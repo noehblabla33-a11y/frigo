@@ -10,7 +10,7 @@ class Ingredient(db.Model):
     unite = db.Column(db.String(20), default='g')
     prix_unitaire = db.Column(db.Float, default=0)
     image = db.Column(db.String(200), nullable=True)
-    categorie = db.Column(db.String(50), nullable=True)  # Nouvelle catégorie
+    categorie = db.Column(db.String(50), nullable=True)
     
     # Relations
     stock = db.relationship('StockFrigo', backref='ingredient', uselist=False, 
@@ -36,7 +36,7 @@ class Recette(db.Model):
     """Modèle pour les recettes"""
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False)
-    instructions = db.Column(db.Text)
+    instructions = db.Column(db.Text)  # Gardé pour compatibilité
     image = db.Column(db.String(200), nullable=True)
     type_recette = db.Column(db.String(50), nullable=True)
     temps_preparation = db.Column(db.Integer, nullable=True)
@@ -44,6 +44,9 @@ class Recette(db.Model):
     # Relations avec suppression en cascade
     ingredients = db.relationship('IngredientRecette', backref='recette', 
                                  cascade='all, delete-orphan')
+    etapes = db.relationship('EtapeRecette', backref='recette', 
+                            cascade='all, delete-orphan', 
+                            order_by='EtapeRecette.ordre')
     planifications = db.relationship('RecettePlanifiee', backref='recette_ref', 
                                     cascade='all, delete-orphan')
     
@@ -57,6 +60,17 @@ class Recette(db.Model):
     
     def __repr__(self):
         return f'<Recette {self.nom}>'
+
+class EtapeRecette(db.Model):
+    """Étapes de préparation d'une recette avec minuteurs optionnels"""
+    id = db.Column(db.Integer, primary_key=True)
+    recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False)
+    ordre = db.Column(db.Integer, nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    duree_minutes = db.Column(db.Integer, nullable=True)  # Minuteur optionnel
+    
+    def __repr__(self):
+        return f'<EtapeRecette {self.recette_id} - Étape {self.ordre}>'
 
 class IngredientRecette(db.Model):
     """Table de liaison entre recettes et ingrédients"""
@@ -95,4 +109,3 @@ class ListeCourses(db.Model):
     
     def __repr__(self):
         return f'<ListeCourses {self.ingredient_id}: {self.quantite}>'
-

@@ -24,8 +24,17 @@
         <p class="recette-detail-cout">💰 Coût estimé : <strong>{{ cout_estime }}€</strong></p>
         {% endif %}
         <p class="recette-detail-count">{{ recette.ingredients|length }} ingrédient(s) nécessaire(s)</p>
+        {% if recette.etapes %}
+        <p class="recette-detail-count">{{ recette.etapes|length }} étape(s) de préparation</p>
+        {% endif %}
         <div class="recette-detail-actions">
             <a href="{{ url_for('recettes.liste') }}" class="btn">← Retour aux recettes</a>
+            {% if recette.etapes %}
+            <a href="{{ url_for('recettes.cuisiner', id=recette.id) }}" class="btn btn-success">
+                🍳 Mode cuisson
+            </a>
+            {% endif %}
+            <a href="{{ url_for('recettes.modifier', id=recette.id) }}" class="btn">✏️ Modifier</a>
             <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
                class="btn btn-danger"
                onclick="return confirm('Supprimer cette recette ?')">
@@ -64,12 +73,103 @@
     </div>
 </div>
 
-{% if recette.instructions %}
+{% if recette.etapes %}
+<div class="card">
+    <h3>📝 Étapes de préparation</h3>
+    <div class="etapes-preview">
+        {% for etape in recette.etapes %}
+        <div class="etape-preview-card">
+            <div class="etape-preview-numero">{{ etape.ordre }}</div>
+            <div class="etape-preview-content">
+                <p>{{ etape.description }}</p>
+                {% if etape.duree_minutes %}
+                <div class="etape-preview-timer">
+                    ⏱️ {{ etape.duree_minutes }} minute(s)
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="{{ url_for('recettes.cuisiner', id=recette.id) }}" class="btn btn-success btn-large">
+            🍳 Lancer le mode cuisson interactif
+        </a>
+    </div>
+</div>
+{% elif recette.instructions %}
 <div class="card">
     <h3>📝 Instructions</h3>
     <div class="recette-instructions">
         {{ recette.instructions|replace('\n', '<br>')|safe }}
     </div>
+    <p style="margin-top: 20px; color: #6c757d; font-style: italic;">
+        💡 Astuce : Modifiez cette recette pour ajouter des étapes avec minuteurs interactifs !
+    </p>
 </div>
 {% endif %}
+
+<style>
+/* Aperçu des étapes */
+.etapes-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.etape-preview-card {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+    transition: all 0.2s;
+}
+
+.etape-preview-card:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.etape-preview-numero {
+    min-width: 40px;
+    height: 40px;
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.etape-preview-content {
+    flex: 1;
+}
+
+.etape-preview-content p {
+    margin: 0 0 10px 0;
+    line-height: 1.6;
+    color: #495057;
+}
+
+.etape-preview-timer {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.2em;
+}
+</style>
 {% endblock %}

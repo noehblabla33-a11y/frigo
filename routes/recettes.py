@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
-from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee
+from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette
 from werkzeug.utils import secure_filename
 import os
 
@@ -25,7 +25,7 @@ def liste():
         
         recette = Recette(
             nom=nom, 
-            instructions=instructions,
+            instructions=instructions,  # Gardé pour compatibilité
             type_recette=type_recette if type_recette else None,
             temps_preparation=int(temps_preparation) if temps_preparation else None
         )
@@ -41,6 +41,7 @@ def liste():
         db.session.add(recette)
         db.session.commit()
         
+        # Ajouter les ingrédients
         i = 0
         while True:
             ing_id = request.form.get(f'ingredient_{i}')
@@ -57,6 +58,26 @@ def liste():
                 db.session.add(ing_recette)
             i += 1
         
+        # Ajouter les étapes
+        j = 0
+        while True:
+            etape_desc = request.form.get(f'etape_desc_{j}')
+            if not etape_desc:
+                break
+            
+            duree = request.form.get(f'etape_duree_{j}')
+            duree_minutes = int(duree) if duree and duree.strip() else None
+            
+            if etape_desc.strip():
+                etape = EtapeRecette(
+                    recette_id=recette.id,
+                    ordre=j + 1,
+                    description=etape_desc.strip(),
+                    duree_minutes=duree_minutes
+                )
+                db.session.add(etape)
+            j += 1
+        
         db.session.commit()
         flash(f'Recette "{nom}" créée avec succès !', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
@@ -65,7 +86,7 @@ def liste():
     search_query = request.args.get('search', '')
     type_filter = request.args.get('type', '')
     ingredient_filter = request.args.get('ingredient', '')
-    view_mode = request.args.get('view', 'grid')  # Nouveau : 'grid' ou 'list'
+    view_mode = request.args.get('view', 'grid')
     
     query = Recette.query
     
@@ -104,6 +125,71 @@ def detail(id):
     recette = Recette.query.get_or_404(id)
     cout_estime = recette.calculer_cout()
     return render_template('recette_detail.html', recette=recette, cout_estime=cout_estime)
+
+@recettes_bp.route('/cuisiner/<int:id>')
+def cuisiner(id):
+    """Mode cuisson avec minuteurs interactifs"""
+    recette = Recette.query.get_or_404(id)
+    return render_template('recette_cuisiner.html', recette=recette)
+
+@recettes_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
+def modifier(id):
+    recette = Recette.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        recette.nom = request.form.get('nom')
+        recette.type_recette = request.form.get('type_recette')
+        temps_prep = request.form.get('temps_preparation')
+        recette.temps_preparation = int(temps_prep) if temps_prep else None
+        
+        # Image
+        if 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename != '' and allowed_file(file.filename):
+                if recette.image:
+                    try:
+                        os.remove(os.path.join(current_app.root_path, recette.image))
+                    except:
+                        pass
+                
+                filename = secure_filename(f"rec_{recette.nom}_{file.filename}")
+                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                file.save(os.path.join(current_app.root_path, filepath))
+                recette.image = filepath
+        
+        # Supprimer les anciennes étapes
+        for etape in recette.etapes:
+            db.session.delete(etape)
+        
+        # Ajouter les nouvelles étapes
+        j = 0
+        while True:
+            etape_desc = request.form.get(f'etape_desc_{j}')
+            if not etape_desc:
+                break
+            
+            duree = request.form.get(f'etape_duree_{j}')
+            duree_minutes = int(duree) if duree and duree.strip() else None
+            
+            if etape_desc.strip():
+                etape = EtapeRecette(
+                    recette_id=recette.id,
+                    ordre=j + 1,
+                    description=etape_desc.strip(),
+                    duree_minutes=duree_minutes
+                )
+                db.session.add(etape)
+            j += 1
+        
+        db.session.commit()
+        flash(f'Recette "{recette.nom}" modifiée !', 'success')
+        return redirect(url_for('recettes.detail', id=recette.id))
+    
+    ingredients = Ingredient.query.order_by(Ingredient.nom).all()
+    return render_template('recette_modifier.html', 
+                         recette=recette, 
+                         ingredients=ingredients,
+                         types_recettes=TYPES_RECETTES)
 
 @recettes_bp.route('/supprimer/<int:id>')
 def supprimer(id):
