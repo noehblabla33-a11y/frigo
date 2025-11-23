@@ -13,5 +13,8 @@ venv/
 # Flask cache
 instance/
 
+# Images
+static/uploads/
+
 # Migrations
 migrations/
