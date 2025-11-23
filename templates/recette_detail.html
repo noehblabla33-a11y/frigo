@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ recette.nom }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='recettes.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="recette-detail-header">
     <div class="recette-detail-image">
@@ -108,68 +112,4 @@
     </p>
 </div>
 {% endif %}
-
-<style>
-/* Aperçu des étapes */
-.etapes-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.etape-preview-card {
-    display: flex;
-    gap: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border-left: 4px solid #667eea;
-    transition: all 0.2s;
-}
-
-.etape-preview-card:hover {
-    background: #e9ecef;
-    transform: translateX(5px);
-}
-
-.etape-preview-numero {
-    min-width: 40px;
-    height: 40px;
-    background: #667eea;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    font-size: 1.2em;
-    flex-shrink: 0;
-}
-
-.etape-preview-content {
-    flex: 1;
-}
-
-.etape-preview-content p {
-    margin: 0 0 10px 0;
-    line-height: 1.6;
-    color: #495057;
-}
-
-.etape-preview-timer {
-    display: inline-block;
-    padding: 4px 12px;
-    background: #fff3cd;
-    color: #856404;
-    border-radius: 15px;
-    font-size: 0.9em;
-    font-weight: 600;
-}
-
-.btn-large {
-    padding: 15px 30px;
-    font-size: 1.2em;
-}
-</style>
 {% endblock %}

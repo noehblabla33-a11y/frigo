@@ -90,69 +90,25 @@
     <p>Aucune recette préparée pour le moment. Commencez à cuisiner !</p>
     {% endif %}
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='historique.js') }}"></script>
 <script>
-    // Graphique des recettes par mois
-    const ctxMois = document.getElementById('chartMois').getContext('2d');
-    const chartMois = new Chart(ctxMois, {
-        type: 'line',
-        data: {
+    // Initialiser les graphiques avec les données du template
+    document.addEventListener('DOMContentLoaded', () => {
+        const graphiqueMois = {
             labels: {{ graphique_mois.labels|tojson }},
-            datasets: [{
-                label: 'Recettes préparées',
-                data: {{ graphique_mois.data|tojson }},
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            }
-        }
-    });
-
-    // Graphique top recettes
-    {% if top_recettes %}
-    const ctxTop = document.getElementById('chartTop').getContext('2d');
-    const chartTop = new Chart(ctxTop, {
-        type: 'bar',
-        data: {
+            data: {{ graphique_mois.data|tojson }}
+        };
+        
+        const graphiqueTop = {
             labels: {{ graphique_top.labels|tojson }},
-            datasets: [{
-                label: 'Nombre de préparations',
-                data: {{ graphique_top.data|tojson }},
-                backgroundColor: [
-                    '#FFD700', '#C0C0C0', '#CD7F32',
-                    '#667eea', '#667eea', '#667eea', 
-                    '#667eea', '#667eea', '#667eea', '#667eea'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            indexAxis: 'y',
-            plugins: { legend: { display: false } },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            }
-        }
+            data: {{ graphique_top.data|tojson }}
+        };
+        
+        initHistoriqueCharts(graphiqueMois, graphiqueTop);
     });
-    {% endif %}
 </script>
 {% endblock %}

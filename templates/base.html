@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Mon Frigo{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="{{ url_for('static', filename='select-search.js') }}" defer></script>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="container">
@@ -36,5 +36,9 @@
             {% block content %}{% endblock %}
         </div>
     </div>
+    
+    <!-- Scripts communs -->
+    <script src="{{ url_for('static', filename='select-search.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
