@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Mon Frigo{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3>❄️ Contenu de mon frigo</h3>
+    <p style="margin-bottom: 20px;">Voici les ingrédients actuellement en stock dans votre frigo.</p>
+    {% if stocks %}
+    <div class="ingredient-grid">
+        {% for stock in stocks %}
+        <div class="ingredient-card">
+            <div class="ingredient-image">
+                {% if stock.ingredient.image %}
+                <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" alt="{{ stock.ingredient.nom }}">
+                {% else %}
+                <div class="no-image">📦</div>
+                {% endif %}
+            </div>
+            <div class="ingredient-info">
+                <h4>{{ stock.ingredient.nom }}</h4>
+                
+                <!-- Édition rapide de la quantité -->
+                <div class="quick-edit-container" data-stock-id="{{ stock.id }}">
+                    <div class="quantite-display" onclick="enableEdit({{ stock.id }})">
+                        <span class="quantite-value" id="quantite-display-{{ stock.id }}">{{ stock.quantite }}</span>
+                        <span class="quantite-unite">{{ stock.ingredient.unite }}</span>
+                        <span class="edit-icon">✏️</span>
+                    </div>
+                    <div class="quantite-edit" id="quantite-edit-{{ stock.id }}" style="display: none;">
+                        <input type="number" 
+                               step="0.01" 
+                               class="quantite-input-inline" 
+                               id="quantite-input-{{ stock.id }}"
+                               value="{{ stock.quantite }}"
+                               data-stock-id="{{ stock.id }}"
+                               data-original="{{ stock.quantite }}">
+                        <span class="quantite-unite-edit">{{ stock.ingredient.unite }}</span>
+                        <button class="btn-inline btn-inline-save" onclick="saveQuantite({{ stock.id }})">✓</button>
+                        <button class="btn-inline btn-inline-cancel" onclick="cancelEdit({{ stock.id }})">✖</button>
+                    </div>
+                    <div class="edit-status" id="status-{{ stock.id }}"></div>
+                </div>
+                
+                {% if stock.ingredient.prix_unitaire > 0 %}
+                <p class="ingredient-prix">{{ stock.ingredient.prix_unitaire }}€/{{ stock.ingredient.unite }}</p>
+                {% endif %}
+            </div>
+            <div class="ingredient-actions">
+                <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
+                   class="btn btn-danger btn-small" 
+                   onclick="return confirm('Retirer cet ingrédient du frigo ?')">
+                    Vider
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Votre frigo est vide ! Ajoutez des ingrédients ci-dessous.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Gérer le stock</h3>
+    <form method="POST">
+        <div class="form-group">
+            <label>Ingrédient</label>
+            <select name="ingredient_id" required id="ingredient-select" class="searchable-select">
+                <option value="">Sélectionner un ingrédient</option>
+                {% for ing in tous_ingredients %}
+                <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
+                    {{ ing.nom }}
+                    {% if ing.stock %}(actuellement: {{ ing.stock.quantite }} {{ ing.unite }}){% endif %}
+                </option>
+                {% endfor %}
+            </select>
+            <small style="color: #6c757d;">
+                Vous ne trouvez pas votre ingrédient ? 
+                <a href="{{ url_for('ingredients.liste') }}">Ajoutez-le au catalogue d'abord</a>
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label>Quantité</label>
+            <input type="number" step="0.01" name="quantite" required id="quantite-input">
+            <span id="unite-display"></span>
+        </div>
+        
+        <div class="form-group">
+            <label>Action</label>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="radio" name="action" value="add" checked>
+                    <span>➕ Ajouter (ex: retour de courses)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="radio" name="action" value="remove">
+                    <span>➖ Retirer (ex: consommation)</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="radio" name="action" value="set">
+                    <span>✏️ Définir (remplace la quantité)</span>
+                </label>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn">Valider</button>
+    </form>
+</div>
+
+<script>
+    const select = document.getElementById('ingredient-select');
+    const uniteDisplay = document.getElementById('unite-display');
+    
+    select.addEventListener('change', function() {
+        const option = this.options[this.selectedIndex];
+        const unite = option.getAttribute('data-unite');
+        if (unite) {
+            uniteDisplay.textContent = unite;
+        } else {
+            uniteDisplay.textContent = '';
+        }
+    });
+</script>
+
+<script>
+// Édition rapide de la quantité
+function enableEdit(stockId) {
+    // Cacher l'affichage
+    document.querySelector(`#quantite-edit-${stockId}`).previousElementSibling.style.display = 'none';
+    // Afficher l'édition
+    document.getElementById(`quantite-edit-${stockId}`).style.display = 'flex';
+    // Focus sur l'input
+    const input = document.getElementById(`quantite-input-${stockId}`);
+    input.focus();
+    input.select();
+}
+
+function cancelEdit(stockId) {
+    const input = document.getElementById(`quantite-input-${stockId}`);
+    // Restaurer la valeur originale
+    input.value = input.dataset.original;
+    // Cacher l'édition
+    document.getElementById(`quantite-edit-${stockId}`).style.display = 'none';
+    // Afficher l'affichage
+    document.querySelector(`#quantite-edit-${stockId}`).previousElementSibling.style.display = 'flex';
+    // Effacer le status
+    document.getElementById(`status-${stockId}`).textContent = '';
+}
+
+async function saveQuantite(stockId) {
+    const input = document.getElementById(`quantite-input-${stockId}`);
+    const statusDiv = document.getElementById(`status-${stockId}`);
+    const nouvelleQuantite = parseFloat(input.value);
+    
+    if (isNaN(nouvelleQuantite) || nouvelleQuantite < 0) {
+        statusDiv.textContent = '❌ Quantité invalide';
+        statusDiv.className = 'edit-status error';
+        return;
+    }
+    
+    // Afficher le chargement
+    statusDiv.textContent = '⏳ Sauvegarde...';
+    statusDiv.className = 'edit-status loading';
+    
+    try {
+        const response = await fetch(`/frigo/update-quantite/${stockId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ quantite: nouvelleQuantite })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Mettre à jour l'affichage
+            document.getElementById(`quantite-display-${stockId}`).textContent = data.quantite;
+            
+            // Mettre à jour la valeur originale
+            input.dataset.original = data.quantite;
+            
+            // Afficher le succès
+            statusDiv.textContent = '✓ Sauvegardé';
+            statusDiv.className = 'edit-status success';
+            
+            // Cacher l'édition après 1 seconde
+            setTimeout(() => {
+                document.getElementById(`quantite-edit-${stockId}`).style.display = 'none';
+                document.querySelector(`#quantite-edit-${stockId}`).previousElementSibling.style.display = 'flex';
+                statusDiv.textContent = '';
+            }, 1000);
+        } else {
+            statusDiv.textContent = '❌ ' + data.message;
+            statusDiv.className = 'edit-status error';
+        }
+    } catch (error) {
+        statusDiv.textContent = '❌ Erreur réseau';
+        statusDiv.className = 'edit-status error';
+    }
+}
+
+// Sauvegarder avec Entrée
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.quantite-input-inline').forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const stockId = input.dataset.stockId;
+                saveQuantite(stockId);
+            } else if (e.key === 'Escape') {
+                const stockId = input.dataset.stockId;
+                cancelEdit(stockId);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

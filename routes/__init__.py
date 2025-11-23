@@ -1,0 +1,8 @@
+from routes.main import main_bp
+from routes.ingredients import ingredients_bp
+from routes.frigo import frigo_bp
+from routes.recettes import recettes_bp
+from routes.planification import planification_bp
+from routes.courses import courses_bp
+from routes.historique import historique_bp
+

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mon Frigo{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='select-search.js') }}" defer></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍳 Mon Frigo</h1>
+            <p>Gérez votre cuisine intelligemment</p>
+        </header>
+        
+        <nav>
+            <a href="{{ url_for('main.index') }}">🏠 Accueil</a>
+            <a href="{{ url_for('ingredients.liste') }}">📦 Ingrédients</a>
+            <a href="{{ url_for('frigo.liste') }}">❄️ Mon Frigo</a>
+            <a href="{{ url_for('recettes.liste') }}">📖 Recettes</a>
+            <a href="{{ url_for('planification.liste') }}">📅 Planifier</a>
+            <a href="{{ url_for('courses.liste') }}">🛒 Courses</a>
+            <a href="{{ url_for('historique.liste') }}">📊 Historique</a>
+        </nav>
+        
+        <div class="content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</body>
+</html>

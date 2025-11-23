@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Catalogue d'ingrédients{% endblock %}
+
+{% block content %}
+
+<!-- Barre de recherche et filtres -->
+<div class="card">
+    <h3>🔍 Rechercher et filtrer</h3>
+    <form method="GET" action="{{ url_for('ingredients.liste') }}">
+        <div class="search-filters">
+            <div class="form-group" style="flex: 2;">
+                <label>Recherche par nom</label>
+                <input type="text" name="search" placeholder="Ex: Tomate, Oignon..." 
+                       value="{{ search_query }}">
+            </div>
+            
+            <div class="form-group" style="flex: 1;">
+                <label>Catégorie</label>
+                <select name="categorie" class="searchable-select">
+                    <option value="">Toutes les catégories</option>
+                    {% for cat_name, cat_icon in categories %}
+                    <option value="{{ cat_name }}" {% if categorie_filter == cat_name %}selected{% endif %}>
+                        {{ cat_icon }} {{ cat_name }}
+                        {% if cat_name in categories_count %}({{ categories_count[cat_name] }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group" style="flex: 1;">
+                <label>Stock</label>
+                <select name="stock">
+                    <option value="">Tous</option>
+                    <option value="en_stock" {% if stock_filter == 'en_stock' %}selected{% endif %}>En stock</option>
+                    <option value="pas_en_stock" {% if stock_filter == 'pas_en_stock' %}selected{% endif %}>Pas en stock</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="flex: 0; align-self: flex-end;">
+                <button type="submit" class="btn">🔍 Rechercher</button>
+            </div>
+            
+            {% if search_query or categorie_filter or stock_filter %}
+            <div class="form-group" style="flex: 0; align-self: flex-end;">
+                <a href="{{ url_for('ingredients.liste') }}" class="btn btn-secondary">✖ Effacer</a>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+    
+    {% if search_query or categorie_filter or stock_filter %}
+    <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 5px;">
+        <strong>Filtres actifs :</strong>
+        {% if search_query %}
+        <span class="filter-badge">Recherche: "{{ search_query }}"</span>
+        {% endif %}
+        {% if categorie_filter %}
+        <span class="filter-badge">Catégorie: {{ categorie_filter }}</span>
+        {% endif %}
+        {% if stock_filter == 'en_stock' %}
+        <span class="filter-badge">En stock uniquement</span>
+        {% elif stock_filter == 'pas_en_stock' %}
+        <span class="filter-badge">Pas en stock</span>
+        {% endif %}
+        <span style="color: #666;">({{ ingredients|length }} résultat(s))</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>➕ Ajouter un ingrédient au catalogue</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Nom de l'ingrédient</label>
+            <input type="text" name="nom" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Catégorie</label>
+            <select name="categorie" class="searchable-select">
+                <option value="">Sélectionner une catégorie (optionnel)</option>
+                {% for cat_name, cat_icon in categories %}
+                <option value="{{ cat_name }}">{{ cat_icon }} {{ cat_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Unité de mesure</label>
+            <select name="unite">
+                <option value="g">grammes (g)</option>
+                <option value="kg">kilogrammes (kg)</option>
+                <option value="ml">millilitres (ml)</option>
+                <option value="L">litres (L)</option>
+                <option value="pièce">pièce(s)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Prix unitaire (€)</label>
+            <input type="number" step="0.01" name="prix_unitaire" placeholder="Prix par unité (optionnel)">
+            <small style="color: #6c757d;">Ex: 2.50 pour 2.50€/kg ou 2.50€/L</small>
+        </div>
+        <div class="form-group">
+            <label>Image de l'ingrédient</label>
+            <input type="file" name="image" accept="image/*">
+        </div>
+        <button type="submit" class="btn">Ajouter au catalogue</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>📦 Catalogue d'ingrédients</h3>
+    <p style="margin-bottom: 20px;">
+        Gérez ici tous les ingrédients que vous utilisez dans vos recettes.
+        {% if ingredients|length > 0 %}
+        <strong>{{ ingredients|length }}</strong> ingrédient(s) affiché(s).
+        {% endif %}
+    </p>
+    {% if ingredients %}
+    <div class="ingredient-grid">
+        {% for ing in ingredients %}
+        <div class="ingredient-card">
+            {% if ing.categorie %}
+            <div class="category-badge">
+                {% for cat_name, cat_icon in categories %}
+                    {% if cat_name == ing.categorie %}
+                        {{ cat_icon }} {{ cat_name }}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="ingredient-image">
+                {% if ing.image %}
+                <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" alt="{{ ing.nom }}">
+                {% else %}
+                <div class="no-image">📦</div>
+                {% endif %}
+            </div>
+            <div class="ingredient-info">
+                <h4>{{ ing.nom }}</h4>
+                <p class="ingredient-unite">Unité: {{ ing.unite }}</p>
+                {% if ing.prix_unitaire > 0 %}
+                <p class="ingredient-prix">{{ ing.prix_unitaire }}€/{{ ing.unite }}</p>
+                {% endif %}
+                {% if ing.stock %}
+                <p class="ingredient-stock">En stock: {{ ing.stock.quantite }} {{ ing.unite }}</p>
+                {% else %}
+                <p class="ingredient-stock-vide">Pas en stock</p>
+                {% endif %}
+            </div>
+            <div class="ingredient-actions">
+                <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" class="btn btn-small">Modifier</a>
+                <a href="{{ url_for('ingredients.supprimer', id=ing.id) }}" 
+                   class="btn btn-danger btn-small" 
+                   onclick="return confirm('Supprimer cet ingrédient ?')">
+                    Supprimer
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Aucun ingrédient trouvé. 
+        {% if search_query or categorie_filter or stock_filter %}
+        Essayez de modifier vos critères de recherche.
+        {% else %}
+        Utilisez le formulaire ci-dessus pour en ajouter !
+        {% endif %}
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

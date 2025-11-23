@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ recette.nom }}{% endblock %}
+
+{% block content %}
+<div class="recette-detail-header">
+    <div class="recette-detail-image">
+        {% if recette.image %}
+        <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" alt="{{ recette.nom }}">
+        {% else %}
+        <div class="no-image-large">🍳</div>
+        {% endif %}
+    </div>
+    <div class="recette-detail-info">
+        <h2>{{ recette.nom }}</h2>
+        {% if recette.type_recette %}
+        <p class="recette-detail-type">
+            <span class="type-badge-large">{{ recette.type_recette }}</span>
+        </p>
+        {% endif %}
+        {% if recette.temps_preparation %}
+        <p class="recette-detail-temps">⏱️ Temps de préparation : <strong>{{ recette.temps_preparation }} minutes</strong></p>
+        {% endif %}
+        {% if cout_estime > 0 %}
+        <p class="recette-detail-cout">💰 Coût estimé : <strong>{{ cout_estime }}€</strong></p>
+        {% endif %}
+        <p class="recette-detail-count">{{ recette.ingredients|length }} ingrédient(s) nécessaire(s)</p>
+        <div class="recette-detail-actions">
+            <a href="{{ url_for('recettes.liste') }}" class="btn">← Retour aux recettes</a>
+            <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
+               class="btn btn-danger"
+               onclick="return confirm('Supprimer cette recette ?')">
+                Supprimer
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>🥗 Ingrédients nécessaires</h3>
+    <div class="ingredients-grid-detail">
+        {% for ing_rec in recette.ingredients %}
+        <div class="ingredient-detail-card">
+            <div class="ingredient-detail-image">
+                {% if ing_rec.ingredient.image %}
+                <img src="{{ url_for('static', filename=ing_rec.ingredient.image.replace('static/', '')) }}" 
+                     alt="{{ ing_rec.ingredient.nom }}">
+                {% else %}
+                <div class="no-image-small">📦</div>
+                {% endif %}
+            </div>
+            <div class="ingredient-detail-info">
+                <h4>{{ ing_rec.ingredient.nom }}</h4>
+                <p class="ingredient-detail-quantite">{{ ing_rec.quantite }} {{ ing_rec.ingredient.unite }}</p>
+                {% set stock = ing_rec.ingredient.stock %}
+                {% set quantite_dispo = stock.quantite if stock else 0 %}
+                {% if quantite_dispo >= ing_rec.quantite %}
+                <span class="badge-disponible">✓ Disponible</span>
+                {% else %}
+                <span class="badge-manquant">✗ Manquant</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if recette.instructions %}
+<div class="card">
+    <h3>📝 Instructions</h3>
+    <div class="recette-instructions">
+        {{ recette.instructions|replace('\n', '<br>')|safe }}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

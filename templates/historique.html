@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Historique{% endblock %}
+
+{% block content %}
+<!-- Statistiques globales -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total }}</div>
+        <div class="stat-label">Recettes préparées</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.mois }}</div>
+        <div class="stat-label">Ce mois-ci</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.semaine }}</div>
+        <div class="stat-label">Cette semaine</div>
+    </div>
+    {% if stats.cout_moyen > 0 %}
+    <div class="stat-card">
+        <div class="stat-number">{{ "%.2f"|format(stats.cout_moyen) }}€</div>
+        <div class="stat-label">Coût moyen/recette</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Graphique des recettes par mois -->
+<div class="card">
+    <h3>📊 Recettes préparées par mois</h3>
+    <canvas id="chartMois" style="max-height: 300px;"></canvas>
+</div>
+
+<!-- Top des recettes -->
+<div class="card">
+    <h3>🏆 Top 10 des recettes les plus préparées</h3>
+    {% if top_recettes %}
+    <div class="top-recettes">
+        {% for recette in top_recettes %}
+        <div class="top-recette-item">
+            <span class="rank">
+                {% if loop.index == 1 %}🥇
+                {% elif loop.index == 2 %}🥈
+                {% elif loop.index == 3 %}🥉
+                {% else %}{{ loop.index }}
+                {% endif %}
+            </span>
+            <span class="recette-nom">{{ recette.nom }}</span>
+            <span class="recette-count">{{ recette.nb_preparations }} fois</span>
+        </div>
+        {% endfor %}
+    </div>
+    <canvas id="chartTop" style="max-height: 300px; margin-top: 20px;"></canvas>
+    {% else %}
+    <p>Aucune recette préparée pour le moment.</p>
+    {% endif %}
+</div>
+
+<!-- Historique détaillé -->
+<div class="card">
+    <h3>📅 Historique des préparations</h3>
+    {% if historique %}
+    <div class="historique-liste">
+        {% for prep in historique %}
+        <div class="historique-item">
+            <div class="historique-date">
+                {{ prep.date_preparation.strftime('%d/%m/%Y à %H:%M') if prep.date_preparation else 'Date inconnue' }}
+            </div>
+            <div class="historique-recette">
+                <strong>{{ prep.recette_ref.nom }}</strong>
+                {% set cout = prep.recette_ref.calculer_cout() %}
+                {% if cout > 0 %}
+                <span class="historique-cout">{{ cout }}€</span>
+                {% endif %}
+                {% if prep.recette_ref.ingredients %}
+                <div class="historique-ingredients">
+                    Ingrédients utilisés : 
+                    {% for ing_rec in prep.recette_ref.ingredients[:3] %}
+                        {{ ing_rec.ingredient.nom }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                    {% if prep.recette_ref.ingredients|length > 3 %}
+                        et {{ prep.recette_ref.ingredients|length - 3 }} autre(s)
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Aucune recette préparée pour le moment. Commencez à cuisiner !</p>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Graphique des recettes par mois
+    const ctxMois = document.getElementById('chartMois').getContext('2d');
+    const chartMois = new Chart(ctxMois, {
+        type: 'line',
+        data: {
+            labels: {{ graphique_mois.labels|tojson }},
+            datasets: [{
+                label: 'Recettes préparées',
+                data: {{ graphique_mois.data|tojson }},
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+
+    // Graphique top recettes
+    {% if top_recettes %}
+    const ctxTop = document.getElementById('chartTop').getContext('2d');
+    const chartTop = new Chart(ctxTop, {
+        type: 'bar',
+        data: {
+            labels: {{ graphique_top.labels|tojson }},
+            datasets: [{
+                label: 'Nombre de préparations',
+                data: {{ graphique_top.data|tojson }},
+                backgroundColor: [
+                    '#FFD700', '#C0C0C0', '#CD7F32',
+                    '#667eea', '#667eea', '#667eea', 
+                    '#667eea', '#667eea', '#667eea', '#667eea'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

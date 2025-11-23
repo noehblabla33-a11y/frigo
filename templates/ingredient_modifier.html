@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ ingredient.nom }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3>✏️ Modifier l'ingrédient</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Nom de l'ingrédient</label>
+            <input type="text" name="nom" value="{{ ingredient.nom }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Catégorie</label>
+            <select name="categorie" class="searchable-select">
+                <option value="">Sélectionner une catégorie (optionnel)</option>
+                {% for cat_name, cat_icon in categories %}
+                <option value="{{ cat_name }}" {% if ingredient.categorie == cat_name %}selected{% endif %}>
+                    {{ cat_icon }} {{ cat_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Unité de mesure</label>
+            <select name="unite">
+                <option value="g" {% if ingredient.unite == 'g' %}selected{% endif %}>grammes (g)</option>
+                <option value="kg" {% if ingredient.unite == 'kg' %}selected{% endif %}>kilogrammes (kg)</option>
+                <option value="ml" {% if ingredient.unite == 'ml' %}selected{% endif %}>millilitres (ml)</option>
+                <option value="L" {% if ingredient.unite == 'L' %}selected{% endif %}>litres (L)</option>
+                <option value="pièce" {% if ingredient.unite == 'pièce' %}selected{% endif %}>pièce(s)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Prix unitaire (€)</label>
+            <input type="number" step="0.01" name="prix_unitaire" 
+                   value="{{ ingredient.prix_unitaire if ingredient.prix_unitaire else '' }}" 
+                   placeholder="Prix par unité (optionnel)">
+            <small style="color: #6c757d;">Ex: 2.50 pour 2.50€/kg ou 2.50€/L</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Image de l'ingrédient</label>
+            {% if ingredient.image %}
+            <div style="margin-bottom: 10px;">
+                <img src="{{ url_for('static', filename=ingredient.image.replace('static/', '')) }}" 
+                     alt="{{ ingredient.nom }}" 
+                     style="max-width: 200px; border-radius: 8px;">
+                <p style="color: #6c757d; font-size: 0.9em; margin-top: 5px;">
+                    Image actuelle (choisissez un nouveau fichier pour la remplacer)
+                </p>
+            </div>
+            {% endif %}
+            <input type="file" name="image" accept="image/*">
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-success">Enregistrer les modifications</button>
+            <a href="{{ url_for('ingredients.liste') }}" class="btn">Annuler</a>
+        </div>
+    </form>
+</div>
+
+{% if ingredient.stock %}
+<div class="card">
+    <h3>📊 Stock actuel</h3>
+    <p>Quantité en stock : <strong>{{ ingredient.stock.quantite }} {{ ingredient.unite }}</strong></p>
+    <p style="color: #6c757d; font-size: 0.9em;">
+        Dernière modification : {{ ingredient.stock.date_modification.strftime('%d/%m/%Y à %H:%M') }}
+    </p>
+    <a href="{{ url_for('frigo.liste') }}" class="btn">Gérer le stock</a>
+</div>
+{% else %}
+<div class="card">
+    <h3>📊 Stock actuel</h3>
+    <p>Cet ingrédient n'est pas actuellement en stock dans votre frigo.</p>
+    <a href="{{ url_for('frigo.liste') }}" class="btn">Ajouter au frigo</a>
+</div>
+{% endif %}
+
+{% if ingredient.recettes %}
+<div class="card">
+    <h3>📖 Utilisé dans les recettes</h3>
+    <p style="margin-bottom: 15px;">
+        Cet ingrédient est utilisé dans <strong>{{ ingredient.recettes|length }}</strong> recette(s) :
+    </p>
+    <ul style="margin-left: 20px; line-height: 2;">
+        {% for ing_rec in ingredient.recettes %}
+        <li>
+            <a href="{{ url_for('recettes.detail', id=ing_rec.recette.id) }}" style="color: #667eea;">
+                {{ ing_rec.recette.nom }}
+            </a>
+            ({{ ing_rec.quantite }} {{ ingredient.unite }})
+        </li>
+        {% endfor %}
+    </ul>
+    <p style="color: #dc3545; margin-top: 15px; font-size: 0.9em;">
+        ⚠️ Vous ne pouvez pas supprimer cet ingrédient tant qu'il est utilisé dans des recettes.
+    </p>
+</div>
+{% endif %}
+{% endblock %}

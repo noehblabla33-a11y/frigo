@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Recettes{% endblock %}
+
+{% block content %}
+<!-- Barre de recherche et filtres -->
+<div class="card">
+    <h3>🔍 Rechercher des recettes</h3>
+    <form method="GET" action="{{ url_for('recettes.liste') }}">
+        <div class="search-filters">
+            <div class="form-group" style="flex: 2;">
+                <label>Recherche par nom</label>
+                <input type="text" name="search" placeholder="Ex: Pizza, Pâtes..." 
+                       value="{{ search_query }}">
+            </div>
+            
+            <div class="form-group" style="flex: 1;">
+                <label>Type de recette</label>
+                <select name="type" class="searchable-select">
+                    <option value="">Tous les types</option>
+                    {% for type in types_recettes %}
+                    <option value="{{ type }}" {% if type_filter == type %}selected{% endif %}>
+                        {{ type }} {% if type in types_count %}({{ types_count[type] }}){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group" style="flex: 1;">
+                <label>Ingrédient</label>
+                <select name="ingredient" class="searchable-select">
+                    <option value="">Tous les ingrédients</option>
+                    {% for ing in ingredients %}
+                    <option value="{{ ing.id }}" {% if ingredient_filter == ing.id|string %}selected{% endif %}>
+                        {{ ing.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group" style="flex: 0; align-self: flex-end;">
+                <button type="submit" class="btn">🔍 Rechercher</button>
+            </div>
+            
+            {% if search_query or type_filter or ingredient_filter %}
+            <div class="form-group" style="flex: 0; align-self: flex-end;">
+                <a href="{{ url_for('recettes.liste') }}" class="btn btn-secondary">✖ Effacer</a>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+    
+    {% if search_query or type_filter or ingredient_filter %}
+    <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 5px;">
+        <strong>Filtres actifs :</strong>
+        {% if search_query %}
+        <span class="filter-badge">Nom: "{{ search_query }}"</span>
+        {% endif %}
+        {% if type_filter %}
+        <span class="filter-badge">Type: {{ type_filter }}</span>
+        {% endif %}
+        {% if ingredient_filter %}
+        {% for ing in ingredients %}
+            {% if ing.id == ingredient_filter|int %}
+            <span class="filter-badge">Ingrédient: {{ ing.nom }}</span>
+            {% endif %}
+        {% endfor %}
+        {% endif %}
+        <span style="color: #666;">({{ recettes|length }} résultat(s))</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>📖 Mes recettes</h3>
+    {% if recettes %}
+    <div class="recettes-grid">
+        {% for recette in recettes %}
+        <div class="recette-card">
+            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link">
+                <div class="recette-image">
+                    {% if recette.image %}
+                    <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" alt="{{ recette.nom }}">
+                    {% else %}
+                    <div class="no-image">🍳</div>
+                    {% endif %}
+                    {% if recette.type_recette %}
+                    <span class="recette-type-badge">{{ recette.type_recette }}</span>
+                    {% endif %}
+                </div>
+                <div class="recette-info">
+                    <h4>{{ recette.nom }}</h4>
+                    <div class="recette-meta">
+                        <span class="recette-ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
+                        {% if recette.temps_preparation %}
+                        <span class="recette-temps">⏱️ {{ recette.temps_preparation }} min</span>
+                        {% endif %}
+                    </div>
+                    {% set cout = recette.calculer_cout() %}
+                    {% if cout > 0 %}
+                    <p class="recette-cout">≈ {{ cout }}€</p>
+                    {% endif %}
+                </div>
+            </a>
+            <div class="recette-actions">
+                <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
+                   class="btn btn-danger btn-small"
+                   onclick="return confirm('Supprimer cette recette ?')">
+                    Supprimer
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Aucune recette trouvée. 
+        {% if search_query or type_filter or ingredient_filter %}
+        Essayez de modifier vos critères de recherche.
+        {% else %}
+        Créez-en une ci-dessous !
+        {% endif %}
+    </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Créer une nouvelle recette</h3>
+    <form method="POST" id="recetteForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Nom de la recette</label>
+            <input type="text" name="nom" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Type de recette</label>
+            <select name="type_recette" class="searchable-select">
+                <option value="">Sélectionner un type (optionnel)</option>
+                {% for type in types_recettes %}
+                <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Temps de préparation (minutes)</label>
+            <input type="number" name="temps_preparation" placeholder="Ex: 30">
+        </div>
+        
+        <div class="form-group">
+            <label>Image de la recette</label>
+            <input type="file" name="image" accept="image/*">
+        </div>
+        
+        <div class="form-group">
+            <label>Instructions</label>
+            <textarea name="instructions" placeholder="Décrivez les étapes de préparation..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>Ingrédients</label>
+            <div id="ingredients-container">
+                <div class="ingredient-row">
+                    <div style="flex: 2;">
+                        <select name="ingredient_0" class="ingredient-select" data-index="0">
+                            <option value="">Sélectionner un ingrédient</option>
+                            {% for ing in ingredients %}
+                            <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">{{ ing.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="number" step="0.01" name="quantite_0" placeholder="Quantité">
+                    </div>
+                    <div style="flex: 0; min-width: 50px;">
+                        <span class="unite-display" id="unite-0" style="font-weight: bold; color: #667eea;"></span>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="ajouterIngredient()" class="btn">
+                + Ajouter un ingrédient
+            </button>
+        </div>
+        
+        <button type="submit" class="btn btn-success">Créer la recette</button>
+    </form>
+</div>
+
+<script>
+    let ingredientCount = 1;
+    
+    // Fonction pour mettre à jour l'unité affichée
+    function updateUnite(selectElement) {
+        const index = selectElement.dataset.index;
+        const uniteSpan = document.getElementById('unite-' + index);
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const unite = selectedOption.getAttribute('data-unite');
+        
+        if (unite && selectedOption.value) {
+            uniteSpan.textContent = unite;
+        } else {
+            uniteSpan.textContent = '';
+        }
+    }
+    
+    // Attacher les événements aux selects existants
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.ingredient-select').forEach(select => {
+            select.addEventListener('change', function() {
+                updateUnite(this);
+            });
+        });
+    });
+    
+    function ajouterIngredient() {
+        const container = document.getElementById('ingredients-container');
+        const div = document.createElement('div');
+        div.className = 'ingredient-row';
+        div.innerHTML = `
+            <div style="flex: 2;">
+                <select name="ingredient_${ingredientCount}" class="ingredient-select searchable-select" data-index="${ingredientCount}">
+                    <option value="">Sélectionner un ingrédient</option>
+                    {% for ing in ingredients %}
+                    <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">{{ ing.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <input type="number" step="0.01" name="quantite_${ingredientCount}" placeholder="Quantité">
+            </div>
+            <div style="flex: 0; min-width: 50px;">
+                <span class="unite-display" id="unite-${ingredientCount}" style="font-weight: bold; color: #667eea;"></span>
+            </div>
+        `;
+        container.appendChild(div);
+        
+        // Attacher l'événement au nouveau select
+        const newSelect = div.querySelector('.ingredient-select');
+        newSelect.addEventListener('change', function() {
+            updateUnite(this);
+        });
+        
+        // Initialiser SelectSearch pour le nouveau select
+        if (window.SelectSearch) {
+            new window.SelectSearch(newSelect);
+        }
+        
+        ingredientCount++;
+    }
+</script>
+{% endblock %}

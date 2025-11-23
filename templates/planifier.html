@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Planifier{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3>📅 Recettes planifiées</h3>
+    {% if planifiees %}
+    {% for plan in planifiees %}
+    <div class="card">
+        <h4>{{ plan.recette_ref.nom }}</h4>
+        <p><strong>Statut des ingrédients :</strong></p>
+        <ul>
+        {% for ing_rec in plan.recette_ref.ingredients %}
+            {% set stock = ing_rec.ingredient.stock %}
+            {% set quantite_dispo = stock.quantite if stock else 0 %}
+            <li class="{% if quantite_dispo >= ing_rec.quantite %}disponible{% else %}manquant{% endif %}">
+                {{ ing_rec.ingredient.nom }} : {{ ing_rec.quantite }} {{ ing_rec.ingredient.unite }} nécessaire
+                ({{ quantite_dispo }} disponible)
+            </li>
+        {% endfor %}
+        </ul>
+        <a href="{{ url_for('planification.preparer', id=plan.id) }}" class="btn btn-success">Marquer comme préparée</a>
+        <a href="{{ url_for('planification.annuler', id=plan.id) }}" class="btn btn-danger">Annuler</a>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p>Aucune recette planifiée.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Planifier une recette</h3>
+    <form method="POST">
+        <div class="form-group">
+            <label>Choisir une recette</label>
+            <select name="recette_id" required>
+                <option value="">Sélectionner...</option>
+                {% for recette in recettes %}
+                <option value="{{ recette.id }}">{{ recette.nom }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn">Planifier</button>
+    </form>
+</div>
+{% endblock %}
