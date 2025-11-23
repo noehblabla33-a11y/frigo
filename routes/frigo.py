@@ -40,10 +40,15 @@ def liste():
         db.session.commit()
         return redirect(url_for('frigo.liste'))
     
+    view_mode = request.args.get('view', 'grid')  # Nouveau : 'grid' ou 'list'
+    
     stocks = StockFrigo.query.join(Ingredient).order_by(Ingredient.nom).all()
     tous_ingredients = Ingredient.query.order_by(Ingredient.nom).all()
     
-    return render_template('frigo.html', stocks=stocks, tous_ingredients=tous_ingredients)
+    return render_template('frigo.html', 
+                         stocks=stocks, 
+                         tous_ingredients=tous_ingredients,
+                         view_mode=view_mode)
 
 @frigo_bp.route('/vider/<int:id>')
 def vider(id):
@@ -78,4 +83,3 @@ def update_quantite(stock_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
-

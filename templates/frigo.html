@@ -3,58 +3,170 @@
 
 {% block content %}
 <div class="card">
-    <h3>❄️ Contenu de mon frigo</h3>
-    <p style="margin-bottom: 20px;">Voici les ingrédients actuellement en stock dans votre frigo.</p>
-    {% if stocks %}
-    <div class="ingredient-grid">
-        {% for stock in stocks %}
-        <div class="ingredient-card">
-            <div class="ingredient-image">
-                {% if stock.ingredient.image %}
-                <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" alt="{{ stock.ingredient.nom }}">
-                {% else %}
-                <div class="no-image">📦</div>
-                {% endif %}
-            </div>
-            <div class="ingredient-info">
-                <h4>{{ stock.ingredient.nom }}</h4>
-                
-                <!-- Édition rapide de la quantité -->
-                <div class="quick-edit-container" data-stock-id="{{ stock.id }}">
-                    <div class="quantite-display" onclick="enableEdit({{ stock.id }})">
-                        <span class="quantite-value" id="quantite-display-{{ stock.id }}">{{ stock.quantite }}</span>
-                        <span class="quantite-unite">{{ stock.ingredient.unite }}</span>
-                        <span class="edit-icon">✏️</span>
-                    </div>
-                    <div class="quantite-edit" id="quantite-edit-{{ stock.id }}" style="display: none;">
-                        <input type="number" 
-                               step="0.01" 
-                               class="quantite-input-inline" 
-                               id="quantite-input-{{ stock.id }}"
-                               value="{{ stock.quantite }}"
-                               data-stock-id="{{ stock.id }}"
-                               data-original="{{ stock.quantite }}">
-                        <span class="quantite-unite-edit">{{ stock.ingredient.unite }}</span>
-                        <button class="btn-inline btn-inline-save" onclick="saveQuantite({{ stock.id }})">✓</button>
-                        <button class="btn-inline btn-inline-cancel" onclick="cancelEdit({{ stock.id }})">✖</button>
-                    </div>
-                    <div class="edit-status" id="status-{{ stock.id }}"></div>
-                </div>
-                
-                {% if stock.ingredient.prix_unitaire > 0 %}
-                <p class="ingredient-prix">{{ stock.ingredient.prix_unitaire }}€/{{ stock.ingredient.unite }}</p>
-                {% endif %}
-            </div>
-            <div class="ingredient-actions">
-                <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
-                   class="btn btn-danger btn-small" 
-                   onclick="return confirm('Retirer cet ingrédient du frigo ?')">
-                    Vider
-                </a>
-            </div>
+    <div class="catalogue-header">
+        <h3>❄️ Contenu de mon frigo</h3>
+        <div class="view-toggle">
+            <a href="{{ url_for('frigo.liste', view='grid') }}" 
+               class="view-toggle-btn {% if view_mode == 'grid' %}active{% endif %}"
+               title="Vue en grille">
+                <span class="icon">⊞</span>
+            </a>
+            <a href="{{ url_for('frigo.liste', view='list') }}" 
+               class="view-toggle-btn {% if view_mode == 'list' %}active{% endif %}"
+               title="Vue en liste">
+                <span class="icon">☰</span>
+            </a>
         </div>
-        {% endfor %}
     </div>
+    
+    <p style="margin-bottom: 20px;">Voici les ingrédients actuellement en stock dans votre frigo.</p>
+    
+    {% if stocks %}
+        {% if view_mode == 'list' %}
+        <!-- MODE LISTE -->
+        <div class="frigo-list">
+            <table class="frigo-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;"></th>
+                        <th>Ingrédient</th>
+                        <th>Quantité</th>
+                        <th>Unité</th>
+                        <th>Prix unitaire</th>
+                        <th>Valeur stock</th>
+                        <th>Dernière modif.</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr class="frigo-row">
+                        <td class="frigo-img-cell">
+                            {% if stock.ingredient.image %}
+                            <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" 
+                                 alt="{{ stock.ingredient.nom }}" 
+                                 class="frigo-thumbnail">
+                            {% else %}
+                            <div class="frigo-thumbnail-placeholder">📦</div>
+                            {% endif %}
+                        </td>
+                        <td class="frigo-name-cell">
+                            <strong>{{ stock.ingredient.nom }}</strong>
+                        </td>
+                        <td>
+                            <div class="quantite-edit-inline" data-stock-id="{{ stock.id }}">
+                                <input type="number" 
+                                       step="0.01" 
+                                       class="quantite-input-table" 
+                                       id="quantite-input-{{ stock.id }}"
+                                       value="{{ stock.quantite }}"
+                                       data-stock-id="{{ stock.id }}"
+                                       data-original="{{ stock.quantite }}">
+                                <button class="btn-inline-mini btn-save-mini" onclick="saveQuantite({{ stock.id }})" title="Sauvegarder">✓</button>
+                                <div class="edit-status-mini" id="status-{{ stock.id }}"></div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="unite-badge">{{ stock.ingredient.unite }}</span>
+                        </td>
+                        <td>
+                            {% if stock.ingredient.prix_unitaire > 0 %}
+                            <span class="prix-table">{{ stock.ingredient.prix_unitaire }}€/{{ stock.ingredient.unite }}</span>
+                            {% else %}
+                            <span style="color: #adb5bd;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if stock.ingredient.prix_unitaire > 0 %}
+                            <span class="valeur-stock">{{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</span>
+                            {% else %}
+                            <span style="color: #adb5bd;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="date-modif">{{ stock.date_modification.strftime('%d/%m/%y %H:%M') }}</span>
+                        </td>
+                        <td class="actions-cell">
+                            <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
+                               class="btn-icon btn-icon-danger" 
+                               title="Vider du frigo"
+                               onclick="return confirm('Retirer cet ingrédient du frigo ?')">🗑️</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="total-row-frigo">
+                        <td colspan="5" style="text-align: right; font-weight: bold;">Valeur totale du stock :</td>
+                        <td colspan="3" style="font-weight: bold; color: #28a745; font-size: 1.1em;">
+                            {% set valeur_totale = 0 %}
+                            {% for stock in stocks %}
+                                {% if stock.ingredient.prix_unitaire > 0 %}
+                                    {% set valeur_totale = valeur_totale + (stock.quantite * stock.ingredient.prix_unitaire) %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if valeur_totale > 0 %}
+                            {{ "%.2f"|format(valeur_totale) }}€
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <!-- MODE GRILLE (existant) -->
+        <div class="ingredient-grid">
+            {% for stock in stocks %}
+            <div class="ingredient-card">
+                <div class="ingredient-image">
+                    {% if stock.ingredient.image %}
+                    <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" alt="{{ stock.ingredient.nom }}">
+                    {% else %}
+                    <div class="no-image">📦</div>
+                    {% endif %}
+                </div>
+                <div class="ingredient-info">
+                    <h4>{{ stock.ingredient.nom }}</h4>
+                    
+                    <!-- Édition rapide de la quantité -->
+                    <div class="quick-edit-container" data-stock-id="{{ stock.id }}">
+                        <div class="quantite-display" onclick="enableEdit({{ stock.id }})">
+                            <span class="quantite-value" id="quantite-display-{{ stock.id }}">{{ stock.quantite }}</span>
+                            <span class="quantite-unite">{{ stock.ingredient.unite }}</span>
+                            <span class="edit-icon">✏️</span>
+                        </div>
+                        <div class="quantite-edit" id="quantite-edit-{{ stock.id }}" style="display: none;">
+                            <input type="number" 
+                                   step="0.01" 
+                                   class="quantite-input-inline" 
+                                   id="quantite-input-grid-{{ stock.id }}"
+                                   value="{{ stock.quantite }}"
+                                   data-stock-id="{{ stock.id }}"
+                                   data-original="{{ stock.quantite }}">
+                            <span class="quantite-unite-edit">{{ stock.ingredient.unite }}</span>
+                            <button class="btn-inline btn-inline-save" onclick="saveQuantiteGrid({{ stock.id }})">✓</button>
+                            <button class="btn-inline btn-inline-cancel" onclick="cancelEdit({{ stock.id }})">✖</button>
+                        </div>
+                        <div class="edit-status" id="status-grid-{{ stock.id }}"></div>
+                    </div>
+                    
+                    {% if stock.ingredient.prix_unitaire > 0 %}
+                    <p class="ingredient-prix">{{ stock.ingredient.prix_unitaire }}€/{{ stock.ingredient.unite }}</p>
+                    {% endif %}
+                </div>
+                <div class="ingredient-actions">
+                    <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
+                       class="btn btn-danger btn-small" 
+                       onclick="return confirm('Retirer cet ingrédient du frigo ?')">
+                        Vider
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     {% else %}
     <p>Votre frigo est vide ! Ajoutez des ingrédients ci-dessous.</p>
     {% endif %}
@@ -124,33 +236,26 @@
 </script>
 
 <script>
-// Édition rapide de la quantité
+// Édition rapide pour la grille
 function enableEdit(stockId) {
-    // Cacher l'affichage
     document.querySelector(`#quantite-edit-${stockId}`).previousElementSibling.style.display = 'none';
-    // Afficher l'édition
     document.getElementById(`quantite-edit-${stockId}`).style.display = 'flex';
-    // Focus sur l'input
-    const input = document.getElementById(`quantite-input-${stockId}`);
+    const input = document.getElementById(`quantite-input-grid-${stockId}`);
     input.focus();
     input.select();
 }
 
 function cancelEdit(stockId) {
-    const input = document.getElementById(`quantite-input-${stockId}`);
-    // Restaurer la valeur originale
+    const input = document.getElementById(`quantite-input-grid-${stockId}`);
     input.value = input.dataset.original;
-    // Cacher l'édition
     document.getElementById(`quantite-edit-${stockId}`).style.display = 'none';
-    // Afficher l'affichage
     document.querySelector(`#quantite-edit-${stockId}`).previousElementSibling.style.display = 'flex';
-    // Effacer le status
-    document.getElementById(`status-${stockId}`).textContent = '';
+    document.getElementById(`status-grid-${stockId}`).textContent = '';
 }
 
-async function saveQuantite(stockId) {
-    const input = document.getElementById(`quantite-input-${stockId}`);
-    const statusDiv = document.getElementById(`status-${stockId}`);
+async function saveQuantiteGrid(stockId) {
+    const input = document.getElementById(`quantite-input-grid-${stockId}`);
+    const statusDiv = document.getElementById(`status-grid-${stockId}`);
     const nouvelleQuantite = parseFloat(input.value);
     
     if (isNaN(nouvelleQuantite) || nouvelleQuantite < 0) {
@@ -159,7 +264,6 @@ async function saveQuantite(stockId) {
         return;
     }
     
-    // Afficher le chargement
     statusDiv.textContent = '⏳ Sauvegarde...';
     statusDiv.className = 'edit-status loading';
     
@@ -175,17 +279,11 @@ async function saveQuantite(stockId) {
         const data = await response.json();
         
         if (data.success) {
-            // Mettre à jour l'affichage
             document.getElementById(`quantite-display-${stockId}`).textContent = data.quantite;
-            
-            // Mettre à jour la valeur originale
             input.dataset.original = data.quantite;
-            
-            // Afficher le succès
             statusDiv.textContent = '✓ Sauvegardé';
             statusDiv.className = 'edit-status success';
             
-            // Cacher l'édition après 1 seconde
             setTimeout(() => {
                 document.getElementById(`quantite-edit-${stockId}`).style.display = 'none';
                 document.querySelector(`#quantite-edit-${stockId}`).previousElementSibling.style.display = 'flex';
@@ -201,13 +299,77 @@ async function saveQuantite(stockId) {
     }
 }
 
+// Édition rapide pour la liste (tableau)
+async function saveQuantite(stockId) {
+    const input = document.getElementById(`quantite-input-${stockId}`);
+    const statusDiv = document.getElementById(`status-${stockId}`);
+    const nouvelleQuantite = parseFloat(input.value);
+    
+    if (isNaN(nouvelleQuantite) || nouvelleQuantite < 0) {
+        statusDiv.textContent = '❌';
+        statusDiv.className = 'edit-status-mini error';
+        return;
+    }
+    
+    statusDiv.textContent = '⏳';
+    statusDiv.className = 'edit-status-mini loading';
+    
+    try {
+        const response = await fetch(`/frigo/update-quantite/${stockId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ quantite: nouvelleQuantite })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            input.dataset.original = data.quantite;
+            input.value = data.quantite;
+            statusDiv.textContent = '✓';
+            statusDiv.className = 'edit-status-mini success';
+            
+            setTimeout(() => {
+                statusDiv.textContent = '';
+            }, 2000);
+        } else {
+            statusDiv.textContent = '❌';
+            statusDiv.className = 'edit-status-mini error';
+        }
+    } catch (error) {
+        statusDiv.textContent = '❌';
+        statusDiv.className = 'edit-status-mini error';
+    }
+}
+
 // Sauvegarder avec Entrée
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.quantite-input-inline').forEach(input => {
+    document.querySelectorAll('.quantite-input-table').forEach(input => {
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 const stockId = input.dataset.stockId;
                 saveQuantite(stockId);
+            }
+        });
+        
+        // Auto-save on blur (perte de focus)
+        input.addEventListener('blur', (e) => {
+            const stockId = input.dataset.stockId;
+            const original = parseFloat(input.dataset.original);
+            const current = parseFloat(input.value);
+            if (original !== current && !isNaN(current)) {
+                saveQuantite(stockId);
+            }
+        });
+    });
+    
+    document.querySelectorAll('.quantite-input-inline').forEach(input => {
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const stockId = input.dataset.stockId;
+                saveQuantiteGrid(stockId);
             } else if (e.key === 'Escape') {
                 const stockId = input.dataset.stockId;
                 cancelEdit(stockId);
