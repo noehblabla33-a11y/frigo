@@ -65,6 +65,7 @@ def liste():
     search_query = request.args.get('search', '')
     type_filter = request.args.get('type', '')
     ingredient_filter = request.args.get('ingredient', '')
+    view_mode = request.args.get('view', 'grid')  # Nouveau : 'grid' ou 'list'
     
     query = Recette.query
     
@@ -95,7 +96,8 @@ def liste():
                          types_count=types_count,
                          search_query=search_query,
                          type_filter=type_filter,
-                         ingredient_filter=ingredient_filter)
+                         ingredient_filter=ingredient_filter,
+                         view_mode=view_mode)
 
 @recettes_bp.route('/<int:id>')
 def detail(id):
