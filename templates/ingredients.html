@@ -46,6 +46,8 @@
             </div>
             {% endif %}
         </div>
+        <!-- Champ caché pour maintenir le mode de vue -->
+        <input type="hidden" name="view" value="{{ view_mode }}">
     </form>
     
     {% if search_query or categorie_filter or stock_filter %}
@@ -109,56 +111,149 @@
 </div>
 
 <div class="card">
-    <h3>📦 Catalogue d'ingrédients</h3>
+    <div class="catalogue-header">
+        <h3>📦 Catalogue d'ingrédients</h3>
+        <div class="view-toggle">
+            <a href="{{ url_for('ingredients.liste', search=search_query, categorie=categorie_filter, stock=stock_filter, view='grid') }}" 
+               class="view-toggle-btn {% if view_mode == 'grid' %}active{% endif %}"
+               title="Vue en grille">
+                <span class="icon">⊞</span>
+            </a>
+            <a href="{{ url_for('ingredients.liste', search=search_query, categorie=categorie_filter, stock=stock_filter, view='list') }}" 
+               class="view-toggle-btn {% if view_mode == 'list' %}active{% endif %}"
+               title="Vue en liste">
+                <span class="icon">☰</span>
+            </a>
+        </div>
+    </div>
+    
     <p style="margin-bottom: 20px;">
         Gérez ici tous les ingrédients que vous utilisez dans vos recettes.
         {% if ingredients|length > 0 %}
         <strong>{{ ingredients|length }}</strong> ingrédient(s) affiché(s).
         {% endif %}
     </p>
+    
     {% if ingredients %}
-    <div class="ingredient-grid">
-        {% for ing in ingredients %}
-        <div class="ingredient-card">
-            {% if ing.categorie %}
-            <div class="category-badge">
-                {% for cat_name, cat_icon in categories %}
-                    {% if cat_name == ing.categorie %}
-                        {{ cat_icon }} {{ cat_name }}
-                    {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
-            <div class="ingredient-image">
-                {% if ing.image %}
-                <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" alt="{{ ing.nom }}">
-                {% else %}
-                <div class="no-image">📦</div>
-                {% endif %}
-            </div>
-            <div class="ingredient-info">
-                <h4>{{ ing.nom }}</h4>
-                <p class="ingredient-unite">Unité: {{ ing.unite }}</p>
-                {% if ing.prix_unitaire > 0 %}
-                <p class="ingredient-prix">{{ ing.prix_unitaire }}€/{{ ing.unite }}</p>
-                {% endif %}
-                {% if ing.stock %}
-                <p class="ingredient-stock">En stock: {{ ing.stock.quantite }} {{ ing.unite }}</p>
-                {% else %}
-                <p class="ingredient-stock-vide">Pas en stock</p>
-                {% endif %}
-            </div>
-            <div class="ingredient-actions">
-                <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" class="btn btn-small">Modifier</a>
-                <a href="{{ url_for('ingredients.supprimer', id=ing.id) }}" 
-                   class="btn btn-danger btn-small" 
-                   onclick="return confirm('Supprimer cet ingrédient ?')">
-                    Supprimer
-                </a>
-            </div>
+        {% if view_mode == 'list' %}
+        <!-- MODE LISTE -->
+        <div class="ingredient-list">
+            <table class="ingredient-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;"></th>
+                        <th>Nom</th>
+                        <th>Catégorie</th>
+                        <th>Unité</th>
+                        <th>Prix</th>
+                        <th>Stock</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ing in ingredients %}
+                    <tr class="ingredient-row">
+                        <td class="ingredient-img-cell">
+                            {% if ing.image %}
+                            <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" 
+                                 alt="{{ ing.nom }}" 
+                                 class="ingredient-thumbnail">
+                            {% else %}
+                            <div class="ingredient-thumbnail-placeholder">📦</div>
+                            {% endif %}
+                        </td>
+                        <td class="ingredient-name-cell">
+                            <strong>{{ ing.nom }}</strong>
+                        </td>
+                        <td>
+                            {% if ing.categorie %}
+                            <span class="category-badge-small">
+                                {% for cat_name, cat_icon in categories %}
+                                    {% if cat_name == ing.categorie %}
+                                        {{ cat_icon }} {{ cat_name }}
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                            {% else %}
+                            <span style="color: #adb5bd;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ ing.unite }}</td>
+                        <td>
+                            {% if ing.prix_unitaire > 0 %}
+                            <span class="prix-table">{{ ing.prix_unitaire }}€/{{ ing.unite }}</span>
+                            {% else %}
+                            <span style="color: #adb5bd;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ing.stock %}
+                            <span class="stock-badge stock-available">
+                                ✓ {{ ing.stock.quantite }} {{ ing.unite }}
+                            </span>
+                            {% else %}
+                            <span class="stock-badge stock-empty">✗ Pas en stock</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" 
+                               class="btn-icon" 
+                               title="Modifier">✏️</a>
+                            <a href="{{ url_for('ingredients.supprimer', id=ing.id) }}" 
+                               class="btn-icon btn-icon-danger" 
+                               title="Supprimer"
+                               onclick="return confirm('Supprimer cet ingrédient ?')">🗑️</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% endfor %}
-    </div>
+        {% else %}
+        <!-- MODE GRILLE (existant) -->
+        <div class="ingredient-grid">
+            {% for ing in ingredients %}
+            <div class="ingredient-card">
+                {% if ing.categorie %}
+                <div class="category-badge">
+                    {% for cat_name, cat_icon in categories %}
+                        {% if cat_name == ing.categorie %}
+                            {{ cat_icon }} {{ cat_name }}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="ingredient-image">
+                    {% if ing.image %}
+                    <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" alt="{{ ing.nom }}">
+                    {% else %}
+                    <div class="no-image">📦</div>
+                    {% endif %}
+                </div>
+                <div class="ingredient-info">
+                    <h4>{{ ing.nom }}</h4>
+                    <p class="ingredient-unite">Unité: {{ ing.unite }}</p>
+                    {% if ing.prix_unitaire > 0 %}
+                    <p class="ingredient-prix">{{ ing.prix_unitaire }}€/{{ ing.unite }}</p>
+                    {% endif %}
+                    {% if ing.stock %}
+                    <p class="ingredient-stock">En stock: {{ ing.stock.quantite }} {{ ing.unite }}</p>
+                    {% else %}
+                    <p class="ingredient-stock-vide">Pas en stock</p>
+                    {% endif %}
+                </div>
+                <div class="ingredient-actions">
+                    <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" class="btn btn-small">Modifier</a>
+                    <a href="{{ url_for('ingredients.supprimer', id=ing.id) }}" 
+                       class="btn btn-danger btn-small" 
+                       onclick="return confirm('Supprimer cet ingrédient ?')">
+                        Supprimer
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     {% else %}
     <p>Aucun ingrédient trouvé. 
         {% if search_query or categorie_filter or stock_filter %}
