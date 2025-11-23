@@ -60,7 +60,8 @@ def liste():
     # Gestion de la recherche et des filtres
     search_query = request.args.get('search', '')
     categorie_filter = request.args.get('categorie', '')
-    stock_filter = request.args.get('stock', '')  # 'en_stock', 'pas_en_stock', ou ''
+    stock_filter = request.args.get('stock', '')
+    view_mode = request.args.get('view', 'grid')  # Nouveau : 'grid' ou 'list'
     
     # Construire la requête
     query = Ingredient.query
@@ -97,7 +98,8 @@ def liste():
                          categories_count=categories_count,
                          search_query=search_query,
                          categorie_filter=categorie_filter,
-                         stock_filter=stock_filter)
+                         stock_filter=stock_filter,
+                         view_mode=view_mode)
 
 @ingredients_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
 def modifier(id):
@@ -148,4 +150,3 @@ def supprimer(id):
     db.session.commit()
     flash(f'Ingrédient "{nom}" supprimé du catalogue !', 'success')
     return redirect(url_for('ingredients.liste'))
-
