@@ -16,5 +16,8 @@ instance/
 # Images
 static/uploads/
 
+# Sons
+static/sounds/
+
 # Migrations
 migrations/
