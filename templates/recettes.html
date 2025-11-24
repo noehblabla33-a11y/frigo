@@ -2,7 +2,7 @@
 {% block title %}Recettes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='recettes.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -284,7 +284,7 @@
             <div id="ingredients-container">
                 <div class="ingredient-row">
                     <div style="flex: 2;">
-                        <select name="ingredient_0" class="ingredient-select" data-index="0">
+                        <select name="ingredient_0" class="ingredient-select searchable-select" data-index="0">
                             <option value="">Sélectionner un ingrédient</option>
                             {% for ing in ingredients %}
                             <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">{{ ing.nom }}</option>
@@ -310,5 +310,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='recettes.js') }}"></script>
+<script src="{{ url_for('static', filename='javascript/recettes.js') }}"></script>
 {% endblock %}

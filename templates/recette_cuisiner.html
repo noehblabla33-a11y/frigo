@@ -2,7 +2,7 @@
 {% block title %}🍳 Cuisiner : {{ recette.nom }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='cuisiner.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/cuisiner.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -122,7 +122,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='cuisiner.js') }}"></script>
+<script src="{{ url_for('static', filename='javascript/cuisiner.js') }}"></script>
 <script>
     // Initialiser les minuteurs avec les données des étapes
     const etapesData = [
