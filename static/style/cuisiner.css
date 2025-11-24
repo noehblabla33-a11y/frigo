@@ -1,0 +1,393 @@
+/* ============================================ */
+/* Fichier: static/cuisiner.css                 */
+/* Styles pour le mode cuisson interactif      */
+/* ============================================ */
+
+/* En-tête du mode cuisson */
+.cooking-mode-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.cooking-title h2 {
+    margin: 0 0 5px 0;
+    font-size: 2em;
+}
+
+.cooking-title p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.cooking-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Sections collapsibles */
+.cooking-card {
+    margin-bottom: 20px;
+}
+
+.collapsible-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    user-select: none;
+}
+
+.collapsible-header:hover {
+    opacity: 0.8;
+}
+
+.toggle-icon {
+    font-size: 0.9em;
+    transition: transform 0.3s;
+}
+
+.collapsible-content {
+    margin-top: 15px;
+}
+
+/* Liste de vérification des ingrédients */
+.ingredients-checklist {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.ingredient-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.ingredient-check-item:hover {
+    background: #e9ecef;
+}
+
+.ingredient-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.ingredient-check-text {
+    flex: 1;
+    font-size: 0.95em;
+}
+
+/* Barre de progression globale */
+.progress-container {
+    padding: 15px;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 30px;
+    background: #e9ecef;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+/* Cartes d'étapes */
+.etapes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.etape-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #667eea;
+    transition: all 0.3s;
+}
+
+.etape-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.etape-completed {
+    opacity: 0.7;
+    border-left-color: #28a745;
+}
+
+.etape-timer-finished {
+    animation: pulse 1s ease-in-out 3;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+.etape-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.etape-numero {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.etape-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-badge {
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+.status-in-progress {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.etape-content {
+    margin: 15px 0;
+}
+
+.etape-description {
+    font-size: 1.1em;
+    line-height: 1.6;
+    color: #495057;
+    margin-bottom: 15px;
+}
+
+/* Section minuteur */
+.timer-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+.timer-display {
+    text-align: center;
+    margin-bottom: 15px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.timer-icon {
+    font-size: 2em;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.timer-time {
+    font-size: 3em;
+    font-weight: bold;
+    color: #667eea;
+    font-family: 'Courier New', monospace;
+}
+
+.timer-warning .timer-time {
+    color: #ffc107;
+}
+
+.timer-critical .timer-time {
+    color: #dc3545;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.5; }
+}
+
+.timer-finished {
+    background: #d4edda;
+}
+
+.timer-finished .timer-time {
+    color: #28a745;
+}
+
+.timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.timer-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.timer-start {
+    background: #28a745;
+    color: white;
+}
+
+.timer-start:hover {
+    background: #218838;
+}
+
+.timer-pause {
+    background: #ffc107;
+    color: #212529;
+}
+
+.timer-pause:hover {
+    background: #e0a800;
+}
+
+.timer-resume {
+    background: #17a2b8;
+    color: white;
+}
+
+.timer-resume:hover {
+    background: #138496;
+}
+
+.timer-reset {
+    background: #6c757d;
+    color: white;
+}
+
+.timer-reset:hover {
+    background: #5a6268;
+}
+
+.timer-progress-bar {
+    margin-top: 15px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.timer-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.5s linear;
+    width: 0%;
+}
+
+/* Actions des étapes */
+.etape-actions {
+    margin-top: 20px;
+    text-align: center;
+}
+
+/* Notification flottante */
+.cooking-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    font-weight: 600;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s;
+    z-index: 9999;
+}
+
+.cooking-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cooking-mode-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .cooking-title h2 {
+        font-size: 1.5em;
+    }
+    
+    .cooking-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .ingredients-checklist {
+        grid-template-columns: 1fr;
+    }
+    
+    .timer-time {
+        font-size: 2em;
+    }
+    
+    .etape-numero {
+        font-size: 1.2em;
+    }
+    
+    .cooking-notification {
+        right: 10px;
+        left: 10px;
+        top: 10px;
+    }
+}
