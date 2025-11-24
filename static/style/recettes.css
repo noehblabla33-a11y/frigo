@@ -1,9 +1,13 @@
 /* ============================================ */
-/* Fichier: static/recettes.css                 */
+/* Fichier: static/style/recettes.css           */
 /* Styles spécifiques aux pages recettes       */
 /* ============================================ */
 
-/* Styles pour les étapes dans le formulaire */
+/* Styles pour les étapes dans le formulaire de création */
+#etapes-container {
+    margin-top: 15px;
+}
+
 .etape-row {
     display: flex;
     gap: 15px;
@@ -35,6 +39,10 @@
     align-items: flex-start;
 }
 
+.etape-inputs textarea {
+    resize: vertical;
+}
+
 .btn-remove-etape {
     padding: 8px 12px;
     background: #dc3545;
@@ -45,6 +53,7 @@
     font-weight: bold;
     transition: all 0.2s;
     flex-shrink: 0;
+    min-width: 40px;
 }
 
 .btn-remove-etape:hover {
@@ -245,5 +254,27 @@
     .recette-thumbnail-placeholder {
         width: 40px;
         height: 40px;
+    }
+    
+    .etape-row {
+        flex-direction: column;
+    }
+    
+    .etape-inputs {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .etape-number {
+        min-width: 30px;
+        height: 30px;
+        font-size: 1em;
+    }
+    
+    .etape-preview-numero {
+        min-width: 35px;
+        height: 35px;
+        font-size: 1em;
     }
 }
