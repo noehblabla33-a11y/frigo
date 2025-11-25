@@ -126,12 +126,6 @@ def detail(id):
     cout_estime = recette.calculer_cout()
     return render_template('recette_detail.html', recette=recette, cout_estime=cout_estime)
 
-@recettes_bp.route('/cuisiner/<int:id>')
-def cuisiner(id):
-    """Mode cuisson avec minuteurs interactifs"""
-    recette = Recette.query.get_or_404(id)
-    return render_template('recette_cuisiner.html', recette=recette)
-
 @recettes_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
 def modifier(id):
     recette = Recette.query.get_or_404(id)

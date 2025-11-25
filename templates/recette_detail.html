@@ -2,7 +2,8 @@
 {% block title %}{{ recette.nom }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='style/recette.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/cuisiner.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -33,11 +34,6 @@
         {% endif %}
         <div class="recette-detail-actions">
             <a href="{{ url_for('recettes.liste') }}" class="btn">← Retour aux recettes</a>
-            {% if recette.etapes %}
-            <a href="{{ url_for('recettes.cuisiner', id=recette.id) }}" class="btn btn-success">
-                🍳 Mode cuisson
-            </a>
-            {% endif %}
             <a href="{{ url_for('recettes.modifier', id=recette.id) }}" class="btn">✏️ Modifier</a>
             <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
                class="btn btn-danger"
@@ -77,39 +73,102 @@
     </div>
 </div>
 
-{% if recette.etapes %}
-<div class="card">
-    <h3>📝 Étapes de préparation</h3>
-    <div class="etapes-preview">
-        {% for etape in recette.etapes %}
-        <div class="etape-preview-card">
-            <div class="etape-preview-numero">{{ etape.ordre }}</div>
-            <div class="etape-preview-content">
-                <p>{{ etape.description }}</p>
-                {% if etape.duree_minutes %}
-                <div class="etape-preview-timer">
-                    ⏱️ {{ etape.duree_minutes }} minute(s)
-                </div>
-                {% endif %}
+<!-- Progression globale -->
+<div class="card cooking-card">
+    <div class="progress-container">
+        <div class="progress-info">
+            <span>Progression</span>
+            <span id="progress-text">0 / {{ recette.etapes|length }}</span>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="global-progress" style="width: 0%;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Étapes de la recette -->
+<div class="etapes-container">
+    {% for etape in recette.etapes %}
+    <div class="etape-card" id="etape-{{ etape.id }}" data-etape-id="{{ etape.id }}">
+        <div class="etape-header">
+            <div class="etape-numero">Étape {{ etape.ordre }}</div>
+            <div class="etape-status" id="status-{{ etape.id }}">
+                <span class="status-badge status-pending">En attente</span>
             </div>
         </div>
+        
+        <div class="etape-content">
+            <p class="etape-description">{{ etape.description }}</p>
+            
+            {% if etape.duree_minutes %}
+            <div class="timer-section" id="timer-section-{{ etape.id }}">
+                <div class="timer-display" id="timer-display-{{ etape.id }}">
+                    <span class="timer-icon">⏱️</span>
+                    <span class="timer-time" id="timer-time-{{ etape.id }}">
+                        {{ '%02d'|format(etape.duree_minutes) }}:00
+                    </span>
+                </div>
+                <div class="timer-controls">
+                    <button class="timer-btn timer-start" 
+                            onclick="startTimer({{ etape.id }}, {{ etape.duree_minutes }})"
+                            id="start-{{ etape.id }}">
+                        ▶️ Démarrer
+                    </button>
+                    <button class="timer-btn timer-pause" 
+                            onclick="pauseTimer({{ etape.id }})"
+                            id="pause-{{ etape.id }}"
+                            style="display: none;">
+                        ⏸️ Pause
+                    </button>
+                    <button class="timer-btn timer-resume" 
+                            onclick="resumeTimer({{ etape.id }})"
+                            id="resume-{{ etape.id }}"
+                            style="display: none;">
+                        ▶️ Reprendre
+                    </button>
+                    <button class="timer-btn timer-reset" 
+                            onclick="resetTimer({{ etape.id }}, {{ etape.duree_minutes }})"
+                            id="reset-{{ etape.id }}">
+                        🔄 Reset
+                    </button>
+                </div>
+                <div class="timer-progress-bar">
+                    <div class="timer-progress-fill" id="progress-{{ etape.id }}"></div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="etape-actions">
+            <button class="btn btn-success" onclick="completeStep({{ etape.id }})">
+                ✓ Étape terminée
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Audio pour l'alarme -->
+<audio id="timer-alarm" preload="auto">
+    <source src="{{ url_for('static', filename='sounds/timer-alert.mp3') }}" type="audio/mpeg">
+    <source src="{{ url_for('static', filename='sounds/timer-alert.ogg') }}" type="audio/ogg">
+    <source src="{{ url_for('static', filename='sounds/timer-alert.wav') }}" type="audio/wav">
+</audio>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='javascript/cuisiner.js') }}"></script>
+<script>
+    // Initialiser les minuteurs avec les données des étapes
+    const etapesData = [
+        {% for etape in recette.etapes %}
+        {
+            id: {{ etape.id }},
+            duree_minutes: {{ etape.duree_minutes if etape.duree_minutes else 'null' }}
+        }{% if not loop.last %},{% endif %}
         {% endfor %}
-    </div>
-    <div style="text-align: center; margin-top: 20px;">
-        <a href="{{ url_for('recettes.cuisiner', id=recette.id) }}" class="btn btn-success btn-large">
-            🍳 Lancer le mode cuisson interactif
-        </a>
-    </div>
-</div>
-{% elif recette.instructions %}
-<div class="card">
-    <h3>📝 Instructions</h3>
-    <div class="recette-instructions">
-        {{ recette.instructions|replace('\n', '<br>')|safe }}
-    </div>
-    <p style="margin-top: 20px; color: #6c757d; font-style: italic;">
-        💡 Astuce : Modifiez cette recette pour ajouter des étapes avec minuteurs interactifs !
-    </p>
-</div>
-{% endif %}
+    ];
+    
+    initTimers(etapesData);
+</script>
 {% endblock %}
