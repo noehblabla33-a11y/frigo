@@ -37,3 +37,11 @@ def create_app():
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
+
+
+## Optimisation cache pour images
+@app.after_request
+def add_header(response):
+    if 'static/' in response.headers.get('Content-Type', ''):
+        response.cache_control.max_age = 31536000
+    return response
