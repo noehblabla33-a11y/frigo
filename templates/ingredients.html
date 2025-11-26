@@ -46,7 +46,6 @@
             </div>
             {% endif %}
         </div>
-        <!-- Champ caché pour maintenir le mode de vue -->
         <input type="hidden" name="view" value="{{ view_mode }}">
     </form>
     
@@ -136,9 +135,9 @@
     
     {% if ingredients %}
         {% if view_mode == 'list' %}
-        <!-- MODE LISTE -->
-        <div class="ingredient-list">
-            <table class="ingredient-table">
+        <!-- MODE LISTE - utilise les classes communes -->
+        <div class="item-list">
+            <table class="item-table">
                 <thead>
                     <tr>
                         <th style="width: 60px;"></th>
@@ -152,22 +151,22 @@
                 </thead>
                 <tbody>
                     {% for ing in ingredients %}
-                    <tr class="ingredient-row">
-                        <td class="ingredient-img-cell">
+                    <tr>
+                        <td class="item-img-cell">
                             {% if ing.image %}
                             <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" 
                                  alt="{{ ing.nom }}" 
-                                 class="ingredient-thumbnail">
+                                 class="item-thumbnail">
                             {% else %}
-                            <div class="ingredient-thumbnail-placeholder">📦</div>
+                            <div class="item-thumbnail-placeholder">📦</div>
                             {% endif %}
                         </td>
-                        <td class="ingredient-name-cell">
+                        <td class="item-name-cell">
                             <strong>{{ ing.nom }}</strong>
                         </td>
                         <td>
                             {% if ing.categorie %}
-                            <span class="category-badge-small">
+                            <span class="category-badge-small badge">
                                 {% for cat_name, cat_icon in categories %}
                                     {% if cat_name == ing.categorie %}
                                         {{ cat_icon }} {{ cat_name }}
@@ -188,11 +187,11 @@
                         </td>
                         <td>
                             {% if ing.stock %}
-                            <span class="stock-badge stock-available">
+                            <span class="stock-badge stock-available badge">
                                 ✓ {{ ing.stock.quantite }} {{ ing.unite }}
                             </span>
                             {% else %}
-                            <span class="stock-badge stock-empty">✗ Pas en stock</span>
+                            <span class="stock-badge stock-empty badge">✗ Pas en stock</span>
                             {% endif %}
                         </td>
                         <td class="actions-cell">
@@ -210,10 +209,10 @@
             </table>
         </div>
         {% else %}
-        <!-- MODE GRILLE (existant) -->
-        <div class="ingredient-grid">
+        <!-- MODE GRILLE - utilise les classes communes -->
+        <div class="item-grid">
             {% for ing in ingredients %}
-            <div class="ingredient-card">
+            <div class="item-card">
                 {% if ing.categorie %}
                 <div class="category-badge">
                     {% for cat_name, cat_icon in categories %}
@@ -223,14 +222,14 @@
                     {% endfor %}
                 </div>
                 {% endif %}
-                <div class="ingredient-image">
+                <div class="item-image">
                     {% if ing.image %}
                     <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" alt="{{ ing.nom }}">
                     {% else %}
                     <div class="no-image">📦</div>
                     {% endif %}
                 </div>
-                <div class="ingredient-info">
+                <div class="item-info">
                     <h4>{{ ing.nom }}</h4>
                     <p class="ingredient-unite">Unité: {{ ing.unite }}</p>
                     {% if ing.prix_unitaire > 0 %}
@@ -242,7 +241,7 @@
                     <p class="ingredient-stock-vide">Pas en stock</p>
                     {% endif %}
                 </div>
-                <div class="ingredient-actions">
+                <div class="item-actions">
                     <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" class="btn btn-small">Modifier</a>
                     <a href="{{ url_for('ingredients.supprimer', id=ing.id) }}" 
                        class="btn btn-danger btn-small" 

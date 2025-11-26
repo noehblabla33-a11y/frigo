@@ -1,0 +1,155 @@
+/* ============================================ */
+/* Fichier: static/style/base.css               */
+/* STYLES DE BASE - Variables et éléments      */
+/* ============================================ */
+
+/* ========== VARIABLES CSS ========== */
+:root {
+    /* Couleurs principales */
+    --primary: #667eea;
+    --primary-dark: #764ba2;
+    --secondary: #6c757d;
+    --success: #28a745;
+    --danger: #dc3545;
+    --warning: #ffc107;
+    --info: #17a2b8;
+    
+    /* Couleurs de fond */
+    --bg-light: #f8f9fa;
+    --bg-white: #ffffff;
+    --bg-dark: #495057;
+    
+    /* Couleurs de texte */
+    --text-primary: #495057;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    
+    /* Bordures */
+    --border-color: #ced4da;
+    --border-light: #e9ecef;
+    --border-radius: 5px;
+    --border-radius-lg: 10px;
+    
+    /* Ombres */
+    --shadow-sm: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 4px 15px rgba(0, 0, 0, 0.15);
+    --shadow-primary: 0 4px 15px rgba(102, 126, 234, 0.3);
+    
+    /* Transitions */
+    --transition-fast: 0.2s;
+    --transition-normal: 0.3s;
+}
+
+/* ========== BASE ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: var(--bg-white);
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+/* ========== HEADER ========== */
+header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: var(--text-primary);
+}
+
+h3 {
+    color: var(--primary);
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 10px;
+}
+
+h4 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+/* ========== NAVIGATION ========== */
+nav {
+    background: var(--bg-light);
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+nav a {
+    padding: 10px 20px;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: all var(--transition-normal);
+}
+
+nav a:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+/* ========== CONTENU ========== */
+.content {
+    padding: 30px;
+}
+
+.card {
+    background: var(--bg-light);
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    .content {
+        padding: 15px;
+    }
+
+    nav {
+        flex-direction: column;
+    }
+
+    nav a {
+        width: 100%;
+        text-align: center;
+    }
+}

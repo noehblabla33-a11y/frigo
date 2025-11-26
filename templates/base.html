@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Mon Frigo{% endblock %}</title>
+    
+    <!-- CSS de base - toujours chargés dans cet ordre -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style/list-grid-view.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+    
+    <!-- CSS supplémentaires spécifiques aux pages -->
     {% block extra_css %}{% endblock %}
 </head>
 <body>

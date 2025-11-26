@@ -1,0 +1,306 @@
+/* ============================================ */
+/* Fichier: static/style/components.css         */
+/* COMPOSANTS RÉUTILISABLES                     */
+/* ============================================ */
+
+/* ========== ALERTES ========== */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: var(--border-radius);
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.alert-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-color: #bee5eb;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+/* ========== BOUTONS ========== */
+.btn {
+    padding: 10px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin: 5px;
+    transition: all var(--transition-normal);
+    font-size: 1em;
+}
+
+.btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.btn-small {
+    padding: 5px 15px;
+    font-size: 0.9em;
+}
+
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.2em;
+}
+
+.btn-danger {
+    background: var(--danger);
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.btn-success {
+    background: var(--success);
+}
+
+.btn-success:hover {
+    background: #218838;
+}
+
+.btn-secondary {
+    background: var(--secondary);
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn-icon {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 0 3px;
+    background: var(--bg-light);
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 1.1em;
+    transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+    background: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-icon-danger:hover {
+    background: var(--danger);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* ========== FORMULAIRES ========== */
+form {
+    margin-top: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1em;
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ========== BADGES ========== */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.category-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(102, 126, 234, 0.95);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.category-badge-small {
+    background: #e7f3ff;
+    color: var(--primary);
+}
+
+.type-badge-small {
+    background: #e7f3ff;
+    color: var(--primary);
+}
+
+.type-badge-large {
+    padding: 8px 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 1em;
+}
+
+.badge-disponible {
+    padding: 3px 10px;
+    background: var(--success);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.8em;
+}
+
+.badge-manquant {
+    padding: 3px 10px;
+    background: var(--danger);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.8em;
+}
+
+.stock-badge {
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.stock-available {
+    background: #d4edda;
+    color: #155724;
+}
+
+.stock-empty {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.filter-badge {
+    padding: 5px 12px;
+    background: var(--primary);
+    color: white;
+    border-radius: 15px;
+    font-size: 0.9em;
+    margin-right: 10px;
+}
+
+.unite-badge {
+    padding: 4px 10px;
+    background: #e7f3ff;
+    color: var(--primary);
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+/* ========== RECHERCHE ET FILTRES ========== */
+.search-filters {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+/* ========== TABLES ========== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+}
+
+th {
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+}
+
+tr:hover {
+    background: var(--bg-light);
+}
+
+/* ========== LISTES ========== */
+ul {
+    margin: 10px 0;
+}
+
+li {
+    margin: 5px 0;
+}
+
+.disponible {
+    color: var(--success);
+}
+
+.manquant {
+    color: var(--danger);
+    font-weight: bold;
+}
+
+/* ========== STATUTS ========== */
+.status-badge {
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: var(--border-light);
+    color: var(--text-secondary);
+}
+
+.status-in-progress {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
