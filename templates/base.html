@@ -5,14 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Mon Frigo{% endblock %}</title>
     
-    <!-- CSS de base - toujours chargés dans cet ordre -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/base.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/components.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/list-grid-view.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style/style.css') }}">
+    <!-- CSS de base - avec versioning pour forcer le rechargement si modifié -->
+    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/base.css') }}">
+    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/components.css') }}">
+    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/list-grid-view.css') }}">
+    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/style.css') }}">
     
     <!-- CSS supplémentaires spécifiques aux pages -->
     {% block extra_css %}{% endblock %}
+    
+    <!-- Preconnect pour améliorer les performances (si vous utilisez des CDN) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
 </head>
 <body>
     <div class="container">
@@ -44,8 +47,8 @@
         </div>
     </div>
     
-    <!-- Scripts communs -->
-    <script src="{{ url_for('static', filename='javascript/select-search.js') }}"></script>
+    <!-- Scripts communs - avec versioning -->
+    <script src="{{ versioned_url_for('static', filename='javascript/select-search.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
