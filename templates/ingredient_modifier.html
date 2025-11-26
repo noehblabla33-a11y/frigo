@@ -40,6 +40,57 @@
                    placeholder="Prix par unité (optionnel)">
             <small style="color: #6c757d;">Ex: 2.50 pour 2.50€/kg ou 2.50€/L</small>
         </div>
+
+        <div class="form-group">
+            <h4 style="margin-top: 25px; color: #667eea;">📊 Informations nutritionnelles (pour 100g ou 100ml)</h4>
+            <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
+                Renseignez les valeurs nutritionnelles pour 100g ou 100ml de cet ingrédient.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div class="form-group">
+                    <label>Calories (kcal)</label>
+                    <input type="number" step="0.1" name="calories" 
+                        value="{{ ingredient.calories if ingredient.calories else 0 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Protéines (g)</label>
+                    <input type="number" step="0.1" name="proteines" 
+                        value="{{ ingredient.proteines if ingredient.proteines else 0 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Glucides (g)</label>
+                    <input type="number" step="0.1" name="glucides" 
+                        value="{{ ingredient.glucides if ingredient.glucides else 0 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Lipides (g)</label>
+                    <input type="number" step="0.1" name="lipides" 
+                        value="{{ ingredient.lipides if ingredient.lipides else 0 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Fibres (g)</label>
+                    <input type="number" step="0.1" name="fibres" 
+                        value="{{ ingredient.fibres if ingredient.fibres else 0 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Sucres (g)</label>
+                    <input type="number" step="0.1" name="sucres" 
+                        value="{{ ingredient.sucres if ingredient.sucres else 0 }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>Sel (g)</label>
+                    <input type="number" step="0.01" name="sel" 
+                        value="{{ ingredient.sel if ingredient.sel else 0 }}">
+                </div>
+            </div>
+        </div>
         
         <div class="form-group">
             <label>Image de l'ingrédient</label>

@@ -31,6 +31,14 @@ def liste():
         unite = request.form.get('unite', 'g')
         prix_unitaire = float(request.form.get('prix_unitaire') or 0)
         categorie = request.form.get('categorie')
+        calories = float(request.form.get('calories') or 0)
+        proteines = float(request.form.get('proteines') or 0)
+        glucides = float(request.form.get('glucides') or 0)
+        lipides = float(request.form.get('lipides') or 0)
+        fibres = float(request.form.get('fibres') or 0)
+        sucres = float(request.form.get('sucres') or 0)
+        sel = float(request.form.get('sel') or 0)
+
         
         ingredient = Ingredient.query.filter_by(nom=nom).first()
         if ingredient:
@@ -41,7 +49,14 @@ def liste():
             nom=nom, 
             unite=unite, 
             prix_unitaire=prix_unitaire,
-            categorie=categorie if categorie else None
+            categorie=categorie if categorie else None,
+            calories=calories,
+            proteines=proteines,
+            glucides=glucides,
+            lipides=lipides,
+            fibres=fibres,
+            sucres=sucres,
+            sel=sel
         )
         
         if 'image' in request.files:

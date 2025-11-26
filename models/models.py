@@ -11,10 +11,46 @@ class Ingredient(db.Model):
     prix_unitaire = db.Column(db.Float, default=0)
     image = db.Column(db.String(200), nullable=True)
     categorie = db.Column(db.String(50), nullable=True)
+    calories = db.Column(db.Float, default=0)        # kcal pour 100g/100ml
+    proteines = db.Column(db.Float, default=0)       # g pour 100g/100ml
+    glucides = db.Column(db.Float, default=0)        # g pour 100g/100ml
+    lipides = db.Column(db.Float, default=0)         # g pour 100g/100ml
+    fibres = db.Column(db.Float, default=0)          # g pour 100g/100ml
+    sucres = db.Column(db.Float, default=0)          # g pour 100g/100ml
+    sel = db.Column(db.Float, default=0)             # g pour 100g/100ml
     
     # Relations
     stock = db.relationship('StockFrigo', backref='ingredient', uselist=False, 
                            cascade='all, delete-orphan')
+
+    def get_nutrition_for_quantity(self, quantite):
+        """
+        Calcule les valeurs nutritionnelles pour une quantité donnée
+        Les valeurs sont stockées pour 100g/100ml
+        """
+        if quantite <= 0:
+            return {
+                'calories': 0,
+                'proteines': 0,
+                'glucides': 0,
+                'lipides': 0,
+                'fibres': 0,
+                'sucres': 0,
+                'sel': 0
+            }
+        
+        # Convertir la quantité en base 100
+        factor = quantite / 100.0
+        
+        return {
+            'calories': round(self.calories * factor, 1),
+            'proteines': round(self.proteines * factor, 1),
+            'glucides': round(self.glucides * factor, 1),
+            'lipides': round(self.lipides * factor, 1),
+            'fibres': round(self.fibres * factor, 1),
+            'sucres': round(self.sucres * factor, 1),
+            'sel': round(self.sel * factor, 2)
+        }
     
     def __repr__(self):
         return f'<Ingredient {self.nom}>'
@@ -57,6 +93,28 @@ class Recette(db.Model):
             if ing_rec.ingredient.prix_unitaire > 0:
                 cout_total += ing_rec.quantite * ing_rec.ingredient.prix_unitaire
         return round(cout_total, 2)
+
+    def calculer_nutrition(self):
+        """
+        Calcule les valeurs nutritionnelles totales de la recette
+        """
+        nutrition = {
+            'calories': 0,
+            'proteines': 0,
+            'glucides': 0,
+            'lipides': 0,
+            'fibres': 0,
+            'sucres': 0,
+            'sel': 0
+        }
+        
+        for ing_rec in self.ingredients:
+            ing_nutrition = ing_rec.ingredient.get_nutrition_for_quantity(ing_rec.quantite)
+            for key in nutrition.keys():
+                nutrition[key] += ing_nutrition[key]
+        
+        # Arrondir les résultats
+        return {k: round(v, 1) for k, v in nutrition.items()}
     
     def __repr__(self):
         return f'<Recette {self.nom}>'

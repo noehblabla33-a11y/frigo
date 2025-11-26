@@ -73,6 +73,88 @@
     </div>
 </div>
 
+{% set nutrition = recette.calculer_nutrition() %}
+{% if nutrition.calories > 0 %}
+<div class="nutrition-card">
+    <div class="nutrition-header">
+        <span class="nutrition-icon">🥗</span>
+        <h3>Informations nutritionnelles</h3>
+    </div>
+    
+    <!-- Calories en évidence -->
+    <div class="nutrition-item nutrition-highlight" style="max-width: 300px; margin: 0 auto;">
+        <span class="nutrition-value">{{ nutrition.calories|int }}</span>
+        <span class="nutrition-label">Calories <span class="nutrition-unit">(kcal)</span></span>
+    </div>
+    
+    <!-- Macronutriments principaux -->
+    <div class="nutrition-macros">
+        <div class="macro-item proteines">
+            <div class="macro-label">🥩 Protéines</div>
+            <div class="macro-value">{{ nutrition.proteines|round(1) }}<span style="font-size: 0.5em;">g</span></div>
+            <div class="macro-percentage">
+                {% set total_macros = nutrition.proteines + nutrition.glucides + nutrition.lipides %}
+                {% if total_macros > 0 %}
+                ({{ ((nutrition.proteines / total_macros) * 100)|round(0)|int }}%)
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="macro-item glucides">
+            <div class="macro-label">🌾 Glucides</div>
+            <div class="macro-value">{{ nutrition.glucides|round(1) }}<span style="font-size: 0.5em;">g</span></div>
+            <div class="macro-percentage">
+                {% if total_macros > 0 %}
+                ({{ ((nutrition.glucides / total_macros) * 100)|round(0)|int }}%)
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="macro-item lipides">
+            <div class="macro-label">🥑 Lipides</div>
+            <div class="macro-value">{{ nutrition.lipides|round(1) }}<span style="font-size: 0.5em;">g</span></div>
+            <div class="macro-percentage">
+                {% if total_macros > 0 %}
+                ({{ ((nutrition.lipides / total_macros) * 100)|round(0)|int }}%)
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Autres valeurs nutritionnelles -->
+    <div class="nutrition-grid">
+        <div class="nutrition-item">
+            <span class="nutrition-value">{{ nutrition.fibres|round(1) }}</span>
+            <span class="nutrition-label">Fibres <span class="nutrition-unit">(g)</span></span>
+        </div>
+        
+        <div class="nutrition-item">
+            <span class="nutrition-value">{{ nutrition.sucres|round(1) }}</span>
+            <span class="nutrition-label">Sucres <span class="nutrition-unit">(g)</span></span>
+        </div>
+        
+        <div class="nutrition-item">
+            <span class="nutrition-value">{{ nutrition.sel|round(2) }}</span>
+            <span class="nutrition-label">Sel <span class="nutrition-unit">(g)</span></span>
+        </div>
+    </div>
+    
+    <div class="nutrition-footer">
+        ℹ️ Valeurs calculées pour la recette complète ({{ recette.ingredients|length }} ingrédients)
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <h3>📊 Informations nutritionnelles</h3>
+    <p style="color: #6c757d;">
+        Les informations nutritionnelles ne sont pas disponibles pour cette recette. 
+        <a href="{{ url_for('ingredients.liste') }}" style="color: #667eea;">
+            Ajoutez les valeurs nutritionnelles aux ingrédients
+        </a> pour les voir apparaître ici.
+    </p>
+</div>
+{% endif %}
+
 <!-- Progression globale -->
 <div class="card cooking-card">
     <div class="progress-container">

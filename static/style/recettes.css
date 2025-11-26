@@ -278,3 +278,160 @@
         font-size: 1em;
     }
 }
+
+/* Style pour les informations nutrition */
+.nutrition-card {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 15px;
+    padding: 25px;
+    margin: 20px 0;
+    color: white;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.nutrition-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.nutrition-icon {
+    font-size: 2.5em;
+}
+
+.nutrition-header h3 {
+    margin: 0;
+    color: white;
+    border: none;
+    padding: 0;
+}
+
+.nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.nutrition-item {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.nutrition-item:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px);
+}
+
+.nutrition-value {
+    font-size: 2em;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.nutrition-label {
+    font-size: 0.9em;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.nutrition-unit {
+    font-size: 0.7em;
+    opacity: 0.8;
+}
+
+.nutrition-highlight {
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid white;
+}
+
+.nutrition-macros {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.macro-item {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.macro-item.proteines {
+    border-left: 4px solid #ff6b6b;
+}
+
+.macro-item.glucides {
+    border-left: 4px solid #ffd93d;
+}
+
+.macro-item.lipides {
+    border-left: 4px solid #6bcf7f;
+}
+
+.macro-label {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.macro-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.macro-percentage {
+    font-size: 0.85em;
+    margin-top: 5px;
+    opacity: 0.8;
+}
+
+.nutrition-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.85em;
+    text-align: center;
+    opacity: 0.9;
+}
+
+.recette-nutrition {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.nutrition-preview {
+    color: #28a745;
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nutrition-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .nutrition-macros {
+        grid-template-columns: 1fr;
+    }
+    
+    .nutrition-value {
+        font-size: 1.5em;
+    }
+    
+    .macro-value {
+        font-size: 2em;
+    }
+}

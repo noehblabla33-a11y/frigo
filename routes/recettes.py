@@ -124,7 +124,9 @@ def liste():
 def detail(id):
     recette = Recette.query.get_or_404(id)
     cout_estime = recette.calculer_cout()
-    return render_template('recette_detail.html', recette=recette, cout_estime=cout_estime)
+    nutrition = recette.calculer_nutrition()
+    
+    return render_template('recette_detail.html', recette=recette, cout_estime=cout_estime, nutrition=nutrition)
 
 @recettes_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
 def modifier(id):

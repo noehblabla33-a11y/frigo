@@ -105,6 +105,7 @@
                         <th>Temps</th>
                         <th>Ingrédients</th>
                         <th>Coût</th>
+                        <th>Nutrition</th>
                         <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
@@ -138,6 +139,10 @@
                             {% else %}
                             <span style="color: #adb5bd;">-</span>
                             {% endif %}
+                            {% set nutrition = recette.calculer_nutrition() %}
+                            {% if nutrition.calories > 0 %}
+                                <span class="recette-nutrition" title="Calories">🔥 {{ nutrition.calories|int }} kcal</span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
@@ -146,6 +151,22 @@
                             {% set cout = recette.calculer_cout() %}
                             {% if cout > 0 %}
                             <span class="cout-badge">{{ cout }}€</span>
+                            {% else %}
+                            <span style="color: #adb5bd;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set nutrition = recette.calculer_nutrition() %}
+                            {% if nutrition.calories > 0 %}
+                            <span class="nutrition-preview" title="Calories totales">
+                                🔥 {{ nutrition.calories|int }} kcal
+                            </span>
+                            <br>
+                            <small style="color: #6c757d;">
+                                P: {{ nutrition.proteines|round(1) }}g | 
+                                G: {{ nutrition.glucides|round(1) }}g | 
+                                L: {{ nutrition.lipides|round(1) }}g
+                            </small>
                             {% else %}
                             <span style="color: #adb5bd;">-</span>
                             {% endif %}
