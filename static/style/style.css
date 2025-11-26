@@ -10,12 +10,14 @@
 @import url('list-grid-view.css');
 
 /* ========== INGRÉDIENTS (spécifique) ========== */
-.ingredient-grid {
+.ingredient-grid,
+.frigo-grid {
     /* Utilise .item-grid de list-grid-view.css */
     composes: item-grid;
 }
 
-.ingredient-card {
+.ingredient-card,
+.frigo-card {
     /* Utilise .item-card de list-grid-view.css */
     composes: item-card;
 }

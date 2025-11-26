@@ -120,18 +120,18 @@
             </table>
         </div>
         {% else %}
-        <!-- MODE GRILLE -->
-        <div class="ingredient-grid">
+        <!-- MODE GRILLE - Utilise les mêmes classes que les ingrédients -->
+        <div class="item-grid">
             {% for stock in stocks %}
-            <div class="ingredient-card">
-                <div class="ingredient-image">
+            <div class="item-card">
+                <div class="item-image">
                     {% if stock.ingredient.image %}
                     <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" alt="{{ stock.ingredient.nom }}">
                     {% else %}
                     <div class="no-image">📦</div>
                     {% endif %}
                 </div>
-                <div class="ingredient-info">
+                <div class="item-info">
                     <h4>{{ stock.ingredient.nom }}</h4>
                     
                     <!-- Édition rapide de la quantité -->
@@ -158,9 +158,10 @@
                     
                     {% if stock.ingredient.prix_unitaire > 0 %}
                     <p class="ingredient-prix">{{ stock.ingredient.prix_unitaire }}€/{{ stock.ingredient.unite }}</p>
+                    <p class="ingredient-stock">Valeur: {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</p>
                     {% endif %}
                 </div>
-                <div class="ingredient-actions">
+                <div class="item-actions">
                     <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
                        class="btn btn-danger btn-small" 
                        onclick="return confirm('Retirer cet ingrédient du frigo ?')">
