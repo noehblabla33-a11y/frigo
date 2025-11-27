@@ -1,5 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
 {% block title %}Catalogue d'ingrédients{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
+{% endblock %}
 
 {% block content %}
 
@@ -63,7 +68,7 @@
         {% elif stock_filter == 'pas_en_stock' %}
         <span class="filter-badge">Pas en stock</span>
         {% endif %}
-        <span style="color: #666;">({{ ingredients|length }} résultat(s))</span>
+        <span style="color: #666;">({{ pagination.total }} résultat(s))</span>
     </div>
     {% endif %}
 </div>
@@ -102,57 +107,6 @@
             <small style="color: #6c757d;">Ex: 2.50 pour 2.50€/kg ou 2.50€/L</small>
         </div>
         <div class="form-group">
-            <h4 style="margin-top: 25px; color: #667eea;">📊 Informations nutritionnelles (pour 100g ou 100ml)</h4>
-            <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
-                Renseignez les valeurs nutritionnelles pour 100g ou 100ml de cet ingrédient. 
-                Les valeurs seront automatiquement calculées pour chaque recette.
-            </p>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                <div class="form-group">
-                    <label>Calories (kcal)</label>
-                    <input type="number" step="0.1" name="calories" placeholder="Ex: 52" value="0">
-                </div>
-                
-                <div class="form-group">
-                    <label>Protéines (g)</label>
-                    <input type="number" step="0.1" name="proteines" placeholder="Ex: 3.4" value="0">
-                </div>
-                
-                <div class="form-group">
-                    <label>Glucides (g)</label>
-                    <input type="number" step="0.1" name="glucides" placeholder="Ex: 12" value="0">
-                </div>
-                
-                <div class="form-group">
-                    <label>Lipides (g)</label>
-                    <input type="number" step="0.1" name="lipides" placeholder="Ex: 0.2" value="0">
-                </div>
-                
-                <div class="form-group">
-                    <label>Fibres (g)</label>
-                    <input type="number" step="0.1" name="fibres" placeholder="Ex: 2.4" value="0">
-                </div>
-                
-                <div class="form-group">
-                    <label>Sucres (g)</label>
-                    <input type="number" step="0.1" name="sucres" placeholder="Ex: 4.9" value="0">
-                </div>
-                
-                <div class="form-group">
-                    <label>Sel (g)</label>
-                    <input type="number" step="0.01" name="sel" placeholder="Ex: 0.01" value="0">
-                </div>
-            </div>
-            
-            <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 5px; border-left: 4px solid #667eea;">
-                <p style="margin: 0; font-size: 0.9em; color: #495057;">
-                    💡 <strong>Astuce :</strong> Vous pouvez trouver ces informations sur l'emballage des produits 
-                    ou sur des sites comme <a href="https://fr.openfoodfacts.org/" target="_blank">Open Food Facts</a>.
-                </p>
-            </div>
-        </div>
-        <div class="form-group">
             <label>Image de l'ingrédient</label>
             <input type="file" name="image" accept="image/*">
         </div>
@@ -179,8 +133,8 @@
     
     <p style="margin-bottom: 20px;">
         Gérez ici tous les ingrédients que vous utilisez dans vos recettes.
-        {% if ingredients|length > 0 %}
-        <strong>{{ ingredients|length }}</strong> ingrédient(s) affiché(s).
+        {% if pagination.total > 0 %}
+        <strong>{{ pagination.total }}</strong> ingrédient(s) au total.
         {% endif %}
     </p>
     
@@ -207,7 +161,8 @@
                             {% if ing.image %}
                             <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" 
                                  alt="{{ ing.nom }}" 
-                                 class="item-thumbnail">
+                                 class="item-thumbnail"
+                                 loading="lazy">
                             {% else %}
                             <div class="item-thumbnail-placeholder">📦</div>
                             {% endif %}
@@ -275,7 +230,9 @@
                 {% endif %}
                 <div class="item-image">
                     {% if ing.image %}
-                    <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" alt="{{ ing.nom }}">
+                    <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" 
+                         alt="{{ ing.nom }}"
+                         loading="lazy">
                     {% else %}
                     <div class="no-image">📦</div>
                     {% endif %}
@@ -304,6 +261,13 @@
             {% endfor %}
         </div>
         {% endif %}
+        
+        <!-- Pagination -->
+        {{ render_pagination(pagination, 'ingredients.liste',
+                           search=search_query,
+                           categorie=categorie_filter,
+                           stock=stock_filter,
+                           view=view_mode) }}
     {% else %}
     <p>Aucun ingrédient trouvé. 
         {% if search_query or categorie_filter or stock_filter %}

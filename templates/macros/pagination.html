@@ -1,0 +1,87 @@
+{% macro render_pagination(pagination, endpoint, search='', type='', categorie='', stock='', ingredient='', view='grid') %}
+    {% if pagination.pages > 1 %}
+    <div class="pagination-info">
+        {% set end_item = pagination.page * pagination.per_page %}
+        {% if end_item > pagination.total %}
+            {% set end_item = pagination.total %}
+        {% endif %}
+        Affichage de <strong>{{ ((pagination.page - 1) * pagination.per_page + 1) }}</strong> 
+        à <strong>{{ end_item }}</strong> 
+        sur <strong>{{ pagination.total }}</strong> résultat(s)
+    </div>
+    
+    <div class="pagination-container">
+        <ul class="pagination">
+            <!-- Bouton précédent -->
+            <li class="pagination-item pagination-prev">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for(endpoint, page=pagination.prev_page, search=search, type=type, categorie=categorie, stock=stock, ingredient=ingredient, view=view) }}" 
+                   class="pagination-link">
+                    ← Précédent
+                </a>
+                {% else %}
+                <span class="pagination-link disabled">← Précédent</span>
+                {% endif %}
+            </li>
+            
+            <!-- Première page -->
+            {% if pagination.page > 3 %}
+            <li class="pagination-item">
+                <a href="{{ url_for(endpoint, page=1, search=search, type=type, categorie=categorie, stock=stock, ingredient=ingredient, view=view) }}" class="pagination-link">1</a>
+            </li>
+            {% if pagination.page > 4 %}
+            <li class="pagination-ellipsis">...</li>
+            {% endif %}
+            {% endif %}
+            
+            <!-- Pages autour de la page actuelle -->
+            {% for page_num in range([pagination.page - 2, 1]|max, [pagination.page + 2, pagination.pages]|min + 1) %}
+            <li class="pagination-item {% if page_num == pagination.page %}active-page{% endif %}">
+                {% if page_num == pagination.page %}
+                <span class="pagination-link active">{{ page_num }}</span>
+                {% else %}
+                <a href="{{ url_for(endpoint, page=page_num, search=search, type=type, categorie=categorie, stock=stock, ingredient=ingredient, view=view) }}" 
+                   class="pagination-link">{{ page_num }}</a>
+                {% endif %}
+            </li>
+            {% endfor %}
+            
+            <!-- Dernière page -->
+            {% if pagination.page < pagination.pages - 2 %}
+            {% if pagination.page < pagination.pages - 3 %}
+            <li class="pagination-ellipsis">...</li>
+            {% endif %}
+            <li class="pagination-item">
+                <a href="{{ url_for(endpoint, page=pagination.pages, search=search, type=type, categorie=categorie, stock=stock, ingredient=ingredient, view=view) }}" 
+                   class="pagination-link">{{ pagination.pages }}</a>
+            </li>
+            {% endif %}
+            
+            <!-- Bouton suivant -->
+            <li class="pagination-item pagination-next">
+                {% if pagination.has_next %}
+                <a href="{{ url_for(endpoint, page=pagination.next_page, search=search, type=type, categorie=categorie, stock=stock, ingredient=ingredient, view=view) }}" 
+                   class="pagination-link">
+                    Suivant →
+                </a>
+                {% else %}
+                <span class="pagination-link disabled">Suivant →</span>
+                {% endif %}
+            </li>
+        </ul>
+    </div>
+    {% endif %}
+{% endmacro %}
+
+{% macro render_skeleton_cards(count=4) %}
+    {% for i in range(count) %}
+    <div class="item-card skeleton-card">
+        <div class="skeleton-image"></div>
+        <div class="skeleton-content">
+            <div class="skeleton-title"></div>
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text"></div>
+        </div>
+    </div>
+    {% endfor %}
+{% endmacro %}

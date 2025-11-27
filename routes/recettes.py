@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette
 from werkzeug.utils import secure_filename
 import os
@@ -11,9 +11,32 @@ TYPES_RECETTES = [
     'Sans cuisson', 'Boisson', 'Autre'
 ]
 
+# Nombre d'éléments par page
+ITEMS_PER_PAGE = 20
+
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def paginate_query(query, page, per_page=ITEMS_PER_PAGE):
+    """Helper de pagination"""
+    page = max(1, page)
+    total = query.count()
+    pages = (total + per_page - 1) // per_page if total > 0 else 1
+    page = min(page, pages)
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
+    
+    return {
+        'items': items,
+        'total': total,
+        'page': page,
+        'pages': pages,
+        'per_page': per_page,
+        'has_prev': page > 1,
+        'has_next': page < pages,
+        'prev_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < pages else None
+    }
 
 @recettes_bp.route('/', methods=['GET', 'POST'])
 def liste():
@@ -25,7 +48,7 @@ def liste():
         
         recette = Recette(
             nom=nom, 
-            instructions=instructions,  # Gardé pour compatibilité
+            instructions=instructions,
             type_recette=type_recette if type_recette else None,
             temps_preparation=int(temps_preparation) if temps_preparation else None
         )
@@ -82,11 +105,12 @@ def liste():
         flash(f'Recette "{nom}" créée avec succès !', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
     
-    # Gestion de la recherche
+    # Gestion de la recherche et pagination
     search_query = request.args.get('search', '')
     type_filter = request.args.get('type', '')
     ingredient_filter = request.args.get('ingredient', '')
     view_mode = request.args.get('view', 'grid')
+    page = request.args.get('page', 1, type=int)
     
     query = Recette.query
     
@@ -101,7 +125,11 @@ def liste():
             IngredientRecette.ingredient_id == ingredient_filter
         )
     
-    recettes = query.order_by(Recette.nom).all()
+    query = query.order_by(Recette.nom)
+    
+    # Paginer les résultats
+    pagination = paginate_query(query, page, ITEMS_PER_PAGE)
+    
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
     
     types_count = {}
@@ -111,7 +139,8 @@ def liste():
             types_count[type_rec] = count
     
     return render_template('recettes.html', 
-                         recettes=recettes, 
+                         recettes=pagination['items'],
+                         pagination=pagination,
                          ingredients=ingredients,
                          types_recettes=TYPES_RECETTES,
                          types_count=types_count,
@@ -119,6 +148,56 @@ def liste():
                          type_filter=type_filter,
                          ingredient_filter=ingredient_filter,
                          view_mode=view_mode)
+
+@recettes_bp.route('/api/recettes')
+def api_recettes():
+    """API pour le lazy loading"""
+    page = request.args.get('page', 1, type=int)
+    search_query = request.args.get('search', '')
+    type_filter = request.args.get('type', '')
+    ingredient_filter = request.args.get('ingredient', '')
+    
+    query = Recette.query
+    
+    if search_query:
+        query = query.filter(Recette.nom.ilike(f'%{search_query}%'))
+    
+    if type_filter:
+        query = query.filter(Recette.type_recette == type_filter)
+    
+    if ingredient_filter:
+        query = query.join(IngredientRecette).filter(
+            IngredientRecette.ingredient_id == int(ingredient_filter)
+        )
+    
+    query = query.order_by(Recette.nom)
+    pagination = paginate_query(query, page, ITEMS_PER_PAGE)
+    
+    recettes_data = []
+    for recette in pagination['items']:
+        cout = recette.calculer_cout()
+        nutrition = recette.calculer_nutrition()
+        
+        recettes_data.append({
+            'id': recette.id,
+            'nom': recette.nom,
+            'type_recette': recette.type_recette,
+            'temps_preparation': recette.temps_preparation,
+            'image': recette.image,
+            'nb_ingredients': len(recette.ingredients),
+            'cout': cout,
+            'nutrition': nutrition
+        })
+    
+    return jsonify({
+        'recettes': recettes_data,
+        'pagination': {
+            'page': pagination['page'],
+            'pages': pagination['pages'],
+            'total': pagination['total'],
+            'has_next': pagination['has_next']
+        }
+    })
 
 @recettes_bp.route('/<int:id>')
 def detail(id):

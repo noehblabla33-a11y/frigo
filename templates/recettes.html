@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination, render_skeleton_cards %}
 {% block title %}Recettes{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/recettes.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -70,7 +72,7 @@
             {% endif %}
         {% endfor %}
         {% endif %}
-        <span style="color: #666;">({{ recettes|length }} résultat(s))</span>
+        <span style="color: #666;">({{ pagination.total }} résultat(s))</span>
     </div>
     {% endif %}
 </div>
@@ -79,12 +81,12 @@
     <div class="catalogue-header">
         <h3>📖 Mes recettes</h3>
         <div class="view-toggle">
-            <a href="{{ url_for('recettes.liste', search=search_query, type=type_filter, ingredient=ingredient_filter, view='grid') }}" 
+            <a href="{{ url_for('recettes.liste', search=search_query, type=type_filter, ingredient=ingredient_filter, view='grid', page=pagination.page) }}" 
                class="view-toggle-btn {% if view_mode == 'grid' %}active{% endif %}"
                title="Vue en grille">
                 <span class="icon">⊞</span>
             </a>
-            <a href="{{ url_for('recettes.liste', search=search_query, type=type_filter, ingredient=ingredient_filter, view='list') }}" 
+            <a href="{{ url_for('recettes.liste', search=search_query, type=type_filter, ingredient=ingredient_filter, view='list', page=pagination.page) }}" 
                class="view-toggle-btn {% if view_mode == 'list' %}active{% endif %}"
                title="Vue en liste">
                 <span class="icon">☰</span>
@@ -116,7 +118,8 @@
                             {% if recette.image %}
                             <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
                                  alt="{{ recette.nom }}" 
-                                 class="recette-thumbnail">
+                                 class="recette-thumbnail"
+                                 loading="lazy">
                             {% else %}
                             <div class="recette-thumbnail-placeholder">🍳</div>
                             {% endif %}
@@ -139,10 +142,6 @@
                             {% else %}
                             <span style="color: #adb5bd;">-</span>
                             {% endif %}
-                            {% set nutrition = recette.calculer_nutrition() %}
-                            {% if nutrition.calories > 0 %}
-                                <span class="recette-nutrition" title="Calories">🔥 {{ nutrition.calories|int }} kcal</span>
-                            {% endif %}
                         </td>
                         <td>
                             <span class="ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
@@ -161,12 +160,6 @@
                             <span class="nutrition-preview" title="Calories totales">
                                 🔥 {{ nutrition.calories|int }} kcal
                             </span>
-                            <br>
-                            <small style="color: #6c757d;">
-                                P: {{ nutrition.proteines|round(1) }}g | 
-                                G: {{ nutrition.glucides|round(1) }}g | 
-                                L: {{ nutrition.lipides|round(1) }}g
-                            </small>
                             {% else %}
                             <span style="color: #adb5bd;">-</span>
                             {% endif %}
@@ -193,7 +186,9 @@
                 <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link">
                     <div class="recette-image">
                         {% if recette.image %}
-                        <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" alt="{{ recette.nom }}">
+                        <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
+                             alt="{{ recette.nom }}"
+                             loading="lazy">
                         {% else %}
                         <div class="no-image">🍳</div>
                         {% endif %}
@@ -226,6 +221,13 @@
             {% endfor %}
         </div>
         {% endif %}
+        
+        <!-- Pagination -->
+        {{ render_pagination(pagination, 'recettes.liste', 
+                           search=search_query, 
+                           type=type_filter, 
+                           ingredient=ingredient_filter,
+                           view=view_mode) }}
     {% else %}
     <p>Aucune recette trouvée. 
         {% if search_query or type_filter or ingredient_filter %}
@@ -328,8 +330,29 @@
         <button type="submit" class="btn btn-success">Créer la recette</button>
     </form>
 </div>
+
+<!-- Bouton scroll to top -->
+<button class="scroll-to-top" id="scrollToTop" onclick="scrollToTop()">↑</button>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='javascript/recettes.js') }}"></script>
+<script>
+// Scroll to top
+window.addEventListener('scroll', function() {
+    const scrollBtn = document.getElementById('scrollToTop');
+    if (window.pageYOffset > 300) {
+        scrollBtn.classList.add('visible');
+    } else {
+        scrollBtn.classList.remove('visible');
+    }
+});
+
+function scrollToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+</script>
 {% endblock %}

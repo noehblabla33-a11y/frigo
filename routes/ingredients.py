@@ -20,9 +20,32 @@ CATEGORIES = [
     ('Autres', '📦')
 ]
 
+# Nombre d'éléments par page
+ITEMS_PER_PAGE = 24
+
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def paginate_query(query, page, per_page=ITEMS_PER_PAGE):
+    """Helper de pagination"""
+    page = max(1, page)
+    total = query.count()
+    pages = (total + per_page - 1) // per_page if total > 0 else 1
+    page = min(page, pages)
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
+    
+    return {
+        'items': items,
+        'total': total,
+        'page': page,
+        'pages': pages,
+        'per_page': per_page,
+        'has_prev': page > 1,
+        'has_next': page < pages,
+        'prev_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < pages else None
+    }
 
 @ingredients_bp.route('/', methods=['GET', 'POST'])
 def liste():
@@ -76,7 +99,8 @@ def liste():
     search_query = request.args.get('search', '')
     categorie_filter = request.args.get('categorie', '')
     stock_filter = request.args.get('stock', '')
-    view_mode = request.args.get('view', 'grid')  # Nouveau : 'grid' ou 'list'
+    view_mode = request.args.get('view', 'grid')
+    page = request.args.get('page', 1, type=int)
     
     # Construire la requête
     query = Ingredient.query
@@ -89,16 +113,43 @@ def liste():
     if categorie_filter:
         query = query.filter(Ingredient.categorie == categorie_filter)
     
-    # Récupérer tous les ingrédients
-    all_ingredients = query.order_by(Ingredient.nom).all()
+    # Récupérer avec pagination
+    query = query.order_by(Ingredient.nom)
     
-    # Filtre par stock (en Python car relation complexe)
-    if stock_filter == 'en_stock':
-        ingredients = [ing for ing in all_ingredients if ing.stock and ing.stock.quantite > 0]
-    elif stock_filter == 'pas_en_stock':
-        ingredients = [ing for ing in all_ingredients if not ing.stock or ing.stock.quantite == 0]
+    # Si filtre par stock, on doit récupérer tous puis filtrer (relation complexe)
+    if stock_filter:
+        # Récupérer tous les ingrédients filtrés
+        all_ingredients = query.all()
+        
+        # Filtrer par stock
+        if stock_filter == 'en_stock':
+            filtered = [ing for ing in all_ingredients if ing.stock and ing.stock.quantite > 0]
+        elif stock_filter == 'pas_en_stock':
+            filtered = [ing for ing in all_ingredients if not ing.stock or ing.stock.quantite == 0]
+        else:
+            filtered = all_ingredients
+        
+        # Paginer manuellement
+        total = len(filtered)
+        pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE if total > 0 else 1
+        page = min(max(1, page), pages)
+        start = (page - 1) * ITEMS_PER_PAGE
+        end = start + ITEMS_PER_PAGE
+        
+        pagination = {
+            'items': filtered[start:end],
+            'total': total,
+            'page': page,
+            'pages': pages,
+            'per_page': ITEMS_PER_PAGE,
+            'has_prev': page > 1,
+            'has_next': page < pages,
+            'prev_page': page - 1 if page > 1 else None,
+            'next_page': page + 1 if page < pages else None
+        }
     else:
-        ingredients = all_ingredients
+        # Pagination normale
+        pagination = paginate_query(query, page, ITEMS_PER_PAGE)
     
     # Compter les ingrédients par catégorie
     categories_count = {}
@@ -108,7 +159,8 @@ def liste():
             categories_count[cat_name] = count
     
     return render_template('ingredients.html', 
-                         ingredients=ingredients,
+                         ingredients=pagination['items'],
+                         pagination=pagination,
                          categories=CATEGORIES,
                          categories_count=categories_count,
                          search_query=search_query,
