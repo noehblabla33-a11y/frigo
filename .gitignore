@@ -19,5 +19,8 @@ static/uploads/
 # Sons
 static/sounds/
 
+# Not needed by the project;
+utils/image*
+
 # Migrations
 migrations/
