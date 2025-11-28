@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
 {% block title %}Mon Frigo{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/frigo.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -10,12 +12,12 @@
     <div class="catalogue-header">
         <h3>❄️ Contenu de mon frigo</h3>
         <div class="view-toggle">
-            <a href="{{ url_for('frigo.liste', view='grid') }}" 
+            <a href="{{ url_for('frigo.liste', view='grid', page=pagination.page) }}" 
                class="view-toggle-btn {% if view_mode == 'grid' %}active{% endif %}"
                title="Vue en grille">
                 <span class="icon">⊞</span>
             </a>
-            <a href="{{ url_for('frigo.liste', view='list') }}" 
+            <a href="{{ url_for('frigo.liste', view='list', page=pagination.page) }}" 
                class="view-toggle-btn {% if view_mode == 'list' %}active{% endif %}"
                title="Vue en liste">
                 <span class="icon">☰</span>
@@ -23,7 +25,12 @@
         </div>
     </div>
     
-    <p style="margin-bottom: 20px;">Voici les ingrédients actuellement en stock dans votre frigo.</p>
+    <p style="margin-bottom: 20px;">
+        Voici les ingrédients actuellement en stock dans votre frigo.
+        {% if pagination.total > 0 %}
+        <strong>{{ pagination.total }}</strong> ingrédient(s) en stock.
+        {% endif %}
+    </p>
     
     {% if stocks %}
         {% if view_mode == 'list' %}
@@ -49,7 +56,8 @@
                             {% if stock.ingredient.image %}
                             <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" 
                                  alt="{{ stock.ingredient.nom }}" 
-                                 class="frigo-thumbnail">
+                                 class="frigo-thumbnail"
+                                 loading="lazy">
                             {% else %}
                             <div class="frigo-thumbnail-placeholder">📦</div>
                             {% endif %}
@@ -104,13 +112,27 @@
                         <td colspan="5" style="text-align: right; font-weight: bold;">Valeur totale du stock :</td>
                         <td colspan="3" style="font-weight: bold; color: #28a745; font-size: 1.1em;">
                             {% set valeur_totale = 0 %}
-                            {% for stock in stocks %}
-                                {% if stock.ingredient.prix_unitaire > 0 %}
-                                    {% set valeur_totale = valeur_totale + (stock.quantite * stock.ingredient.prix_unitaire) %}
+                            {% set all_stocks = namespace(items=[]) %}
+                            {% set all_stocks.items = pagination.items %}
+                            
+                            {# Pour le total, on doit récupérer tous les stocks, pas seulement la page actuelle #}
+                            {% set tous_les_stocks = [] %}
+                            {% for s in tous_les_stocks %}
+                                {% if s.ingredient.prix_unitaire > 0 %}
+                                    {% set valeur_totale = valeur_totale + (s.quantite * s.ingredient.prix_unitaire) %}
                                 {% endif %}
                             {% endfor %}
-                            {% if valeur_totale > 0 %}
-                            {{ "%.2f"|format(valeur_totale) }}€
+                            
+                            {# Total pour la page actuelle seulement #}
+                            {% set valeur_page = 0 %}
+                            {% for stock in stocks %}
+                                {% if stock.ingredient.prix_unitaire > 0 %}
+                                    {% set valeur_page = valeur_page + (stock.quantite * stock.ingredient.prix_unitaire) %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if valeur_page > 0 %}
+                            {{ "%.2f"|format(valeur_page) }}€ <span style="font-size: 0.8em;">(page actuelle)</span>
                             {% else %}
                             -
                             {% endif %}
@@ -126,7 +148,9 @@
             <div class="item-card">
                 <div class="item-image">
                     {% if stock.ingredient.image %}
-                    <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" alt="{{ stock.ingredient.nom }}">
+                    <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" 
+                         alt="{{ stock.ingredient.nom }}"
+                         loading="lazy">
                     {% else %}
                     <div class="no-image">📦</div>
                     {% endif %}
@@ -172,6 +196,9 @@
             {% endfor %}
         </div>
         {% endif %}
+        
+        <!-- Pagination -->
+        {{ render_pagination(pagination, 'frigo.liste', view=view_mode) }}
     {% else %}
     <p>Votre frigo est vide ! Ajoutez des ingrédients ci-dessous.</p>
     {% endif %}

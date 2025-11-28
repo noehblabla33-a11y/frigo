@@ -3,6 +3,29 @@ from models.models import db, Ingredient, StockFrigo
 
 frigo_bp = Blueprint('frigo', __name__)
 
+# Nombre d'éléments par page
+ITEMS_PER_PAGE = 24
+
+def paginate_query(query, page, per_page=ITEMS_PER_PAGE):
+    """Helper de pagination"""
+    page = max(1, page)
+    total = query.count()
+    pages = (total + per_page - 1) // per_page if total > 0 else 1
+    page = min(page, pages)
+    items = query.limit(per_page).offset((page - 1) * per_page).all()
+    
+    return {
+        'items': items,
+        'total': total,
+        'page': page,
+        'pages': pages,
+        'per_page': per_page,
+        'has_prev': page > 1,
+        'has_next': page < pages,
+        'prev_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < pages else None
+    }
+
 @frigo_bp.route('/', methods=['GET', 'POST'])
 def liste():
     if request.method == 'POST':
@@ -40,13 +63,20 @@ def liste():
         db.session.commit()
         return redirect(url_for('frigo.liste'))
     
-    view_mode = request.args.get('view', 'grid')  # Nouveau : 'grid' ou 'list'
+    view_mode = request.args.get('view', 'grid')
+    page = request.args.get('page', 1, type=int)
     
-    stocks = StockFrigo.query.join(Ingredient).order_by(Ingredient.nom).all()
+    # Requête de base avec jointure
+    query = StockFrigo.query.join(Ingredient).order_by(Ingredient.nom)
+    
+    # Paginer les résultats
+    pagination = paginate_query(query, page, ITEMS_PER_PAGE)
+    
     tous_ingredients = Ingredient.query.order_by(Ingredient.nom).all()
     
     return render_template('frigo.html', 
-                         stocks=stocks, 
+                         stocks=pagination['items'],
+                         pagination=pagination,
                          tous_ingredients=tous_ingredients,
                          view_mode=view_mode)
 
