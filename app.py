@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_migrate import Migrate
 from models.models import db
-from routes import frigo_bp, recettes_bp, planification_bp, courses_bp, main_bp, historique_bp, ingredients_bp
+from routes import frigo_bp, recettes_bp, planification_bp, courses_bp, main_bp, historique_bp, ingredients_bp, api_bp
 import os
 
 def create_app():
@@ -31,6 +31,8 @@ def create_app():
     app.register_blueprint(planification_bp, url_prefix='/planifier')
     app.register_blueprint(courses_bp, url_prefix='/courses')
     app.register_blueprint(historique_bp, url_prefix='/historique')
+
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
 
     # Configuration du cache pour les ressources statiques
     @app.after_request
@@ -88,6 +90,14 @@ def create_app():
         elif response.content_type and 'application/json' in response.content_type:
             response.cache_control.no_store = True
             response.cache_control.no_cache = True
+
+
+        # Configuration CORS pour permettre les requêtes depuis android
+        # Permettre les requêtes depuis n'importe quelle origine en développement
+        # En production, remplacer '*' par l'origine spécifique de votre app
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,X-API-Key')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
         
         return response
     

@@ -5,4 +5,4 @@ from routes.recettes import recettes_bp
 from routes.planification import planification_bp
 from routes.courses import courses_bp
 from routes.historique import historique_bp
-
+from routes.api import api_bp
