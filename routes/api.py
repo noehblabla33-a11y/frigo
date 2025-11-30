@@ -33,134 +33,155 @@ def health():
 @api_bp.route('/courses', methods=['GET'])
 @require_api_key
 def get_courses():
-    """
-    Récupérer la liste de courses non achetée
-    
-    Returns:
-        JSON avec la liste des items à acheter
-    """
-    items = ListeCourses.query.filter_by(achete=False).all()
-    
-    courses_list = []
-    for item in items:
-        courses_list.append({
-            'id': item.id,
-            'ingredient_id': item.ingredient_id,
-            'ingredient_nom': item.ingredient.nom,
-            'quantite': item.quantite,
-            'unite': item.ingredient.unite,
-            'prix_unitaire': item.ingredient.prix_unitaire,
-            'prix_estime': item.quantite * item.ingredient.prix_unitaire if item.ingredient.prix_unitaire else 0,
-            'image': item.ingredient.image,
-            'categorie': item.ingredient.categorie
+    try:
+        items = ListeCourses.query.filter_by(achete=False).all()
+        
+        courses_list = []
+        total_estime = 0
+        
+        for item in items:
+            prix_estime = item.quantite * item.ingredient.prix_unitaire if item.ingredient.prix_unitaire else 0
+            total_estime += prix_estime
+            
+            courses_list.append({
+                'id': item.id,
+                'ingredient_id': item.ingredient_id,
+                'ingredient_nom': item.ingredient.nom,
+                'quantite': item.quantite,  # Quantité initialement demandée
+                'unite': item.ingredient.unite,
+                'prix_unitaire': item.ingredient.prix_unitaire,
+                'prix_estime': prix_estime,
+                'image': item.ingredient.image,
+                'categorie': item.ingredient.categorie,
+                'achete': False,
+                'quantite_achetee': item.quantite,  # Par défaut = quantité demandée
+                'quantite_restante': item.quantite  # Quantité encore à acheter
+            })
+        
+        return jsonify({
+            'success': True,
+            'items': courses_list,
+            'count': len(courses_list),
+            'total_estime': total_estime
         })
-    
-    # Calculer le total estimé
-    total_estime = sum(item['prix_estime'] for item in courses_list if item['prix_estime'] > 0)
-    
-    return jsonify({
-        'success': True,
-        'items': courses_list,
-        'count': len(courses_list),
-        'total_estime': round(total_estime, 2)
-    })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
+
+@api_bp.route('/courses/historique', methods=['GET'])
+@require_api_key
+def get_historique():
+    try:
+        # Récupérer les 50 derniers achats
+        items = ListeCourses.query.filter_by(achete=True)\
+            .order_by(ListeCourses.id.desc())\
+            .limit(50)\
+            .all()
+        
+        historique_list = []
+        
+        for item in items:
+            prix_total = item.quantite * item.ingredient.prix_unitaire if item.ingredient.prix_unitaire else 0
+            
+            historique_list.append({
+                'id': item.id,
+                'ingredient_id': item.ingredient_id,
+                'ingredient_nom': item.ingredient.nom,
+                'quantite': item.quantite,
+                'unite': item.ingredient.unite,
+                'prix_unitaire': item.ingredient.prix_unitaire,
+                'prix_total': prix_total,
+                'image': item.ingredient.image,
+                'categorie': item.ingredient.categorie
+            })
+        
+        return jsonify({
+            'success': True,
+            'items': historique_list,
+            'count': len(historique_list)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/courses/sync', methods=['POST'])
 @require_api_key
 def sync_courses():
-    """
-    Synchroniser les achats depuis l'application Android
-    
-    Payload attendu:
-    {
-        "achats": [
-            {
-                "id": 1,
-                "quantite_achetee": 2.5,
-                "achete": true
-            },
-            ...
-        ]
-    }
-    
-    Returns:
-        JSON avec le statut de la synchronisation
-    """
     try:
         data = request.get_json()
+        achats = data.get('achats', [])
         
-        if not data or 'achats' not in data:
-            return jsonify({'success': False, 'error': 'Données invalides'}), 400
-        
-        achats = data['achats']
         items_modifies = 0
         
         for achat in achats:
             item_id = achat.get('id')
-            quantite_achetee = achat.get('quantite_achetee')
+            quantite_achetee = achat.get('quantite_achetee', 0)
             achete = achat.get('achete', False)
             
-            if not item_id:
-                continue
-            
+            # Trouver l'item dans la liste de courses
             item = ListeCourses.query.get(item_id)
-            if not item:
+            if not item or item.achete:  # Si déjà acheté, ignorer
                 continue
             
-            # Si l'item est marqué comme acheté
-            if achete:
-                # Mettre à jour le stock
+            if achete and quantite_achetee > 0:
+                # Mettre à jour le stock du frigo
                 stock = StockFrigo.query.filter_by(ingredient_id=item.ingredient_id).first()
                 if stock:
                     stock.quantite += quantite_achetee
                 else:
                     stock = StockFrigo(
-                        ingredient_id=item.ingredient_id, 
+                        ingredient_id=item.ingredient_id,
                         quantite=quantite_achetee
                     )
                     db.session.add(stock)
                 
-                # Marquer comme acheté
-                item.achete = True
-                item.quantite = quantite_achetee
+                # ⚠️ IMPORTANT : Créer une copie dans l'historique AVANT de modifier/supprimer
+                item_historique = ListeCourses(
+                    ingredient_id=item.ingredient_id,
+                    quantite=quantite_achetee,
+                    achete=True
+                )
+                db.session.add(item_historique)
+                
+                # Réduire la quantité dans la liste de courses OU supprimer
+                if quantite_achetee >= item.quantite:
+                    # Tout a été acheté, supprimer l'item de la liste active
+                    db.session.delete(item)
+                else:
+                    # Partiellement acheté, réduire la quantité
+                    item.quantite -= quantite_achetee
+                
                 items_modifies += 1
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'message': f'{items_modifies} article(s) synchronisé(s)',
+            'message': f'{items_modifies} article(s) synchronisé(s) et ajouté(s) au frigo',
             'items_modifies': items_modifies
         })
-    
+        
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+
 @api_bp.route('/courses/<int:item_id>', methods=['DELETE'])
 @require_api_key
 def delete_course_item(item_id):
-    """
-    Supprimer un item de la liste de courses
-    
-    Args:
-        item_id: ID de l'item à supprimer
-    """
-    item = ListeCourses.query.get(item_id)
-    
-    if not item:
-        return jsonify({'success': False, 'error': 'Item introuvable'}), 404
-    
-    nom = item.ingredient.nom
-    db.session.delete(item)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': f'{nom} retiré de la liste'
-    })
+    try:
+        item = ListeCourses.query.get_or_404(item_id)
+        nom = item.ingredient.nom
+        db.session.delete(item)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{nom} retiré de la liste'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @api_bp.route('/stock', methods=['GET'])
@@ -214,4 +235,3 @@ def get_ingredients():
         'items': ingredients_list,
         'count': len(ingredients_list)
     })
-
