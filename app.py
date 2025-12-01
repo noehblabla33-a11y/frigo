@@ -31,7 +31,6 @@ def create_app():
     app.register_blueprint(planification_bp, url_prefix='/planifier')
     app.register_blueprint(courses_bp, url_prefix='/courses')
     app.register_blueprint(historique_bp, url_prefix='/historique')
-
     app.register_blueprint(api_bp, url_prefix='/api/v1')
 
     # Configuration du cache pour les ressources statiques
@@ -139,5 +138,9 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    app.run(
+        host='0.0.0.0',  # Écoute sur toutes les interfaces
+        port=5000,
+        debug=True
+    )
 
