@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
-from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette
+from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
 from werkzeug.utils import secure_filename
 import os
 
@@ -206,6 +206,53 @@ def detail(id):
     nutrition = recette.calculer_nutrition()
     
     return render_template('recette_detail.html', recette=recette, cout_estime=cout_estime, nutrition=nutrition)
+
+@recettes_bp.route('/planifier-rapide/<int:id>', methods=['POST'])
+def planifier_rapide(id):
+    """Planifier rapidement une recette depuis la liste"""
+    recette = Recette.query.get_or_404(id)
+    
+    # Créer la planification
+    planifiee = RecettePlanifiee(recette_id=recette.id)
+    db.session.add(planifiee)
+    
+    # Ajouter les ingrédients manquants à la liste de courses
+    ingredients_recette = IngredientRecette.query.filter_by(recette_id=recette.id).all()
+    ingredients_ajoutes = 0
+    
+    for ing_rec in ingredients_recette:
+        stock = StockFrigo.query.filter_by(ingredient_id=ing_rec.ingredient_id).first()
+        quantite_disponible = stock.quantite if stock else 0
+        
+        if quantite_disponible < ing_rec.quantite:
+            manquant = ing_rec.quantite - quantite_disponible
+            
+            item = ListeCourses.query.filter_by(
+                ingredient_id=ing_rec.ingredient_id, 
+                achete=False
+            ).first()
+            
+            if item:
+                item.quantite += manquant
+            else:
+                item = ListeCourses(
+                    ingredient_id=ing_rec.ingredient_id, 
+                    quantite=manquant
+                )
+                db.session.add(item)
+            
+            ingredients_ajoutes += 1
+    
+    db.session.commit()
+    
+    # Message personnalisé selon le contexte
+    if ingredients_ajoutes > 0:
+        flash(f'✓ "{recette.nom}" planifiée ! {ingredients_ajoutes} ingrédient(s) ajouté(s) à la liste de courses.', 'success')
+    else:
+        flash(f'✓ "{recette.nom}" planifiée ! Tous les ingrédients sont déjà en stock.', 'success')
+    
+    # Retourner à la page précédente ou à la liste des recettes
+    return redirect(request.referrer or url_for('recettes.liste'))
 
 @recettes_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
 def modifier(id):

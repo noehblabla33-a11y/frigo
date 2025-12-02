@@ -168,6 +168,14 @@
                             <a href="{{ url_for('recettes.detail', id=recette.id) }}" 
                                class="btn-icon" 
                                title="Voir détails">👁️</a>
+                            <form method="POST" 
+                                  action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
+                                  style="display: inline;">
+                                <button type="submit" 
+                                        class="btn-icon" 
+                                        title="Planifier cette recette"
+                                        style="border: none; background: none; cursor: pointer;">📅</button>
+                            </form>
                             <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
                                class="btn-icon btn-icon-danger" 
                                title="Supprimer"
@@ -211,6 +219,15 @@
                     </div>
                 </a>
                 <div class="recette-actions">
+                    <form method="POST" 
+                          action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
+                          style="display: inline;">
+                        <button type="submit" 
+                                class="btn btn-small"
+                                style="background: #28a745; color: white;">
+                            📅 Planifier
+                        </button>
+                    </form>
                     <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
                        class="btn btn-danger btn-small"
                        onclick="return confirm('Supprimer cette recette ?')">
