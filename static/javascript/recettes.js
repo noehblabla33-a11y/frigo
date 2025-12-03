@@ -1,6 +1,6 @@
 // ============================================
 // Fichier: static/recettes.js
-// Gestion du formulaire de création de recettes
+// Gestion du formulaire de création/modification de recettes
 // ============================================
 
 let etapeCount = 1;
@@ -99,6 +99,7 @@ function ajouterIngredient() {
     
     const div = document.createElement('div');
     div.className = 'ingredient-row';
+    div.dataset.ingredientRow = ingredientCount;
     div.innerHTML = `
         <div style="flex: 2;">
             <select name="ingredient_${ingredientCount}" class="ingredient-select searchable-select" data-index="${ingredientCount}">
@@ -110,6 +111,14 @@ function ajouterIngredient() {
         </div>
         <div style="flex: 0; min-width: 50px;">
             <span class="unite-display" id="unite-${ingredientCount}" style="font-weight: bold; color: #667eea;"></span>
+        </div>
+        <div style="flex: 0;">
+            <button type="button" 
+                    class="btn-remove-ingredient" 
+                    onclick="removeIngredient(${ingredientCount})"
+                    style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                ✖
+            </button>
         </div>
     `;
     container.appendChild(div);
@@ -125,6 +134,25 @@ function ajouterIngredient() {
     }
     
     ingredientCount++;
+    updateRemoveIngredientsButtons();
+}
+
+function removeIngredient(index) {
+    const row = document.querySelector(`.ingredient-row[data-ingredient-row="${index}"]`);
+    if (row) {
+        row.remove();
+        updateRemoveIngredientsButtons();
+    }
+}
+
+function updateRemoveIngredientsButtons() {
+    const rows = document.querySelectorAll('.ingredient-row');
+    rows.forEach((row) => {
+        const btn = row.querySelector('.btn-remove-ingredient');
+        if (btn) {
+            btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+        }
+    });
 }
 
 // Initialisation
@@ -134,13 +162,21 @@ function initRecettesForm() {
         select.addEventListener('change', function() {
             updateUnite(this);
         });
+        // Afficher l'unité initiale si un ingrédient est déjà sélectionné
+        if (select.value) {
+            updateUnite(select);
+        }
     });
+    
+    // Mettre à jour les boutons de suppression au chargement
+    updateRemoveIngredientsButtons();
 }
 
 // Exposition des fonctions globales
 window.ajouterEtape = ajouterEtape;
 window.removeEtape = removeEtape;
 window.ajouterIngredient = ajouterIngredient;
+window.removeIngredient = removeIngredient;
 
 // Initialisation au chargement du DOM
 document.addEventListener('DOMContentLoaded', () => {

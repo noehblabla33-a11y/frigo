@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}Modifier {{ recette.nom }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3>✏️ Modifier la recette</h3>
+    <form method="POST" id="recetteForm" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Nom de la recette</label>
+            <input type="text" name="nom" value="{{ recette.nom }}" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Type de recette</label>
+            <select name="type_recette" class="searchable-select">
+                <option value="">Sélectionner un type (optionnel)</option>
+                {% for type in types_recettes %}
+                <option value="{{ type }}" {% if recette.type_recette == type %}selected{% endif %}>
+                    {{ type }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Temps de préparation (minutes)</label>
+            <input type="number" name="temps_preparation" 
+                   value="{{ recette.temps_preparation if recette.temps_preparation else '' }}"
+                   placeholder="Ex: 30">
+        </div>
+        
+        <div class="form-group">
+            <label>Image de la recette</label>
+            {% if recette.image %}
+            <div style="margin-bottom: 10px;">
+                <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
+                     alt="{{ recette.nom }}" 
+                     style="max-width: 200px; border-radius: 8px;">
+                <p style="color: #6c757d; font-size: 0.9em; margin-top: 5px;">
+                    Image actuelle (choisissez un nouveau fichier pour la remplacer)
+                </p>
+            </div>
+            {% endif %}
+            <input type="file" name="image" accept="image/*">
+        </div>
+        
+        <div class="form-group">
+            <label>Étapes de préparation</label>
+            <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
+                Décrivez les étapes une par une. Vous pouvez ajouter un minuteur optionnel pour chaque étape.
+            </p>
+            <div id="etapes-container">
+                {% for etape in recette.etapes %}
+                <div class="etape-row" data-etape="{{ loop.index0 }}">
+                    <div class="etape-number">{{ loop.index }}</div>
+                    <div class="etape-inputs">
+                        <div class="form-group" style="flex: 3; margin-bottom: 0;">
+                            <textarea name="etape_desc_{{ loop.index0 }}" 
+                                      placeholder="Décrivez cette étape..."
+                                      rows="2">{{ etape.description }}</textarea>
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <input type="number" 
+                                   name="etape_duree_{{ loop.index0 }}" 
+                                   placeholder="⏱️ Minutes (opt.)"
+                                   value="{{ etape.duree_minutes if etape.duree_minutes else '' }}"
+                                   min="0"
+                                   title="Durée en minutes pour le minuteur (optionnel)">
+                        </div>
+                    </div>
+                    <button type="button" 
+                            class="btn-remove-etape" 
+                            onclick="removeEtape({{ loop.index0 }})"
+                            style="{% if loop.length == 1 %}display: none;{% endif %}">
+                        ✖
+                    </button>
+                </div>
+                {% endfor %}
+                
+                {% if not recette.etapes %}
+                <div class="etape-row" data-etape="0">
+                    <div class="etape-number">1</div>
+                    <div class="etape-inputs">
+                        <div class="form-group" style="flex: 3; margin-bottom: 0;">
+                            <textarea name="etape_desc_0" 
+                                      placeholder="Ex: Préchauffer le four à 180°C"
+                                      rows="2"></textarea>
+                        </div>
+                        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                            <input type="number" 
+                                   name="etape_duree_0" 
+                                   placeholder="⏱️ Minutes (opt.)"
+                                   min="0"
+                                   title="Durée en minutes pour le minuteur (optionnel)">
+                        </div>
+                    </div>
+                    <button type="button" 
+                            class="btn-remove-etape" 
+                            onclick="removeEtape(0)"
+                            style="display: none;">
+                        ✖
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            <button type="button" onclick="ajouterEtape()" class="btn" style="margin-top: 10px;">
+                + Ajouter une étape
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label>Ingrédients</label>
+            <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
+                Gérez les ingrédients de votre recette. Vous pouvez modifier les quantités, supprimer ou ajouter des ingrédients.
+            </p>
+            
+            <div id="ingredients-container">
+                {% for ing_rec in recette.ingredients %}
+                <div class="ingredient-row" data-ingredient-row="{{ loop.index0 }}">
+                    <div style="flex: 2;">
+                        <select name="ingredient_{{ loop.index0 }}" class="ingredient-select searchable-select" data-index="{{ loop.index0 }}" required>
+                            <option value="">Sélectionner un ingrédient</option>
+                            {% for ing in ingredients %}
+                            <option value="{{ ing.id }}" 
+                                    data-unite="{{ ing.unite }}"
+                                    {% if ing.id == ing_rec.ingredient_id %}selected{% endif %}>
+                                {{ ing.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="number" step="0.01" 
+                               name="quantite_{{ loop.index0 }}" 
+                               value="{{ ing_rec.quantite }}"
+                               placeholder="Quantité" required>
+                    </div>
+                    <div style="flex: 0; min-width: 50px;">
+                        <span class="unite-display" id="unite-{{ loop.index0 }}" style="font-weight: bold; color: #667eea;">
+                            {{ ing_rec.ingredient.unite }}
+                        </span>
+                    </div>
+                    <div style="flex: 0;">
+                        <button type="button" 
+                                class="btn-remove-ingredient" 
+                                onclick="removeIngredient({{ loop.index0 }})"
+                                style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            ✖
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if not recette.ingredients %}
+                <div class="ingredient-row" data-ingredient-row="0">
+                    <div style="flex: 2;">
+                        <select name="ingredient_0" class="ingredient-select searchable-select" data-index="0">
+                            <option value="">Sélectionner un ingrédient</option>
+                            {% for ing in ingredients %}
+                            <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">{{ ing.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="number" step="0.01" name="quantite_0" placeholder="Quantité">
+                    </div>
+                    <div style="flex: 0; min-width: 50px;">
+                        <span class="unite-display" id="unite-0" style="font-weight: bold; color: #667eea;"></span>
+                    </div>
+                    <div style="flex: 0;">
+                        <button type="button" 
+                                class="btn-remove-ingredient" 
+                                onclick="removeIngredient(0)"
+                                style="padding: 8px 12px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;">
+                            ✖
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <button type="button" onclick="ajouterIngredient()" class="btn">
+                + Ajouter un ingrédient
+            </button>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" class="btn btn-success">Enregistrer les modifications</button>
+            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+
+{% if recette.ingredients %}
+<div class="card">
+    <h3>📊 Aperçu nutritionnel</h3>
+    {% set nutrition = recette.calculer_nutrition() %}
+    {% if nutrition.calories > 0 %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
+        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 2em; font-weight: bold; color: #667eea;">{{ nutrition.calories|int }}</div>
+            <div style="font-size: 0.9em; color: #6c757d;">Calories (kcal)</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 2em; font-weight: bold; color: #28a745;">{{ nutrition.proteines|round(1) }}</div>
+            <div style="font-size: 0.9em; color: #6c757d;">Protéines (g)</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 2em; font-weight: bold; color: #ffc107;">{{ nutrition.glucides|round(1) }}</div>
+            <div style="font-size: 0.9em; color: #6c757d;">Glucides (g)</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 2em; font-weight: bold; color: #17a2b8;">{{ nutrition.lipides|round(1) }}</div>
+            <div style="font-size: 0.9em; color: #6c757d;">Lipides (g)</div>
+        </div>
+    </div>
+    {% else %}
+    <p style="color: #6c757d;">Les informations nutritionnelles ne sont pas disponibles. Ajoutez les valeurs nutritionnelles aux ingrédients.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='javascript/recettes.js') }}"></script>
+<script>
+// Initialiser le compteur d'étapes avec le nombre existant
+{% if recette.etapes %}
+let etapeCount = {{ recette.etapes|length }};
+{% else %}
+let etapeCount = 1;
+{% endif %}
+
+// Initialiser le compteur d'ingrédients avec le nombre existant
+{% if recette.ingredients %}
+let ingredientCount = {{ recette.ingredients|length }};
+{% else %}
+let ingredientCount = 1;
+{% endif %}
+
+// Fonction pour supprimer un ingrédient
+function removeIngredient(index) {
+    const row = document.querySelector(`.ingredient-row[data-ingredient-row="${index}"]`);
+    if (row) {
+        row.remove();
+        updateRemoveButtons();
+    }
+}
+
+// Fonction pour mettre à jour l'affichage des boutons supprimer
+function updateRemoveButtons() {
+    const rows = document.querySelectorAll('.ingredient-row');
+    rows.forEach((row, idx) => {
+        const btn = row.querySelector('.btn-remove-ingredient');
+        if (btn) {
+            btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+        }
+    });
+}
+
+// Appeler au chargement pour gérer les ingrédients existants
+document.addEventListener('DOMContentLoaded', () => {
+    updateRemoveButtons();
+    
+    // Initialiser les événements pour les selects existants
+    document.querySelectorAll('.ingredient-select').forEach(select => {
+        select.addEventListener('change', function() {
+            updateUnite(this);
+        });
+        // Déclencher l'événement pour afficher l'unité initiale
+        if (select.value) {
+            updateUnite(select);
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -268,6 +268,7 @@ def modifier(id):
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename != '' and allowed_file(file.filename):
+                # Supprimer l'ancienne image si elle existe
                 if recette.image:
                     try:
                         os.remove(os.path.join(current_app.root_path, recette.image))
@@ -302,6 +303,28 @@ def modifier(id):
                 )
                 db.session.add(etape)
             j += 1
+        
+        # NOUVEAU : Gérer les ingrédients
+        # Supprimer tous les anciens ingrédients
+        for ing_rec in recette.ingredients:
+            db.session.delete(ing_rec)
+        
+        # Ajouter les nouveaux ingrédients
+        i = 0
+        while True:
+            ing_id = request.form.get(f'ingredient_{i}')
+            if not ing_id:
+                break
+            quantite = float(request.form.get(f'quantite_{i}', 0))
+            
+            if ing_id and quantite > 0:
+                ing_recette = IngredientRecette(
+                    recette_id=recette.id,
+                    ingredient_id=int(ing_id),
+                    quantite=quantite
+                )
+                db.session.add(ing_recette)
+            i += 1
         
         db.session.commit()
         flash(f'Recette "{recette.nom}" modifiée !', 'success')
