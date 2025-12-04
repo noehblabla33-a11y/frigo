@@ -1,0 +1,132 @@
+/* ============================================ */
+/* Fichier: static/style/collapsable.css       */
+/* Styles pour les sections collapsables       */
+/* ============================================ */
+
+/* Header collapsable */
+.collapsable-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.collapsable-header:hover {
+    background: rgba(102, 126, 234, 0.05);
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.collapsable-header h3 {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.collapsable-header.collapsed h3 {
+    opacity: 0.7;
+}
+
+/* Icône de toggle */
+.collapsable-icon {
+    font-size: 0.8em;
+    color: var(--primary);
+    font-weight: bold;
+    transition: transform 0.3s ease;
+    display: inline-block;
+    min-width: 20px;
+}
+
+.collapsable-header:hover .collapsable-icon {
+    color: var(--primary-dark);
+    transform: scale(1.2);
+}
+
+
+/* Badge "Nouveau" ou "Ajouter" */
+.collapsable-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--primary);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(0.95);
+    }
+}
+
+.collapsable-header.collapsed .collapsable-badge {
+    animation: none;
+    opacity: 0.6;
+}
+
+/* Contenu collapsable */
+.collapsable-content {
+    overflow: hidden;
+}
+
+/* Card avec section collapsable */
+.card-collapsable {
+    border: 2px solid transparent;
+    transition: border-color 0.3s;
+}
+
+.card-collapsable:has(.collapsable-header:not(.collapsed)) {
+    border-color: rgba(102, 126, 234, 0.2);
+}
+
+/* Indicateur visuel pour sections fermées */
+.collapsable-header.collapsed::after {
+    content: "Cliquer pour ouvrir";
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-left: auto;
+    padding-right: 10px;
+}
+
+.collapsable-header:not(.collapsed)::after {
+    content: "Cliquer pour fermer";
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-left: auto;
+    padding-right: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.collapsable-header:not(.collapsed):hover::after {
+    opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .collapsable-header::after {
+        display: none;
+    }
+    
+    .collapsable-badge {
+        font-size: 0.65em;
+        padding: 3px 8px;
+    }
+}
