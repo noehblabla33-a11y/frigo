@@ -33,21 +33,10 @@
     opacity: 0.7;
 }
 
-/* Icône de toggle */
+/* Icône de toggle - MASQUÉE */
 .collapsable-icon {
-    font-size: 0.8em;
-    color: var(--primary);
-    font-weight: bold;
-    transition: transform 0.3s ease;
-    display: inline-block;
-    min-width: 20px;
+    display: none;
 }
-
-.collapsable-header:hover .collapsable-icon {
-    color: var(--primary-dark);
-    transform: scale(1.2);
-}
-
 
 /* Badge "Nouveau" ou "Ajouter" */
 .collapsable-badge {
@@ -94,37 +83,8 @@
     border-color: rgba(102, 126, 234, 0.2);
 }
 
-/* Indicateur visuel pour sections fermées */
-.collapsable-header.collapsed::after {
-    content: "Cliquer pour ouvrir";
-    font-size: 0.75em;
-    color: var(--text-secondary);
-    font-style: italic;
-    margin-left: auto;
-    padding-right: 10px;
-}
-
-.collapsable-header:not(.collapsed)::after {
-    content: "Cliquer pour fermer";
-    font-size: 0.75em;
-    color: var(--text-secondary);
-    font-style: italic;
-    margin-left: auto;
-    padding-right: 10px;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.collapsable-header:not(.collapsed):hover::after {
-    opacity: 1;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
-    .collapsable-header::after {
-        display: none;
-    }
-    
     .collapsable-badge {
         font-size: 0.65em;
         padding: 3px 8px;
