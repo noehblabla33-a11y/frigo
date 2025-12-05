@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
-{% block title %}Catalogue d'ingrédients{% endblock %}
+{% block title %}Catalogue des ingrédients{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
@@ -8,6 +8,7 @@
 {% endblock %}
 
 {% block content %}
+<script>document.body.dataset.page = 'ingredients';</script>
 
 <!-- Barre de recherche et filtres -->
 <div class="card">
