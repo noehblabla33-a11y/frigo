@@ -35,10 +35,23 @@
         
         <div class="form-group">
             <label>Prix unitaire (€)</label>
-            <input type="number" step="0.01" name="prix_unitaire" 
-                   value="{{ ingredient.prix_unitaire if ingredient.prix_unitaire else '' }}" 
-                   placeholder="Prix par unité (optionnel)">
-            <small style="color: #6c757d;">Ex: 2.50 pour 2.50€/kg ou 2.50€/L</small>
+            <input type="number" step="0.001" name="prix_unitaire" 
+                value="{{ ingredient.prix_unitaire if ingredient.prix_unitaire else '' }}" 
+                placeholder="Prix par {{ ingredient.unite }}" id="prix_input">
+            <small style="color: #6c757d;" id="prix_helper">
+                {% if ingredient.unite == 'g' %}
+                Entrez le prix en €/g (ex: 0.015 pour 15€/kg)
+                {% elif ingredient.unite == 'ml' %}
+                Entrez le prix en €/ml (ex: 0.003 pour 3€/L)
+                {% else %}
+                Ex: 2.50 pour 2.50€/{{ ingredient.unite }}
+                {% endif %}
+            </small>
+            {% if ingredient.prix_unitaire > 0 and ingredient.unite == 'g' %}
+            <small style="color: #28a745; font-weight: bold;">
+                💡 Équivaut à {{ (ingredient.prix_unitaire * 1000)|round(2) }}€/kg
+            </small>
+            {% endif %}
         </div>
 
         <div class="form-group">

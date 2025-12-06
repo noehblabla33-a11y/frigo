@@ -161,7 +161,7 @@
                         <th>Nom</th>
                         <th>Catégorie</th>
                         <th>Unité</th>
-                        <th>Prix</th>
+                        <th>Prix (en kg/L)</th>
                         <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
@@ -196,11 +196,7 @@
                         </td>
                         <td>{{ ing.unite }}</td>
                         <td>
-                            {% if ing.prix_unitaire > 0 %}
-                            <span class="prix-table">{{ ing.prix_unitaire }}€/{{ ing.unite }}</span>
-                            {% else %}
-                            <span style="color: #adb5bd;">-</span>
-                            {% endif %}
+                            {{ ing.prix_unitaire|prix_lisible(ing.unite) }}
                         </td>
                         <td>
                             {% if ing.stock %}
@@ -252,15 +248,8 @@
                     <h4>{{ ing.nom }}</h4>
                     <p class="ingredient-unite">Unité: {{ ing.unite }}</p>
                     {% if ing.prix_unitaire > 0 %}
-                    <p class="ingredient-prix">{{ ing.prix_unitaire }}€/{{ ing.unite }}</p>
+                    <p class="ingredient-prix">{{ ing.prix_unitaire|prix_lisible(ing.unite) }}</p>
                     {% endif %}
-                    <!--
-                    {% if ing.stock %}
-                    <p class="ingredient-stock">En stock: {{ ing.stock.quantite }} {{ ing.unite }}</p>
-                    {% else %}
-                    <p class="ingredient-stock-vide">Pas en stock</p>
-                    {% endif %}
-                    -->
                 </div>
                 <div class="item-actions">
                     <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" class="btn btn-small">Modifier</a>
