@@ -177,6 +177,15 @@ def modifier(id):
         ingredient.unite = request.form.get('unite')
         ingredient.prix_unitaire = float(request.form.get('prix_unitaire') or 0)
         ingredient.categorie = request.form.get('categorie')
+
+        # ✅ AJOUT : Récupération des valeurs nutritionnelles
+        ingredient.calories = float(request.form.get('calories') or 0)
+        ingredient.proteines = float(request.form.get('proteines') or 0)
+        ingredient.glucides = float(request.form.get('glucides') or 0)
+        ingredient.lipides = float(request.form.get('lipides') or 0)
+        ingredient.fibres = float(request.form.get('fibres') or 0)
+        ingredient.sucres = float(request.form.get('sucres') or 0)
+        ingredient.sel = float(request.form.get('sel') or 0)
         
         if 'image' in request.files:
             file = request.files['image']
