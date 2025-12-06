@@ -26,9 +26,7 @@
             <label>Unité de mesure</label>
             <select name="unite">
                 <option value="g" {% if ingredient.unite == 'g' %}selected{% endif %}>grammes (g)</option>
-                <option value="kg" {% if ingredient.unite == 'kg' %}selected{% endif %}>kilogrammes (kg)</option>
                 <option value="ml" {% if ingredient.unite == 'ml' %}selected{% endif %}>millilitres (ml)</option>
-                <option value="L" {% if ingredient.unite == 'L' %}selected{% endif %}>litres (L)</option>
                 <option value="pièce" {% if ingredient.unite == 'pièce' %}selected{% endif %}>pièce(s)</option>
             </select>
         </div>
