@@ -157,8 +157,7 @@ def create_app():
             return f"{prix_l:.2f}€/L"
         else:
             return f"{prix:.2f}€/{unite}"
-    
-    return app
+
 
     @app.template_filter('quantite_lisible')
     def quantite_lisible_filter(quantite, ingredient):
@@ -234,6 +233,9 @@ def create_app():
         
         # Règle générale : ajouter 's'
         return nom + 's'
+
+
+    return app
 
 if __name__ == '__main__':
     app = create_app()
