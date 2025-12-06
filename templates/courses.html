@@ -138,7 +138,7 @@
             {% for item in historique %}
             <tr>
                 <td>{{ item.ingredient.nom }}</td>
-                <td>{{ item.quantite }} {{ item.ingredient.unite }}</td>
+                <td>{{ item.quantite|quantite_lisible(item.ingredient) }}</td>
                 <td>
                     {% if item.ingredient.prix_unitaire > 0 %}
                     {{ "%.2f"|format(item.quantite * item.ingredient.prix_unitaire) }} €

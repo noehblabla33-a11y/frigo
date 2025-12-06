@@ -102,6 +102,32 @@
                 </div>
             </div>
         </div>
+
+        <div class="form-group">
+            <h4 style="margin-top: 25px; color: #667eea;">🔢 Affichage en pièces (optionnel)</h4>
+            <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
+                Si cet ingrédient se compte en pièces ({{ ingredient.nom }}, etc.), 
+                renseignez le poids moyen d'une pièce.
+                L'unité reste en grammes pour les calculs, mais s'affichera en pièces dans les recettes.
+            </p>
+            
+            <label>Poids moyen d'une pièce (g)</label>
+            <input type="number" step="1" name="poids_piece" 
+                value="{{ ingredient.poids_piece if ingredient.poids_piece else '' }}" 
+                placeholder="Ex: 200 pour un avocat, 60 pour un œuf">
+            <small style="color: #6c757d;">
+                Laissez vide si l'ingrédient ne se compte pas en pièces
+            </small>
+            
+            {% if ingredient.poids_piece and ingredient.poids_piece > 0 %}
+            <div style="background: #e7f3ff; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <strong>💡 Exemples d'affichage pour "{{ ingredient.nom }}" :</strong><br>
+                - {{ ingredient.poids_piece|int }}g → "1 {{ ingredient.nom }}"<br>
+                - {{ (ingredient.poids_piece * 2)|int }}g → "2 {{ ingredient.nom }}s"<br>
+                - {{ (ingredient.poids_piece * 1.5)|int }}g → "{{ (ingredient.poids_piece * 1.5)|int }}g (≈1.5 {{ ingredient.nom }})"
+            </div>
+            {% endif %}
+        </div>
         
         <div class="form-group">
             <label>Image de l'ingrédient</label>

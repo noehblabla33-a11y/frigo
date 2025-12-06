@@ -203,37 +203,37 @@ def create_app():
             return f"{quantite:.0f}{ingredient.unite}"
 
     def pluraliser(nom):
-    """
-    Gère le pluriel français de base
-    """
-    nom_lower = nom.lower()
-    
-    # Cas spéciaux
-    exceptions = {
-        'oeuf': 'oeufs',
-        'chou': 'choux'
-    }
-    
-    if nom_lower in exceptions:
-        # Préserver la casse (majuscule initiale si nécessaire)
-        resultat = exceptions[nom_lower]
-        return resultat.capitalize() if nom[0].isupper() else resultat
-    
-    # Règles générales
-    # Déjà au pluriel
-    if nom_lower.endswith('s') or nom_lower.endswith('x') or nom_lower.endswith('z'):
-        return nom
-    
-    # -au, -eau, -eu → -aux, -eaux, -eux
-    if nom_lower.endswith('au') or nom_lower.endswith('eau') or nom_lower.endswith('eu'):
-        return nom + 'x'
-    
-    # -al → -aux
-    if nom_lower.endswith('al'):
-        return nom[:-2] + 'aux'
-    
-    # Règle générale : ajouter 's'
-    return nom + 's'
+        """
+        Gère le pluriel français de base
+        """
+        nom_lower = nom.lower()
+        
+        # Cas spéciaux
+        exceptions = {
+            'oeuf': 'oeufs',
+            'chou': 'choux'
+        }
+        
+        if nom_lower in exceptions:
+            # Préserver la casse (majuscule initiale si nécessaire)
+            resultat = exceptions[nom_lower]
+            return resultat.capitalize() if nom[0].isupper() else resultat
+        
+        # Règles générales
+        # Déjà au pluriel
+        if nom_lower.endswith('s') or nom_lower.endswith('x') or nom_lower.endswith('z'):
+            return nom
+        
+        # -au, -eau, -eu → -aux, -eaux, -eux
+        if nom_lower.endswith('au') or nom_lower.endswith('eau') or nom_lower.endswith('eu'):
+            return nom + 'x'
+        
+        # -al → -aux
+        if nom_lower.endswith('al'):
+            return nom[:-2] + 'aux'
+        
+        # Règle générale : ajouter 's'
+        return nom + 's'
 
 if __name__ == '__main__':
     app = create_app()

@@ -61,6 +61,8 @@ def liste():
         fibres = float(request.form.get('fibres') or 0)
         sucres = float(request.form.get('sucres') or 0)
         sel = float(request.form.get('sel') or 0)
+        poids_piece_str = request.form.get('poids_piece')
+        poids_piece = float(poids_piece_str) if poids_piece_str else None
 
         
         ingredient = Ingredient.query.filter_by(nom=nom).first()
@@ -79,7 +81,8 @@ def liste():
             lipides=lipides,
             fibres=fibres,
             sucres=sucres,
-            sel=sel
+            sel=sel,
+            poids_piece=poids_piece
         )
         
         if 'image' in request.files:
@@ -186,6 +189,9 @@ def modifier(id):
         ingredient.fibres = float(request.form.get('fibres') or 0)
         ingredient.sucres = float(request.form.get('sucres') or 0)
         ingredient.sel = float(request.form.get('sel') or 0)
+
+        poids_piece_str = request.form.get('poids_piece')
+        ingredient.poids_piece = float(poids_piece_str) if poids_piece_str else None
         
         if 'image' in request.files:
             file = request.files['image']

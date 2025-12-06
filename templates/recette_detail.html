@@ -59,7 +59,7 @@
             </div>
             <div class="ingredient-detail-info">
                 <h4>{{ ing_rec.ingredient.nom }}</h4>
-                <p class="ingredient-detail-quantite">{{ ing_rec.quantite }} {{ ing_rec.ingredient.unite }}</p>
+                <p class="ingredient-detail-quantite">{{ ing_rec.quantite|quantite_lisible(ing_rec.ingredient) }}</p>
                 {% set stock = ing_rec.ingredient.stock %}
                 {% set quantite_dispo = stock.quantite if stock else 0 %}
                 {% if quantite_dispo >= ing_rec.quantite %}
