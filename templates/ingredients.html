@@ -162,7 +162,6 @@
                         <th>Catégorie</th>
                         <th>Unité</th>
                         <th>Prix</th>
-                        <th>Stock</th>
                         <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
@@ -255,11 +254,13 @@
                     {% if ing.prix_unitaire > 0 %}
                     <p class="ingredient-prix">{{ ing.prix_unitaire }}€/{{ ing.unite }}</p>
                     {% endif %}
+                    <!--
                     {% if ing.stock %}
                     <p class="ingredient-stock">En stock: {{ ing.stock.quantite }} {{ ing.unite }}</p>
                     {% else %}
                     <p class="ingredient-stock-vide">Pas en stock</p>
                     {% endif %}
+                    -->
                 </div>
                 <div class="item-actions">
                     <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" class="btn btn-small">Modifier</a>
