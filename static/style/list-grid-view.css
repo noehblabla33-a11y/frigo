@@ -115,7 +115,7 @@
 
 /* ========== VUE LISTE (TABLE) ========== */
 .item-list {
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 
 .item-table {
@@ -157,7 +157,8 @@
 .item-table tbody tr:hover {
     background: var(--bg-light);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: scale(1.01);
+    /*transform: scale(1.01);*/
+    transform: translateY(-2px);
 }
 
 .item-table td {
