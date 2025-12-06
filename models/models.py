@@ -11,6 +11,7 @@ class Ingredient(db.Model):
     prix_unitaire = db.Column(db.Float, default=0)
     image = db.Column(db.String(200), nullable=True)
     categorie = db.Column(db.String(50), nullable=True)
+    poids_piece = db.Column(db.Float, nullable=True)
     calories = db.Column(db.Float, default=0)        # kcal pour 100g/100ml
     proteines = db.Column(db.Float, default=0)       # g pour 100g/100ml
     glucides = db.Column(db.Float, default=0)        # g pour 100g/100ml

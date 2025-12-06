@@ -133,8 +133,107 @@ def create_app():
             return url_for(endpoint, **values)
         
         return dict(versioned_url_for=versioned_url_for)
+
+    @app.template_filter('prix_lisible')
+    def prix_lisible_filter(prix, unite):
+        """
+        Affiche le prix de manière lisible
+        - Si l'unité est 'g', convertit en €/kg pour l'affichage
+        - Sinon, affiche le prix tel quel
+        """
+        if not prix or prix == 0:
+            return "Prix non renseigné"
+        
+        if unite == 'g':
+            # Convertir €/g en €/kg pour l'affichage
+            prix_kg = prix * 1000
+            return f"{prix_kg:.2f}€/kg"
+        elif unite == 'kg':
+            return f"{prix:.2f}€/kg"
+        elif unite == 'L':
+            return f"{prix:.2f}€/L"
+        elif unite == 'ml':
+            prix_l = prix * 1000
+            return f"{prix_l:.2f}€/L"
+        else:
+            return f"{prix:.2f}€/{unite}"
     
     return app
+
+    @app.template_filter('quantite_lisible')
+    def quantite_lisible_filter(quantite, ingredient):
+        """
+        Affiche la quantité de manière lisible
+        - Si l'ingrédient a un poids_piece défini, convertit en pièces
+        - Sinon, affiche en grammes/ml/etc
+        """
+        if not quantite or quantite == 0:
+            return "0"
+        
+        # Si l'ingrédient a un poids par pièce défini
+        if ingredient.poids_piece and ingredient.poids_piece > 0:
+            nb_pieces = quantite / ingredient.poids_piece
+            
+            # Si c'est proche d'un nombre entier (±10%)
+            nb_pieces_arrondi = round(nb_pieces)
+            if abs(nb_pieces - nb_pieces_arrondi) / nb_pieces < 0.1:
+                # Afficher en pièces en utilisant le nom de l'ingrédient
+                if nb_pieces_arrondi == 1:
+                    return f"1 {ingredient.nom}"
+                else:
+                    # Gestion du pluriel
+                    nom_pluriel = pluraliser(ingredient.nom)
+                    return f"{nb_pieces_arrondi} {nom_pluriel}"
+            else:
+                # Quantité non standard, afficher en grammes ET en pièces approximatif
+                return f"{quantite:.0f}g (≈{nb_pieces:.1f} {ingredient.nom})"
+        
+        # Sinon, affichage normal
+        if ingredient.unite == 'g':
+            if quantite >= 1000:
+                return f"{quantite/1000:.1f}kg"
+            else:
+                return f"{quantite:.0f}g"
+        elif ingredient.unite == 'ml':
+            if quantite >= 1000:
+                return f"{quantite/1000:.1f}L"
+            else:
+                return f"{quantite:.0f}ml"
+        else:
+            return f"{quantite:.0f}{ingredient.unite}"
+
+    def pluraliser(nom):
+    """
+    Gère le pluriel français de base
+    """
+    nom_lower = nom.lower()
+    
+    # Cas spéciaux
+    exceptions = {
+        'oeuf': 'oeufs',
+        'chou': 'choux'
+    }
+    
+    if nom_lower in exceptions:
+        # Préserver la casse (majuscule initiale si nécessaire)
+        resultat = exceptions[nom_lower]
+        return resultat.capitalize() if nom[0].isupper() else resultat
+    
+    # Règles générales
+    # Déjà au pluriel
+    if nom_lower.endswith('s') or nom_lower.endswith('x') or nom_lower.endswith('z'):
+        return nom
+    
+    # -au, -eau, -eu → -aux, -eaux, -eux
+    if nom_lower.endswith('au') or nom_lower.endswith('eau') or nom_lower.endswith('eu'):
+        return nom + 'x'
+    
+    # -al → -aux
+    if nom_lower.endswith('al'):
+        return nom[:-2] + 'aux'
+    
+    # Règle générale : ajouter 's'
+    return nom + 's'
 
 if __name__ == '__main__':
     app = create_app()
