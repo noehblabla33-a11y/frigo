@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Que puis-je cuisiner ?{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🥘 Que puis-je cuisiner avec mon frigo ?</h2>
+    <p>Découvrez les recettes que vous pouvez réaliser avec vos ingrédients en stock</p>
+</div>
+
+<!-- Statistiques rapides -->
+<div class="stats-grid" style="margin-bottom: 30px;">
+    <div class="stat-card">
+        <div class="stat-number">{{ nb_realisables }}</div>
+        <div class="stat-label">Recette(s) réalisable(s) maintenant</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ recettes_partielles|length }}</div>
+        <div class="stat-label">Recette(s) partiellement possible(s)</div>
+    </div>
+</div>
+
+<!-- Recettes réalisables immédiatement -->
+{% if recettes_realisables %}
+<div class="card">
+    <h3>✅ Recettes réalisables immédiatement</h3>
+    <p style="color: #28a745; margin-bottom: 20px;">
+        Vous avez tous les ingrédients nécessaires pour ces recettes !
+    </p>
+    
+    <div class="recettes-grid">
+        {% for item in recettes_realisables %}
+        {% set recette = item.recette %}
+        <div class="recette-card">
+            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link">
+                <div class="recette-image">
+                    {% if recette.image %}
+                    <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
+                         alt="{{ recette.nom }}"
+                         loading="lazy">
+                    {% else %}
+                    <div class="no-image">🍳</div>
+                    {% endif %}
+                    
+                    <!-- Badge type à GAUCHE -->
+                    {% if recette.type_recette %}
+                    <span class="recette-type-badge">{{ recette.type_recette }}</span>
+                    {% endif %}
+                    
+                    <!-- Badge "Réalisable" à DROITE -->
+                    <span class="badge-realisable">✓ Réalisable</span>
+                </div>
+                <div class="recette-info">
+                    <h4>{{ recette.nom }}</h4>
+                    <div class="recette-meta">
+                        <span class="recette-ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
+                        {% if recette.temps_preparation %}
+                        <span class="recette-temps">⏱️ {{ recette.temps_preparation }} min</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Barre de progression à 100% -->
+                    <div class="disponibilite-bar">
+                        <div class="disponibilite-progress" style="width: 100%; background: #28a745;"></div>
+                    </div>
+                    <p class="disponibilite-text" style="color: #28a745;">
+                        100% des ingrédients disponibles
+                    </p>
+                    
+                    {% set cout = recette.calculer_cout() %}
+                    {% if cout > 0 %}
+                    <p class="recette-cout">≈ {{ cout }}€</p>
+                    {% endif %}
+                </div>
+            </a>
+            <div class="recette-actions">
+                <form method="POST" 
+                      action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
+                      style="display: inline;">
+                    <button type="submit" 
+                            class="btn btn-small"
+                            style="background: #28a745; color: white;">
+                        📅 Planifier
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Recettes partiellement réalisables -->
+{% if recettes_partielles %}
+<div class="card">
+    <h3>📊 Recettes partiellement réalisables</h3>
+    <p style="color: #6c757d; margin-bottom: 20px;">
+        Triées par pourcentage d'ingrédients disponibles
+    </p>
+    
+    <div class="recettes-grid">
+        {% for item in recettes_partielles[:12] %}
+        {% set recette = item.recette %}
+        {% set dispo = item.disponibilite %}
+        <div class="recette-card">
+            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link">
+                <div class="recette-image">
+                    {% if recette.image %}
+                    <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
+                         alt="{{ recette.nom }}"
+                         loading="lazy">
+                    {% else %}
+                    <div class="no-image">🍳</div>
+                    {% endif %}
+                    
+                    {% if recette.type_recette %}
+                    <span class="recette-type-badge">{{ recette.type_recette }}</span>
+                    {% endif %}
+                </div>
+                <div class="recette-info">
+                    <h4>{{ recette.nom }}</h4>
+                    <div class="recette-meta">
+                        <span class="recette-ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
+                        {% if recette.temps_preparation %}
+                        <span class="recette-temps">⏱️ {{ recette.temps_preparation }} min</span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Barre de progression -->
+                    <div class="disponibilite-bar">
+                        <div class="disponibilite-progress" 
+                             style="width: {{ dispo.pourcentage }}%; 
+                                    background: {% if dispo.pourcentage >= 75 %}#ffc107{% elif dispo.pourcentage >= 50 %}#ff9800{% else %}#f44336{% endif %};">
+                        </div>
+                    </div>
+                    <p class="disponibilite-text" 
+                       style="color: {% if dispo.pourcentage >= 75 %}#ffc107{% elif dispo.pourcentage >= 50 %}#ff9800{% else %}#f44336{% endif %};">
+                        {{ dispo.pourcentage }}% des ingrédients disponibles
+                        <br>
+                        <small>{{ dispo.ingredients_manquants|length }} ingrédient(s) manquant(s)</small>
+                    </p>
+                    
+                    {% set cout = recette.calculer_cout() %}
+                    {% if cout > 0 %}
+                    <p class="recette-cout">≈ {{ cout }}€</p>
+                    {% endif %}
+                </div>
+            </a>
+            <div class="recette-actions">
+                <form method="POST" 
+                      action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
+                      style="display: inline;">
+                    <button type="submit" 
+                            class="btn btn-small"
+                            style="background: #667eea; color: white;">
+                        📅 Planifier
+                    </button>
+                </form>
+                <a href="{{ url_for('recettes.detail', id=recette.id) }}" 
+                   class="btn btn-small"
+                   style="background: #6c757d; color: white;">
+                    Voir détails
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% if recettes_partielles|length > 12 %}
+    <p style="margin-top: 20px; text-align: center; color: #6c757d;">
+        Et {{ recettes_partielles|length - 12 }} autre(s) recette(s)...
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Message si aucune recette -->
+{% if not recettes_realisables and not recettes_partielles %}
+<div class="card">
+    <p style="text-align: center; color: #6c757d; padding: 40px;">
+        Aucune recette trouvée. Ajoutez des ingrédients à votre frigo et créez des recettes !
+    </p>
+</div>
+{% endif %}
+
+<!-- Styles spécifiques -->
+<style>
+.badge-realisable {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #28a745;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    z-index: 10;
+}
+
+.disponibilite-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 10px 0 5px 0;
+}
+
+.disponibilite-progress {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.disponibilite-text {
+    font-size: 0.9em;
+    font-weight: 500;
+    margin: 5px 0;
+}
+
+.disponibilite-text small {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+</style>
+{% endblock %}
