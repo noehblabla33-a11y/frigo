@@ -361,3 +361,36 @@ def supprimer(id):
     db.session.commit()
     flash(f'Recette "{nom}" supprimée !', 'success')
     return redirect(url_for('recettes.liste'))
+
+
+@recettes_bp.route('/cuisiner-avec-frigo')
+def cuisiner_avec_frigo():
+    """
+    Affiche les recettes triées par pourcentage d'ingrédients disponibles
+    """
+    # Récupérer toutes les recettes
+    recettes = Recette.query.all()
+    
+    # Calculer la disponibilité pour chaque recette
+    recettes_avec_score = []
+    for recette in recettes:
+        disponibilite = recette.calculer_disponibilite_ingredients()
+        recettes_avec_score.append({
+            'recette': recette,
+            'disponibilite': disponibilite
+        })
+    
+    # Trier par pourcentage décroissant, puis par nombre d'ingrédients disponibles
+    recettes_avec_score.sort(
+        key=lambda x: (x['disponibilite']['pourcentage'], x['disponibilite']['score']),
+        reverse=True
+    )
+    
+    # Séparer les recettes réalisables immédiatement
+    recettes_realisables = [r for r in recettes_avec_score if r['disponibilite']['realisable']]
+    recettes_partielles = [r for r in recettes_avec_score if not r['disponibilite']['realisable']]
+    
+    return render_template('cuisiner_avec_frigo.html',
+                         recettes_realisables=recettes_realisables,
+                         recettes_partielles=recettes_partielles,
+                         nb_realisables=len(recettes_realisables))
