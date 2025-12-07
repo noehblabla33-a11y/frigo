@@ -81,17 +81,21 @@ def liste():
                 db.session.add(ing_recette)
             i += 1
         
-        # Ajouter les étapes
+        # Ajouter les étapes avec durée optionnelle
         j = 0
         while True:
-            etape_desc = request.form.get(f'etape_{j}')
+            etape_desc = request.form.get(f'etape_desc_{j}')
             if not etape_desc:
                 break
             if etape_desc.strip():
+                duree_str = request.form.get(f'etape_duree_{j}')
+                duree = int(duree_str) if duree_str and duree_str.strip() else None
+                
                 etape = EtapeRecette(
                     recette_id=recette.id,
                     numero=j + 1,
-                    description=etape_desc
+                    description=etape_desc,
+                    duree_minutes=duree
                 )
                 db.session.add(etape)
             j += 1
@@ -100,28 +104,36 @@ def liste():
         flash(f'Recette "{nom}" créée !', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
     
-    # Gestion des filtres et tri
-    type_filtre = request.args.get('type', 'all')
-    tri = request.args.get('tri', 'nom')
+    # Gestion des filtres (correspondant au template)
+    search_query = request.args.get('search', '')
+    type_filter = request.args.get('type', '')
+    ingredient_filter_str = request.args.get('ingredient', '')
+    ingredient_filter = int(ingredient_filter_str) if ingredient_filter_str else None
+    view_mode = request.args.get('view', 'grid')
     page = request.args.get('page', 1, type=int)
     
+    # Construire la requête
     query = Recette.query
     
-    # Appliquer le filtre de type
-    if type_filtre != 'all':
-        query = query.filter_by(type_recette=type_filtre)
+    # Filtre par recherche
+    if search_query:
+        query = query.filter(Recette.nom.ilike(f'%{search_query}%'))
     
-    # Appliquer le tri
-    if tri == 'nom':
-        query = query.order_by(Recette.nom)
-    elif tri == 'type':
-        query = query.order_by(Recette.type_recette, Recette.nom)
-    elif tri == 'temps':
-        query = query.order_by(Recette.temps_preparation.desc())
+    # Filtre par type
+    if type_filter:
+        query = query.filter(Recette.type_recette == type_filter)
     
-    # Paginer
-    pagination = paginate_query(query, page)
+    # Filtre par ingrédient
+    if ingredient_filter:
+        query = query.join(IngredientRecette).filter(IngredientRecette.ingredient_id == ingredient_filter)
     
+    # Trier par nom
+    query = query.order_by(Recette.nom)
+    
+    # Paginer les résultats
+    pagination = paginate_query(query, page, ITEMS_PER_PAGE)
+    
+    # Récupérer tous les ingrédients pour le filtre
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
     
     return render_template('recettes.html', 
@@ -129,8 +141,10 @@ def liste():
                          pagination=pagination,
                          ingredients=ingredients,
                          types_recettes=TYPES_RECETTES,
-                         type_filtre=type_filtre,
-                         tri=tri)
+                         search_query=search_query,
+                         type_filter=type_filter,
+                         ingredient_filter=ingredient_filter,
+                         view_mode=view_mode)
 
 @recettes_bp.route('/<int:id>')
 def detail(id):
