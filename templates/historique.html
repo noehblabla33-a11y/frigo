@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Historique{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/historique.css') }}">
+{% endblock %}
+
 {% block content %}
 <!-- Statistiques globales -->
 <div class="stats-grid">
@@ -24,10 +28,83 @@
     {% endif %}
 </div>
 
+<!-- Statistiques de coûts périodiques -->
+{% if stats.cout_moyen_semaine > 0 or stats.cout_moyen_mois > 0 %}
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+    {% if stats.cout_moyen_semaine > 0 %}
+    <div class="stat-card" style="background: linear-gradient(135deg, #20c997 0%, #17a589 100%);">
+        <div class="stat-number">{{ "%.2f"|format(stats.cout_moyen_semaine) }}€</div>
+        <div class="stat-label">Coût moyen/recette cette semaine</div>
+        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 10px;">
+            Total: {{ "%.2f"|format(stats.cout_total_semaine) }}€
+        </div>
+    </div>
+    {% endif %}
+    {% if stats.cout_moyen_mois > 0 %}
+    <div class="stat-card" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+        <div class="stat-number">{{ "%.2f"|format(stats.cout_moyen_mois) }}€</div>
+        <div class="stat-label">Coût moyen/recette ce mois</div>
+        <div style="font-size: 0.9em; opacity: 0.8; margin-top: 10px;">
+            Total: {{ "%.2f"|format(stats.cout_total_mois) }}€
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
 <!-- Graphique des recettes par mois -->
 <div class="card">
     <h3>📊 Recettes préparées par mois</h3>
     <canvas id="chartMois" style="max-height: 300px;"></canvas>
+</div>
+
+<!-- Graphiques de coûts moyens par période -->
+{% if couts_periodiques.semaines.labels|length > 0 or couts_periodiques.mois.labels|length > 0 %}
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin: 20px 0;">
+    {% if couts_periodiques.semaines.labels|length > 0 %}
+    <div class="card">
+        <h3>💰 Coût moyen par semaine</h3>
+        <canvas id="chartCoutsSemaines" style="max-height: 300px;"></canvas>
+        <p style="text-align: center; color: var(--text-secondary); margin-top: 10px; font-size: 0.9em;">
+            Évolution des coûts moyens par recette sur les dernières semaines
+        </p>
+    </div>
+    {% endif %}
+    
+    {% if couts_periodiques.mois.labels|length > 0 %}
+    <div class="card">
+        <h3>💰 Coût moyen par mois</h3>
+        <canvas id="chartCoutsMois" style="max-height: 300px;"></canvas>
+        <p style="text-align: center; color: var(--text-secondary); margin-top: 10px; font-size: 0.9em;">
+            Évolution des coûts moyens par recette sur les derniers mois
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Graphiques catégories et ingrédients -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin: 20px 0;">
+    <!-- Consommation par catégorie -->
+    {% if stats_categories.labels|length > 0 %}
+    <div class="card">
+        <h3>🏷️ Consommation par catégorie d'ingrédients</h3>
+        <canvas id="chartCategories" style="max-height: 350px;"></canvas>
+        {% if stats_categories.couts|sum > 0 %}
+        <p style="text-align: center; color: var(--text-secondary); margin-top: 10px; font-size: 0.9em;">
+            Coût total estimé: {{ "%.2f"|format(stats_categories.couts|sum) }}€
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Ingrédients les plus utilisés -->
+    {% if ingredients_populaires.labels|length > 0 %}
+    <div class="card">
+        <h3>🥕 Top 10 des ingrédients les plus utilisés</h3>
+        <canvas id="chartIngredients" style="max-height: 350px;"></canvas>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Top des recettes -->
@@ -94,7 +171,7 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="{{ url_for('static', filename='javascript/historique.js') }}"></script>
+<script src="{{ versioned_url_for('static', filename='javascript/historique.js') }}"></script>
 <script>
     // Initialiser les graphiques avec les données du template
     document.addEventListener('DOMContentLoaded', () => {
@@ -108,7 +185,33 @@
             data: {{ graphique_top.data|tojson }}
         };
         
-        initHistoriqueCharts(graphiqueMois, graphiqueTop);
+        const statsCategories = {
+            labels: {{ stats_categories.labels|tojson }},
+            counts: {{ stats_categories.counts|tojson }},
+            couts: {{ stats_categories.couts|tojson }}
+        };
+        
+        const coutsPeriodiques = {
+            semaines: {
+                labels: {{ couts_periodiques.semaines.labels|tojson }},
+                couts_moyens: {{ couts_periodiques.semaines.couts_moyens|tojson }},
+                couts_totaux: {{ couts_periodiques.semaines.couts_totaux|tojson }}
+            },
+            mois: {
+                labels: {{ couts_periodiques.mois.labels|tojson }},
+                couts_moyens: {{ couts_periodiques.mois.couts_moyens|tojson }},
+                couts_totaux: {{ couts_periodiques.mois.couts_totaux|tojson }}
+            }
+        };
+        
+        const ingredientsPopulaires = {
+            labels: {{ ingredients_populaires.labels|tojson }},
+            counts: {{ ingredients_populaires.counts|tojson }},
+            quantites: {{ ingredients_populaires.quantites|tojson }},
+            unites: {{ ingredients_populaires.unites|tojson }}
+        };
+        
+        initHistoriqueCharts(graphiqueMois, graphiqueTop, statsCategories, coutsPeriodiques, ingredientsPopulaires);
     });
 </script>
 {% endblock %}

@@ -1,0 +1,288 @@
+/* ========================================
+   STYLES POUR LA PAGE HISTORIQUE
+   Styles additionnels pour les statistiques
+   ======================================== */
+
+/* Amélioration des cartes de statistiques */
+.stat-card {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 30px;
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-primary);
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.stat-number {
+    font-size: 3em;
+    font-weight: bold;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-label {
+    font-size: 1.1em;
+    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+/* Grille responsive pour les statistiques */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-number {
+        font-size: 2.5em;
+    }
+}
+
+/* Top recettes - amélioration visuelle */
+.top-recettes {
+    margin-top: 20px;
+}
+
+.top-recette-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin: 10px 0;
+    background: var(--bg-white);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--border-radius);
+    transition: all var(--transition-normal);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.top-recette-item:hover {
+    transform: translateX(5px);
+    box-shadow: var(--shadow-md);
+    border-left-width: 6px;
+}
+
+.top-recette-item .rank {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: var(--primary);
+    min-width: 50px;
+    text-align: center;
+}
+
+.top-recette-item:nth-child(1) .rank { font-size: 2em; }
+.top-recette-item:nth-child(2) .rank { font-size: 1.8em; }
+.top-recette-item:nth-child(3) .rank { font-size: 1.6em; }
+
+.top-recette-item .recette-nom {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.05em;
+}
+
+.top-recette-item .recette-count {
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+}
+
+/* Historique détaillé */
+.historique-liste {
+    margin-top: 20px;
+}
+
+.historique-item {
+    display: flex;
+    gap: 20px;
+    padding: 15px;
+    margin: 10px 0;
+    background: var(--bg-white);
+    border-left: 3px solid var(--success);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: all var(--transition-normal);
+}
+
+.historique-item:hover {
+    box-shadow: var(--shadow-md);
+    background: #fafbfc;
+}
+
+.historique-date {
+    min-width: 150px;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    padding-top: 2px;
+    font-weight: 500;
+}
+
+.historique-recette {
+    flex: 1;
+}
+
+.historique-recette strong {
+    color: var(--text-primary);
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.historique-cout {
+    color: var(--primary);
+    font-weight: 600;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    margin-left: 10px;
+    display: inline-block;
+}
+
+.historique-ingredients {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Responsive pour historique */
+@media (max-width: 768px) {
+    .historique-item {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .historique-date {
+        min-width: auto;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 8px;
+    }
+}
+
+/* Amélioration des cartes */
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 25px;
+    transition: all var(--transition-normal);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.card h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+    font-size: 1.4em;
+    font-weight: 700;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+/* Animation de chargement pour les graphiques */
+canvas {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styles pour les tooltips Chart.js (si besoin de personnalisation) */
+.chartjs-tooltip {
+    opacity: 1;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 8px;
+    padding: 12px;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+    transition: all 0.2s ease;
+}
+
+/* Indicateur de période active */
+.periode-active {
+    background: linear-gradient(135deg, #20c997 0%, #17a589 100%);
+}
+
+.periode-mois {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+}
+
+/* Message d'aide/info */
+.info-message {
+    background: #e7f3ff;
+    border-left: 4px solid #2196F3;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: var(--border-radius);
+    color: #0d47a1;
+}
+
+.info-message p {
+    margin: 0;
+    font-size: 0.95em;
+}
+
+/* Message vide */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-state p {
+    font-size: 1.1em;
+    margin: 20px 0;
+}
+
+.empty-state::before {
+    content: '📊';
+    font-size: 4em;
+    display: block;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
