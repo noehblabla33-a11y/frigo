@@ -75,7 +75,7 @@ def liste():
             if ing_id and quantite > 0:
                 ing_recette = IngredientRecette(
                     recette_id=recette.id,
-                    ingredient_id=int(ing_id),
+                    ingredient_id=ing_id,
                     quantite=quantite
                 )
                 db.session.add(ing_recette)
@@ -84,120 +84,53 @@ def liste():
         # Ajouter les étapes
         j = 0
         while True:
-            etape_desc = request.form.get(f'etape_desc_{j}')
+            etape_desc = request.form.get(f'etape_{j}')
             if not etape_desc:
                 break
-            
-            duree = request.form.get(f'etape_duree_{j}')
-            duree_minutes = int(duree) if duree and duree.strip() else None
-            
             if etape_desc.strip():
                 etape = EtapeRecette(
                     recette_id=recette.id,
-                    ordre=j + 1,
-                    description=etape_desc.strip(),
-                    duree_minutes=duree_minutes
+                    numero=j + 1,
+                    description=etape_desc
                 )
                 db.session.add(etape)
             j += 1
         
         db.session.commit()
-        flash(f'Recette "{nom}" créée avec succès !', 'success')
+        flash(f'Recette "{nom}" créée !', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
     
-    # Gestion de la recherche et pagination
-    search_query = request.args.get('search', '')
-    type_filter = request.args.get('type', '')
-    ingredient_filter = request.args.get('ingredient', '')
-    view_mode = request.args.get('view', 'grid')
+    # Gestion des filtres et tri
+    type_filtre = request.args.get('type', 'all')
+    tri = request.args.get('tri', 'nom')
     page = request.args.get('page', 1, type=int)
     
     query = Recette.query
     
-    if search_query:
-        query = query.filter(Recette.nom.ilike(f'%{search_query}%'))
+    # Appliquer le filtre de type
+    if type_filtre != 'all':
+        query = query.filter_by(type_recette=type_filtre)
     
-    if type_filter:
-        query = query.filter(Recette.type_recette == type_filter)
+    # Appliquer le tri
+    if tri == 'nom':
+        query = query.order_by(Recette.nom)
+    elif tri == 'type':
+        query = query.order_by(Recette.type_recette, Recette.nom)
+    elif tri == 'temps':
+        query = query.order_by(Recette.temps_preparation.desc())
     
-    if ingredient_filter:
-        query = query.join(IngredientRecette).filter(
-            IngredientRecette.ingredient_id == ingredient_filter
-        )
-    
-    query = query.order_by(Recette.nom)
-    
-    # Paginer les résultats
-    pagination = paginate_query(query, page, ITEMS_PER_PAGE)
+    # Paginer
+    pagination = paginate_query(query, page)
     
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
-    
-    types_count = {}
-    for type_rec in TYPES_RECETTES:
-        count = Recette.query.filter_by(type_recette=type_rec).count()
-        if count > 0:
-            types_count[type_rec] = count
     
     return render_template('recettes.html', 
                          recettes=pagination['items'],
                          pagination=pagination,
                          ingredients=ingredients,
                          types_recettes=TYPES_RECETTES,
-                         types_count=types_count,
-                         search_query=search_query,
-                         type_filter=type_filter,
-                         ingredient_filter=ingredient_filter,
-                         view_mode=view_mode)
-
-@recettes_bp.route('/api/recettes')
-def api_recettes():
-    """API pour le lazy loading"""
-    page = request.args.get('page', 1, type=int)
-    search_query = request.args.get('search', '')
-    type_filter = request.args.get('type', '')
-    ingredient_filter = request.args.get('ingredient', '')
-    
-    query = Recette.query
-    
-    if search_query:
-        query = query.filter(Recette.nom.ilike(f'%{search_query}%'))
-    
-    if type_filter:
-        query = query.filter(Recette.type_recette == type_filter)
-    
-    if ingredient_filter:
-        query = query.join(IngredientRecette).filter(
-            IngredientRecette.ingredient_id == int(ingredient_filter)
-        )
-    
-    query = query.order_by(Recette.nom)
-    pagination = paginate_query(query, page, ITEMS_PER_PAGE)
-    
-    recettes_data = []
-    for recette in pagination['items']:
-        cout = recette.calculer_cout()
-        nutrition = recette.calculer_nutrition()
-        
-        recettes_data.append({
-            'id': recette.id,
-            'nom': recette.nom,
-            'type_recette': recette.type_recette,
-            'temps_preparation': recette.temps_preparation,
-            'image': recette.image,
-            'nb_ingredients': len(recette.ingredients),
-            'cout': cout,
-            'nutrition': nutrition
-        })
-    
-    return jsonify({
-        'recettes': recettes_data,
-        'pagination': {
-            'page': pagination['page'],
-            'pages': pagination['pages'],
-            'total': pagination['total'],
-            'has_next': pagination['has_next']
-        }
-    })
+                         type_filtre=type_filtre,
+                         tri=tri)
 
 @recettes_bp.route('/<int:id>')
 def detail(id):
@@ -251,8 +184,8 @@ def planifier_rapide(id):
     else:
         flash(f'✓ "{recette.nom}" planifiée ! Tous les ingrédients sont déjà en stock.', 'success')
     
-    # Retourner à la page précédente ou à la liste des recettes
-    return redirect(request.referrer or url_for('recettes.liste'))
+    # Rediriger vers la page "Cuisiner avec mon frigo"
+    return redirect(url_for('recettes.cuisiner_avec_frigo'))
 
 @recettes_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
 def modifier(id):
@@ -260,15 +193,14 @@ def modifier(id):
     
     if request.method == 'POST':
         recette.nom = request.form.get('nom')
+        recette.instructions = request.form.get('instructions')
         recette.type_recette = request.form.get('type_recette')
         temps_prep = request.form.get('temps_preparation')
         recette.temps_preparation = int(temps_prep) if temps_prep else None
         
-        # Image
         if 'image' in request.files:
             file = request.files['image']
             if file and file.filename != '' and allowed_file(file.filename):
-                # Supprimer l'ancienne image si elle existe
                 if recette.image:
                     try:
                         os.remove(os.path.join(current_app.root_path, recette.image))
@@ -280,36 +212,9 @@ def modifier(id):
                 file.save(os.path.join(current_app.root_path, filepath))
                 recette.image = filepath
         
-        # Supprimer les anciennes étapes
-        for etape in recette.etapes:
-            db.session.delete(etape)
+        # Mise à jour des ingrédients
+        IngredientRecette.query.filter_by(recette_id=id).delete()
         
-        # Ajouter les nouvelles étapes
-        j = 0
-        while True:
-            etape_desc = request.form.get(f'etape_desc_{j}')
-            if not etape_desc:
-                break
-            
-            duree = request.form.get(f'etape_duree_{j}')
-            duree_minutes = int(duree) if duree and duree.strip() else None
-            
-            if etape_desc.strip():
-                etape = EtapeRecette(
-                    recette_id=recette.id,
-                    ordre=j + 1,
-                    description=etape_desc.strip(),
-                    duree_minutes=duree_minutes
-                )
-                db.session.add(etape)
-            j += 1
-        
-        # NOUVEAU : Gérer les ingrédients
-        # Supprimer tous les anciens ingrédients
-        for ing_rec in recette.ingredients:
-            db.session.delete(ing_rec)
-        
-        # Ajouter les nouveaux ingrédients
         i = 0
         while True:
             ing_id = request.form.get(f'ingredient_{i}')
@@ -320,11 +225,28 @@ def modifier(id):
             if ing_id and quantite > 0:
                 ing_recette = IngredientRecette(
                     recette_id=recette.id,
-                    ingredient_id=int(ing_id),
+                    ingredient_id=ing_id,
                     quantite=quantite
                 )
                 db.session.add(ing_recette)
             i += 1
+        
+        # Mise à jour des étapes
+        EtapeRecette.query.filter_by(recette_id=id).delete()
+        
+        j = 0
+        while True:
+            etape_desc = request.form.get(f'etape_{j}')
+            if not etape_desc:
+                break
+            if etape_desc.strip():
+                etape = EtapeRecette(
+                    recette_id=recette.id,
+                    numero=j + 1,
+                    description=etape_desc
+                )
+                db.session.add(etape)
+            j += 1
         
         db.session.commit()
         flash(f'Recette "{recette.nom}" modifiée !', 'success')
@@ -367,6 +289,7 @@ def supprimer(id):
 def cuisiner_avec_frigo():
     """
     Affiche les recettes triées par pourcentage d'ingrédients disponibles
+    ET les recettes planifiées (non préparées)
     """
     # Récupérer toutes les recettes
     recettes = Recette.query.all()
@@ -390,7 +313,11 @@ def cuisiner_avec_frigo():
     recettes_realisables = [r for r in recettes_avec_score if r['disponibilite']['realisable']]
     recettes_partielles = [r for r in recettes_avec_score if not r['disponibilite']['realisable']]
     
+    # Récupérer les recettes planifiées (non préparées)
+    planifiees = RecettePlanifiee.query.filter_by(preparee=False).all()
+    
     return render_template('cuisiner_avec_frigo.html',
                          recettes_realisables=recettes_realisables,
                          recettes_partielles=recettes_partielles,
-                         nb_realisables=len(recettes_realisables))
+                         nb_realisables=len(recettes_realisables),
+                         planifiees=planifiees)

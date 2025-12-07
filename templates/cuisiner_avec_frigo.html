@@ -17,7 +17,87 @@
         <div class="stat-number">{{ recettes_partielles|length }}</div>
         <div class="stat-label">Recette(s) partiellement possible(s)</div>
     </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ planifiees|length }}</div>
+        <div class="stat-label">Recette(s) planifiée(s)</div>
+    </div>
 </div>
+
+<!-- Section des recettes planifiées -->
+{% if planifiees %}
+<div class="card">
+    <h3>📅 Mes recettes planifiées</h3>
+    <p style="color: #667eea; margin-bottom: 20px;">
+        Recettes que vous avez planifiées et qui attendent d'être préparées
+    </p>
+    
+    <div class="planifiees-container">
+        {% for plan in planifiees %}
+        <div class="recette-planifiee-card">
+            <div class="planifiee-image">
+                {% if plan.recette_ref.image %}
+                <img src="{{ url_for('static', filename=plan.recette_ref.image.replace('static/', '')) }}" 
+                     alt="{{ plan.recette_ref.nom }}"
+                     loading="lazy">
+                {% else %}
+                <div class="no-image-small">🍳</div>
+                {% endif %}
+            </div>
+            
+            <div class="planifiee-info">
+                <h4>
+                    <a href="{{ url_for('recettes.detail', id=plan.recette_ref.id) }}">
+                        {{ plan.recette_ref.nom }}
+                    </a>
+                </h4>
+                
+                <div class="planifiee-meta">
+                    {% if plan.recette_ref.type_recette %}
+                    <span class="meta-badge">{{ plan.recette_ref.type_recette }}</span>
+                    {% endif %}
+                    <span class="meta-ingredients">{{ plan.recette_ref.ingredients|length }} ingrédient(s)</span>
+                    {% if plan.recette_ref.temps_preparation %}
+                    <span class="meta-temps">⏱️ {{ plan.recette_ref.temps_preparation }} min</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Statut des ingrédients -->
+                <div class="ingredients-status">
+                    {% set disponibilite = plan.recette_ref.calculer_disponibilite_ingredients() %}
+                    {% if disponibilite.realisable %}
+                    <span class="status-ready">✓ Tous les ingrédients sont disponibles</span>
+                    {% else %}
+                    <span class="status-partial">
+                        ⚠️ {{ disponibilite.ingredients_manquants|length }} ingrédient(s) manquant(s)
+                    </span>
+                    <ul class="ingredients-manquants">
+                        {% for ing in disponibilite.ingredients_manquants[:3] %}
+                        <li>{{ ing.ingredient.nom }}: {{ ing.quantite_manquante }} {{ ing.ingredient.unite }}</li>
+                        {% endfor %}
+                        {% if disponibilite.ingredients_manquants|length > 3 %}
+                        <li>Et {{ disponibilite.ingredients_manquants|length - 3 }} autre(s)...</li>
+                        {% endif %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="planifiee-actions">
+                <a href="{{ url_for('planification.preparer', id=plan.id) }}" 
+                   class="btn btn-success btn-small">
+                    ✓ Marquer comme préparée
+                </a>
+                <a href="{{ url_for('planification.annuler', id=plan.id) }}" 
+                   class="btn btn-danger btn-small"
+                   onclick="return confirm('Annuler cette planification ?')">
+                    ✖ Annuler
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <!-- Recettes réalisables immédiatement -->
 {% if recettes_realisables %}
@@ -184,6 +264,7 @@
 
 <!-- Styles spécifiques -->
 <style>
+/* Badge "Réalisable" */
 .badge-realisable {
     position: absolute;
     top: 10px;
@@ -198,6 +279,7 @@
     z-index: 10;
 }
 
+/* Barres de disponibilité */
 .disponibilite-bar {
     width: 100%;
     height: 8px;
@@ -222,6 +304,133 @@
 .disponibilite-text small {
     font-size: 0.85em;
     opacity: 0.8;
+}
+
+/* Section des recettes planifiées */
+.planifiees-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.recette-planifiee-card {
+    display: flex;
+    gap: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+    align-items: center;
+}
+
+.planifiee-image {
+    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.planifiee-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-image-small {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 3em;
+}
+
+.planifiee-info {
+    flex: 1;
+}
+
+.planifiee-info h4 {
+    margin: 0 0 10px 0;
+}
+
+.planifiee-info h4 a {
+    color: #333;
+    text-decoration: none;
+}
+
+.planifiee-info h4 a:hover {
+    color: #667eea;
+}
+
+.planifiee-meta {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.meta-badge {
+    background: #667eea;
+    color: white;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+}
+
+.ingredients-status {
+    margin-top: 10px;
+}
+
+.status-ready {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.status-partial {
+    color: #ff9800;
+    font-weight: 600;
+}
+
+.ingredients-manquants {
+    margin: 8px 0 0 20px;
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
+.ingredients-manquants li {
+    margin: 3px 0;
+}
+
+.planifiee-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .recette-planifiee-card {
+        flex-direction: column;
+    }
+    
+    .planifiee-image {
+        width: 100%;
+        height: 200px;
+    }
+    
+    .planifiee-actions {
+        width: 100%;
+        flex-direction: row;
+    }
+    
+    .planifiee-actions .btn {
+        flex: 1;
+    }
 }
 </style>
 {% endblock %}
