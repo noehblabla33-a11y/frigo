@@ -116,7 +116,53 @@ class Recette(db.Model):
         
         # Arrondir les résultats
         return {k: round(v, 1) for k, v in nutrition.items()}
-    
+
+    def calculer_disponibilite_ingredients(self):
+        """
+        Calcule le pourcentage d'ingrédients disponibles dans le frigo
+        Retourne un dictionnaire avec les détails
+        """
+        if not self.ingredients:
+            return {
+                'pourcentage': 0,
+                'ingredients_disponibles': [],
+                'ingredients_manquants': [],
+                'realisable': False
+            }
+        
+        total_ingredients = len(self.ingredients)
+        disponibles = []
+        manquants = []
+        
+        for ing_rec in self.ingredients:
+            stock = StockFrigo.query.filter_by(ingredient_id=ing_rec.ingredient_id).first()
+            quantite_disponible = stock.quantite if stock else 0
+            
+            if quantite_disponible >= ing_rec.quantite:
+                disponibles.append({
+                    'ingredient': ing_rec.ingredient,
+                    'quantite_requise': ing_rec.quantite,
+                    'quantite_disponible': quantite_disponible
+                })
+            else:
+                manquants.append({
+                    'ingredient': ing_rec.ingredient,
+                    'quantite_requise': ing_rec.quantite,
+                    'quantite_disponible': quantite_disponible,
+                    'quantite_manquante': ing_rec.quantite - quantite_disponible
+                })
+        
+        pourcentage = (len(disponibles) / total_ingredients * 100) if total_ingredients > 0 else 0
+        realisable = len(manquants) == 0
+        
+        return {
+            'pourcentage': round(pourcentage, 1),
+            'ingredients_disponibles': disponibles,
+            'ingredients_manquants': manquants,
+            'realisable': realisable,
+            'score': len(disponibles)  # Pour le tri
+        }
+
     def __repr__(self):
         return f'<Recette {self.nom}>'
 
