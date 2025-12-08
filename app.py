@@ -13,6 +13,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = 'static/uploads'
     app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max
+    app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     
     # Créer le dossier uploads s'il n'existe pas
     os.makedirs(os.path.join(app.root_path, 'static/uploads'), exist_ok=True)
