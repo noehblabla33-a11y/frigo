@@ -194,15 +194,8 @@ def get_stock():
     """
     stocks = StockFrigo.query.all()
     
-    stock_list = []
-    for stock in stocks:
-        stock_list.append({
-            'ingredient_id': stock.ingredient_id,
-            'ingredient_nom': stock.ingredient.nom,
-            'quantite': stock.quantite,
-            'unite': stock.ingredient.unite,
-            'derniere_modif': stock.date_modification.isoformat()
-        })
+    # Sérialisation avec to_dict()
+    stock_list = [stock.to_dict() for stock in stocks]
     
     return jsonify({
         'success': True,
@@ -219,18 +212,8 @@ def get_ingredients():
     """
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
     
-    ingredients_list = []
-    for ing in ingredients:
-        ingredients_list.append({
-            'id': ing.id,
-            'nom': ing.nom,
-            'unite': ing.unite,
-            'prix_unitaire': ing.prix_unitaire,
-            'categorie': ing.categorie,
-            'image': ing.image,
-            'en_stock': ing.stock is not None and ing.stock.quantite > 0,
-            'quantite_stock': ing.stock.quantite if ing.stock else 0
-        })
+    # Sérialisation avec to_dict()
+    ingredients_list = [ing.to_dict(include_stock=True) for ing in ingredients]
     
     return jsonify({
         'success': True,

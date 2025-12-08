@@ -52,6 +52,49 @@ class Ingredient(db.Model):
             'sucres': round(self.sucres * factor, 1),
             'sel': round(self.sel * factor, 2)
         }
+
+    def to_dict(self, include_stock=False, include_nutrition=False):
+        """
+        Convertit l'ingrédient en dictionnaire pour JSON
+        
+        Args:
+            include_stock: Inclure les infos de stock du frigo
+            include_nutrition: Inclure les valeurs nutritionnelles
+        
+        Returns:
+            dict: Données de l'ingrédient au format JSON
+        """
+        data = {
+            'id': self.id,
+            'nom': self.nom,
+            'unite': self.unite,
+            'prix_unitaire': self.prix_unitaire,
+            'categorie': self.categorie,
+            'image': self.image,
+            'poids_piece': self.poids_piece
+        }
+        
+        # Inclure le stock si demandé
+        if include_stock:
+            data['stock'] = {
+                'en_stock': self.stock is not None and self.stock.quantite > 0,
+                'quantite': self.stock.quantite if self.stock else 0,
+                'date_modification': self.stock.date_modification.isoformat() if self.stock else None
+            }
+        
+        # Inclure les valeurs nutritionnelles si demandé
+        if include_nutrition:
+            data['nutrition'] = {
+                'calories': self.calories,
+                'proteines': self.proteines,
+                'glucides': self.glucides,
+                'lipides': self.lipides,
+                'fibres': self.fibres,
+                'sucres': self.sucres,
+                'sel': self.sel
+            }
+        
+        return data
     
     def __repr__(self):
         return f'<Ingredient {self.nom}>'
@@ -65,6 +108,32 @@ class StockFrigo(db.Model):
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, 
                                  onupdate=datetime.utcnow)
+
+    def to_dict(self, include_ingredient=False):
+        """
+        Convertit le stock en dictionnaire pour JSON
+        
+        Args:
+            include_ingredient: Inclure les détails de l'ingrédient
+        
+        Returns:
+            dict: Données du stock au format JSON
+        """
+        data = {
+            'id': self.id,
+            'ingredient_id': self.ingredient_id,
+            'ingredient_nom': self.ingredient.nom,
+            'ingredient_unite': self.ingredient.unite,
+            'quantite': self.quantite,
+            'date_ajout': self.date_ajout.isoformat(),
+            'date_modification': self.date_modification.isoformat()
+        }
+        
+        # Inclure les détails complets de l'ingrédient si demandé
+        if include_ingredient:
+            data['ingredient'] = self.ingredient.to_dict()
+        
+        return data
     
     def __repr__(self):
         return f'<StockFrigo {self.ingredient.nom}: {self.quantite}>'
@@ -163,6 +232,71 @@ class Recette(db.Model):
             'score': len(disponibles)  # Pour le tri
         }
 
+
+    def to_dict(self, include_ingredients=False, include_etapes=False, 
+                include_nutrition=False, include_cout=False, include_disponibilite=False):
+        """
+        Convertit la recette en dictionnaire pour JSON
+        
+        Args:
+            include_ingredients: Inclure la liste des ingrédients
+            include_etapes: Inclure les étapes de préparation
+            include_nutrition: Inclure les valeurs nutritionnelles
+            include_cout: Inclure le coût estimé
+            include_disponibilite: Inclure la disponibilité des ingrédients
+        
+        Returns:
+            dict: Données de la recette au format JSON
+        """
+        data = {
+            'id': self.id,
+            'nom': self.nom,
+            'instructions': self.instructions,
+            'image': self.image,
+            'type_recette': self.type_recette,
+            'temps_preparation': self.temps_preparation
+        }
+        
+        # Inclure les ingrédients si demandé
+        if include_ingredients:
+            data['ingredients'] = [
+                {
+                    'ingredient_id': ing_rec.ingredient_id,
+                    'ingredient_nom': ing_rec.ingredient.nom,
+                    'quantite': ing_rec.quantite,
+                    'unite': ing_rec.ingredient.unite,
+                    'prix_unitaire': ing_rec.ingredient.prix_unitaire
+                }
+                for ing_rec in self.ingredients
+            ]
+            data['nb_ingredients'] = len(self.ingredients)
+        
+        # Inclure les étapes si demandé
+        if include_etapes:
+            data['etapes'] = [
+                {
+                    'ordre': etape.ordre,
+                    'description': etape.description,
+                    'duree_minutes': etape.duree_minutes
+                }
+                for etape in self.etapes
+            ]
+            data['nb_etapes'] = len(self.etapes)
+        
+        # Inclure les valeurs nutritionnelles si demandé
+        if include_nutrition:
+            data['nutrition'] = self.calculer_nutrition()
+        
+        # Inclure le coût si demandé
+        if include_cout:
+            data['cout_estime'] = self.calculer_cout()
+        
+        # Inclure la disponibilité si demandé
+        if include_disponibilite:
+            data['disponibilite'] = self.calculer_disponibilite_ingredients()
+        
+        return data
+
     def __repr__(self):
         return f'<Recette {self.nom}>'
 
@@ -198,6 +332,36 @@ class RecettePlanifiee(db.Model):
     date_planification = db.Column(db.DateTime, default=datetime.utcnow)
     date_preparation = db.Column(db.DateTime, nullable=True)
     preparee = db.Column(db.Boolean, default=False)
+
+
+    def to_dict(self, include_recette=False):
+        """
+        Convertit la recette planifiée en dictionnaire pour JSON
+        
+        Args:
+            include_recette: Inclure les détails complets de la recette
+        
+        Returns:
+            dict: Données de la planification au format JSON
+        """
+        data = {
+            'id': self.id,
+            'recette_id': self.recette_id,
+            'recette_nom': self.recette_ref.nom,
+            'date_planification': self.date_planification.isoformat(),
+            'date_preparation': self.date_preparation.isoformat() if self.date_preparation else None,
+            'preparee': self.preparee
+        }
+        
+        # Inclure les détails de la recette si demandé
+        if include_recette:
+            data['recette'] = self.recette_ref.to_dict(
+                include_ingredients=True,
+                include_cout=True
+            )
+        
+        return data
+
     
     def __repr__(self):
         return f'<RecettePlanifiee {self.recette_id} - {self.date_planification}>'
@@ -211,6 +375,31 @@ class ListeCourses(db.Model):
     
     # Relations
     ingredient = db.relationship('Ingredient', backref='courses')
+
+    def to_dict(self, include_ingredient=False):
+        """
+        Convertit l'item de course en dictionnaire pour JSON
+        
+        Args:
+            include_ingredient: Inclure les détails de l'ingrédient
+        
+        Returns:
+            dict: Données de l'item au format JSON
+        """
+        data = {
+            'id': self.id,
+            'ingredient_id': self.ingredient_id,
+            'ingredient_nom': self.ingredient.nom,
+            'ingredient_unite': self.ingredient.unite,
+            'quantite': self.quantite,
+            'achete': self.achete
+        }
+        
+        # Inclure les détails complets de l'ingrédient si demandé
+        if include_ingredient:
+            data['ingredient'] = self.ingredient.to_dict()
+        
+        return data
     
     def __repr__(self):
         return f'<ListeCourses {self.ingredient_id}: {self.quantite}>'
