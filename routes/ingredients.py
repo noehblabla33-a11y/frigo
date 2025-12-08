@@ -2,28 +2,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from models.models import db, Ingredient
 from werkzeug.utils import secure_filename
 from utils.pagination import paginate_query
-from utils.files import allowed_file
+from utils.files import allowed_file, save_uploaded_file, delete_file
+from utils.database import db_transaction_with_flash, db_delete_with_check
+from constants import CATEGORIES, valider_categorie
 import os
 
 ingredients_bp = Blueprint('ingredients', __name__)
-
-# Catégories d'ingrédients
-CATEGORIES = [
-    ('Légumes', '🥬'),
-    ('Fruits', '🍎'),
-    ('Viandes', '🥩'),
-    ('Poissons', '🐟'),
-    ('Produits laitiers', '🥛'),
-    ('Féculents', '🍚'),
-    ('Épices et herbes', '🌿'),
-    ('Condiments', '🧂'),
-    ('Boissons', '🥤'),
-    ('Boulangerie', '🥖'),
-    ('Autres', '📦')
-]
-
-# Nombre d'éléments par page
-ITEMS_PER_PAGE = 24
 
 @ingredients_bp.route('/', methods=['GET', 'POST'])
 def liste():
@@ -32,6 +16,12 @@ def liste():
         unite = request.form.get('unite', 'g')
         prix_unitaire = float(request.form.get('prix_unitaire') or 0)
         categorie = request.form.get('categorie')
+
+        # Vérification de catégorie
+        if categorie and not valider_categorie(categorie):
+            flash(f'Catégorie invalide : {categorie}', 'danger')
+            return redirect(url_for('ingredients.liste'))
+        
         calories = float(request.form.get('calories') or 0)
         proteines = float(request.form.get('proteines') or 0)
         glucides = float(request.form.get('glucides') or 0)
@@ -42,38 +32,47 @@ def liste():
         poids_piece_str = request.form.get('poids_piece')
         poids_piece = float(poids_piece_str) if poids_piece_str else None
 
-        
         ingredient = Ingredient.query.filter_by(nom=nom).first()
         if ingredient:
             flash(f'L\'ingrédient "{nom}" existe déjà !', 'danger')
             return redirect(url_for('ingredients.liste'))
         
-        ingredient = Ingredient(
-            nom=nom, 
-            unite=unite, 
-            prix_unitaire=prix_unitaire,
-            categorie=categorie if categorie else None,
-            calories=calories,
-            proteines=proteines,
-            glucides=glucides,
-            lipides=lipides,
-            fibres=fibres,
-            sucres=sucres,
-            sel=sel,
-            poids_piece=poids_piece
-        )
+        try:
+            with db_transaction_with_flash(
+                success_message=f'Ingrédient "{nom}" ajouté au catalogue !',
+                error_message='Erreur lors de l\'ajout de l\'ingrédient'
+            ):
+                ingredient = Ingredient(
+                    nom=nom,
+                    unite=unite,
+                    prix_unitaire=prix_unitaire,
+                    categorie=categorie if categorie else None,
+                    calories=calories,
+                    proteines=proteines,
+                    glucides=glucides,
+                    lipides=lipides,
+                    fibres=fibres,
+                    sucres=sucres,
+                    sel=sel,
+                    poids_piece=poids_piece
+                )
+                
+                # Gérer l'upload de l'image
+                if 'image' in request.files:
+                    file = request.files['image']
+                    if file and file.filename != '' and allowed_file(file.filename):
+                        filename = secure_filename(f"ing_{nom}_{file.filename}")
+                        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                        file.save(os.path.join(current_app.root_path, filepath))
+                        ingredient.image = filepath
+                
+                db.session.add(ingredient)
+                # ✅ Le commit et le flash sont gérés automatiquement par le context manager
         
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(f"ing_{nom}_{file.filename}")
-                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(os.path.join(current_app.root_path, filepath))
-                ingredient.image = filepath
-        
-        db.session.add(ingredient)
-        db.session.commit()
-        flash(f'Ingrédient "{nom}" ajouté au catalogue !', 'success')
+        except Exception:
+            # ✅ Le rollback et le flash d'erreur sont automatiques
+            pass
+            
         return redirect(url_for('ingredients.liste'))
     
     # Gestion de la recherche et des filtres
@@ -82,6 +81,8 @@ def liste():
     stock_filter = request.args.get('stock', '')
     view_mode = request.args.get('view', 'grid')
     page = request.args.get('page', 1, type=int)
+
+    items_per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
     
     # Construire la requête
     query = Ingredient.query
@@ -130,7 +131,7 @@ def liste():
         }
     else:
         # Pagination normale
-        pagination = paginate_query(query, page, ITEMS_PER_PAGE)
+        pagination = paginate_query(query, page, items_per_page)
     
     # Compter les ingrédients par catégorie
     categories_count = {}
@@ -154,39 +155,48 @@ def modifier(id):
     ingredient = Ingredient.query.get_or_404(id)
     
     if request.method == 'POST':
-        ingredient.nom = request.form.get('nom')
-        ingredient.unite = request.form.get('unite')
-        ingredient.prix_unitaire = float(request.form.get('prix_unitaire') or 0)
-        ingredient.categorie = request.form.get('categorie')
-
-        # ✅ AJOUT : Récupération des valeurs nutritionnelles
-        ingredient.calories = float(request.form.get('calories') or 0)
-        ingredient.proteines = float(request.form.get('proteines') or 0)
-        ingredient.glucides = float(request.form.get('glucides') or 0)
-        ingredient.lipides = float(request.form.get('lipides') or 0)
-        ingredient.fibres = float(request.form.get('fibres') or 0)
-        ingredient.sucres = float(request.form.get('sucres') or 0)
-        ingredient.sel = float(request.form.get('sel') or 0)
-
-        poids_piece_str = request.form.get('poids_piece')
-        ingredient.poids_piece = float(poids_piece_str) if poids_piece_str else None
-        
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                if ingredient.image:
-                    try:
-                        os.remove(os.path.join(current_app.root_path, ingredient.image))
-                    except:
-                        pass
+        try:
+            with db_transaction_with_flash(success_message=f'Ingrédient "{ingredient.nom}" modifié !', error_message='Erreur lors de la modification'):
+                ingredient.nom = request.form.get('nom')
+                ingredient.unite = request.form.get('unite')
+                ingredient.prix_unitaire = float(request.form.get('prix_unitaire') or 0)
+                ingredient.categorie = request.form.get('categorie')
                 
-                filename = secure_filename(f"ing_{ingredient.nom}_{file.filename}")
-                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(os.path.join(current_app.root_path, filepath))
-                ingredient.image = filepath
+                # Valeurs nutritionnelles
+                ingredient.calories = float(request.form.get('calories') or 0)
+                ingredient.proteines = float(request.form.get('proteines') or 0)
+                ingredient.glucides = float(request.form.get('glucides') or 0)
+                ingredient.lipides = float(request.form.get('lipides') or 0)
+                ingredient.fibres = float(request.form.get('fibres') or 0)
+                ingredient.sucres = float(request.form.get('sucres') or 0)
+                ingredient.sel = float(request.form.get('sel') or 0)
+                
+                poids_piece_str = request.form.get('poids_piece')
+                ingredient.poids_piece = float(poids_piece_str) if poids_piece_str else None
+                
+                # Gérer l'upload de la nouvelle image
+                if 'image' in request.files:
+                    file = request.files['image']
+                    if file and file.filename != '' and allowed_file(file.filename):
+                        # Supprimer l'ancienne image
+                        if ingredient.image:
+                            try:
+                                os.remove(os.path.join(current_app.root_path, ingredient.image))
+                            except:
+                                pass
+                        
+                        # Sauvegarder la nouvelle image
+                        filename = secure_filename(f"ing_{ingredient.nom}_{file.filename}")
+                        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                        file.save(os.path.join(current_app.root_path, filepath))
+                        ingredient.image = filepath
+                
+                # ✅ Le commit est automatique
         
-        db.session.commit()
-        flash(f'Ingrédient "{ingredient.nom}" modifié !', 'success')
+        except Exception:
+            # ✅ Le rollback est automatique
+            pass
+            
         return redirect(url_for('ingredients.liste'))
     
     return render_template('ingredient_modifier.html', ingredient=ingredient, categories=CATEGORIES)
@@ -196,17 +206,26 @@ def supprimer(id):
     ingredient = Ingredient.query.get_or_404(id)
     nom = ingredient.nom
     
-    if ingredient.recettes:
-        flash(f'Impossible de supprimer "{nom}" car il est utilisé dans des recettes !', 'danger')
-        return redirect(url_for('ingredients.liste'))
+    try:
+        with db_delete_with_check(
+            ingredient,
+            check_relationships=['recettes'],  # Vérifier qu'il n'est pas utilisé dans des recettes
+            success_message=f'Ingrédient "{nom}" supprimé du catalogue !'
+        ):
+            if ingredient.image:
+                try:
+                    os.remove(os.path.join(current_app.root_path, ingredient.image))
+                except:
+                    pass
+            
+            # ✅ La suppression et le commit sont automatiques
     
-    if ingredient.image:
-        try:
-            os.remove(os.path.join(current_app.root_path, ingredient.image))
-        except:
-            pass
+    except ValueError as e:
+        # Erreur de vérification (ingrédient utilisé dans des recettes)
+        flash(str(e), 'danger')
     
-    db.session.delete(ingredient)
-    db.session.commit()
-    flash(f'Ingrédient "{nom}" supprimé du catalogue !', 'success')
+    except Exception as e:
+        # Autre erreur
+        flash(f'Erreur lors de la suppression : {str(e)}', 'danger')
+        
     return redirect(url_for('ingredients.liste'))

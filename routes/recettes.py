@@ -1,20 +1,12 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
-from utils.pagination import paginate_query
-from utils.files import allowed_file
-from werkzeug.utils import secure_filename
+from constants import TYPES_RECETTES, valider_type_recette  # Import depuis constants.py
+from utils.pagination import paginate_query  # Import depuis utils
+from utils.files import save_uploaded_file, delete_file  # Import depuis utils
 import os
 
 recettes_bp = Blueprint('recettes', __name__)
 
-TYPES_RECETTES = [
-    'Entrée', 'Plat principal', 'Accompagnement', 'Dessert', 'Petit-déjeuner',
-    'Salade', 'Soupe', 'Au four', 'À la poêle', 'À la casserole',
-    'Sans cuisson', 'Boisson', 'Autre'
-]
-
-# Nombre d'éléments par page
-ITEMS_PER_PAGE = 20
 
 @recettes_bp.route('/', methods=['GET', 'POST'])
 def liste():
@@ -24,6 +16,11 @@ def liste():
         type_recette = request.form.get('type_recette')
         temps_preparation = request.form.get('temps_preparation')
         
+        # Validation du type de recette avec fonction depuis constants.py
+        if type_recette and not valider_type_recette(type_recette):
+            flash(f'Type de recette invalide : {type_recette}', 'danger')
+            return redirect(url_for('recettes.liste'))
+        
         recette = Recette(
             nom=nom, 
             instructions=instructions,
@@ -31,12 +28,11 @@ def liste():
             temps_preparation=int(temps_preparation) if temps_preparation else None
         )
         
+        # Gestion du fichier avec fonction factorisée
         if 'image' in request.files:
             file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(f"rec_{nom}_{file.filename}")
-                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(os.path.join(current_app.root_path, filepath))
+            filepath = save_uploaded_file(file, prefix=f'rec_{nom}')
+            if filepath:
                 recette.image = filepath
         
         db.session.add(recette)
@@ -82,6 +78,10 @@ def liste():
         flash(f'Recette "{nom}" créée !', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
     
+    # ============================================
+    # AFFICHAGE DE LA LISTE
+    # ============================================
+    
     # Gestion des filtres (correspondant au template)
     search_query = request.args.get('search', '')
     type_filter = request.args.get('type', '')
@@ -89,6 +89,9 @@ def liste():
     ingredient_filter = int(ingredient_filter_str) if ingredient_filter_str else None
     view_mode = request.args.get('view', 'grid')
     page = request.args.get('page', 1, type=int)
+    
+    # Récupérer ITEMS_PER_PAGE depuis la config Flask
+    items_per_page = current_app.config.get('ITEMS_PER_PAGE_RECETTES', 20)
     
     # Construire la requête
     query = Recette.query
@@ -108,8 +111,8 @@ def liste():
     # Trier par nom
     query = query.order_by(Recette.nom)
     
-    # Paginer les résultats
-    pagination = paginate_query(query, page, ITEMS_PER_PAGE)
+    # ✅ Paginer les résultats avec fonction factorisée
+    pagination = paginate_query(query, page, items_per_page)
     
     # Récupérer tous les ingrédients pour le filtre
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
@@ -118,11 +121,12 @@ def liste():
                          recettes=pagination['items'],
                          pagination=pagination,
                          ingredients=ingredients,
-                         types_recettes=TYPES_RECETTES,
+                         types_recettes=TYPES_RECETTES,  # ✅ Depuis constants.py
                          search_query=search_query,
                          type_filter=type_filter,
                          ingredient_filter=ingredient_filter,
                          view_mode=view_mode)
+
 
 @recettes_bp.route('/<int:id>')
 def detail(id):
@@ -130,7 +134,11 @@ def detail(id):
     cout_estime = recette.calculer_cout()
     nutrition = recette.calculer_nutrition()
     
-    return render_template('recette_detail.html', recette=recette, cout_estime=cout_estime, nutrition=nutrition)
+    return render_template('recette_detail.html', 
+                         recette=recette, 
+                         cout_estime=cout_estime, 
+                         nutrition=nutrition)
+
 
 @recettes_bp.route('/planifier-rapide/<int:id>', methods=['POST'])
 def planifier_rapide(id):
@@ -179,6 +187,7 @@ def planifier_rapide(id):
     # Rediriger vers la page "Cuisiner avec mon frigo"
     return redirect(url_for('recettes.cuisiner_avec_frigo'))
 
+
 @recettes_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
 def modifier(id):
     recette = Recette.query.get_or_404(id)
@@ -190,19 +199,18 @@ def modifier(id):
         temps_prep = request.form.get('temps_preparation')
         recette.temps_preparation = int(temps_prep) if temps_prep else None
         
+        # Gestion de l'image avec fonctions factorisées
         if 'image' in request.files:
             file = request.files['image']
-            if file and file.filename != '' and allowed_file(file.filename):
+            if file and file.filename:
+                # Supprimer l'ancienne image
                 if recette.image:
-                    try:
-                        os.remove(os.path.join(current_app.root_path, recette.image))
-                    except:
-                        pass
+                    delete_file(recette.image)
                 
-                filename = secure_filename(f"rec_{recette.nom}_{file.filename}")
-                filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                file.save(os.path.join(current_app.root_path, filepath))
-                recette.image = filepath
+                # Sauvegarder la nouvelle
+                filepath = save_uploaded_file(file, prefix=f'rec_{recette.nom}')
+                if filepath:
+                    recette.image = filepath
         
         # Mise à jour des ingrédients
         IngredientRecette.query.filter_by(recette_id=id).delete()
@@ -248,7 +256,8 @@ def modifier(id):
     return render_template('recette_modifier.html', 
                          recette=recette, 
                          ingredients=ingredients,
-                         types_recettes=TYPES_RECETTES)
+                         types_recettes=TYPES_RECETTES)  # ✅ Depuis constants.py
+
 
 @recettes_bp.route('/supprimer/<int:id>')
 def supprimer(id):
@@ -265,11 +274,9 @@ def supprimer(id):
         for plan in planifications:
             db.session.delete(plan)
     
+    # ✅ Supprimer l'image avec fonction factorisée
     if recette.image:
-        try:
-            os.remove(os.path.join(current_app.root_path, recette.image))
-        except:
-            pass
+        delete_file(recette.image)
     
     db.session.delete(recette)
     db.session.commit()

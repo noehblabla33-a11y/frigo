@@ -102,7 +102,7 @@
                 <label>Unité de mesure</label>
                 <select name="unite">
                     <option value="g">grammes (g)</option>
-                    <option value="ml">millilitres (ml)</option>
+                    <option value="cl">centilitres (cl)</option>
                     <option value="pièce">pièce(s)</option>
                 </select>
             </div>
@@ -169,7 +169,7 @@
                     <tr>
                         <td class="item-img-cell">
                             {% if ing.image %}
-                            <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" 
+                            <img src="{{ url_for('static', filename=ingredient.image) }}" 
                                  alt="{{ ing.nom }}" 
                                  class="item-thumbnail"
                                  loading="lazy">
