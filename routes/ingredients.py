@@ -64,7 +64,7 @@ def liste():
                         filename = secure_filename(f"ing_{nom}_{file.filename}")
                         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
                         file.save(os.path.join(current_app.root_path, filepath))
-                        ingredient.image = filepath
+                        ingredient.image = f'uploads/{filename}'
                 
                 db.session.add(ingredient)
                 # ✅ Le commit et le flash sont gérés automatiquement par le context manager

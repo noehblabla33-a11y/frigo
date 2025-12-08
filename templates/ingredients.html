@@ -5,6 +5,8 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/collapsable.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/ingredients.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/view-toggle-improved.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -169,10 +171,10 @@
                     <tr>
                         <td class="item-img-cell">
                             {% if ing.image %}
-                            <img src="{{ url_for('static', filename=ingredient.image) }}" 
-                                 alt="{{ ing.nom }}" 
-                                 class="item-thumbnail"
-                                 loading="lazy">
+                            <img src="{{ url_for('static', filename=ing.image) }}" 
+                                alt="{{ ing.nom }}" 
+                                class="item-thumbnail"
+                                loading="lazy">
                             {% else %}
                             <div class="item-thumbnail-placeholder">📦</div>
                             {% endif %}

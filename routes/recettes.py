@@ -33,7 +33,7 @@ def liste():
             file = request.files['image']
             filepath = save_uploaded_file(file, prefix=f'rec_{nom}')
             if filepath:
-                recette.image = filepath
+                recette.image = f'uploads/{filename}'
         
         db.session.add(recette)
         db.session.commit()
