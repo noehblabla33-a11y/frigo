@@ -44,7 +44,10 @@ def liste():
             ing_id = request.form.get(f'ingredient_{i}')
             if not ing_id:
                 break
-            quantite = float(request.form.get(f'quantite_{i}', 0))
+            
+            # Gérer la conversion avec chaîne vide
+            quantite_str = request.form.get(f'quantite_{i}', '').strip()
+            quantite = float(quantite_str) if quantite_str else 0.0
             
             if ing_id and quantite > 0:
                 ing_recette = IngredientRecette(
@@ -220,7 +223,10 @@ def modifier(id):
             ing_id = request.form.get(f'ingredient_{i}')
             if not ing_id:
                 break
-            quantite = float(request.form.get(f'quantite_{i}', 0))
+            
+            # Gérer la conversion avec chaîne vide
+            quantite_str = request.form.get(f'quantite_{i}', '').strip()
+            quantite = float(quantite_str) if quantite_str else 0.0
             
             if ing_id and quantite > 0:
                 ing_recette = IngredientRecette(
