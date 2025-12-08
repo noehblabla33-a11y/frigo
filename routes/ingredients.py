@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from models.models import db, Ingredient
 from werkzeug.utils import secure_filename
+from utils.pagination import paginate_query
 import os
 
 ingredients_bp = Blueprint('ingredients', __name__)
@@ -26,26 +27,6 @@ ITEMS_PER_PAGE = 24
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def paginate_query(query, page, per_page=ITEMS_PER_PAGE):
-    """Helper de pagination"""
-    page = max(1, page)
-    total = query.count()
-    pages = (total + per_page - 1) // per_page if total > 0 else 1
-    page = min(page, pages)
-    items = query.limit(per_page).offset((page - 1) * per_page).all()
-    
-    return {
-        'items': items,
-        'total': total,
-        'page': page,
-        'pages': pages,
-        'per_page': per_page,
-        'has_prev': page > 1,
-        'has_next': page < pages,
-        'prev_page': page - 1 if page > 1 else None,
-        'next_page': page + 1 if page < pages else None
-    }
 
 @ingredients_bp.route('/', methods=['GET', 'POST'])
 def liste():

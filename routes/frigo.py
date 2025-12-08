@@ -1,30 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models.models import db, Ingredient, StockFrigo
+from utils.pagination import paginate_query
 
 frigo_bp = Blueprint('frigo', __name__)
 
 # Nombre d'éléments par page
 ITEMS_PER_PAGE = 24
-
-def paginate_query(query, page, per_page=ITEMS_PER_PAGE):
-    """Helper de pagination"""
-    page = max(1, page)
-    total = query.count()
-    pages = (total + per_page - 1) // per_page if total > 0 else 1
-    page = min(page, pages)
-    items = query.limit(per_page).offset((page - 1) * per_page).all()
-    
-    return {
-        'items': items,
-        'total': total,
-        'page': page,
-        'pages': pages,
-        'per_page': per_page,
-        'has_prev': page > 1,
-        'has_next': page < pages,
-        'prev_page': page - 1 if page > 1 else None,
-        'next_page': page + 1 if page < pages else None
-    }
 
 @frigo_bp.route('/', methods=['GET', 'POST'])
 def liste():
