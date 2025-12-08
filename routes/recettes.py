@@ -67,7 +67,7 @@ def liste():
                 
                 etape = EtapeRecette(
                     recette_id=recette.id,
-                    numero=j + 1,
+                    ordre=j + 1,
                     description=etape_desc,
                     duree_minutes=duree
                 )
@@ -242,7 +242,7 @@ def modifier(id):
             if etape_desc.strip():
                 etape = EtapeRecette(
                     recette_id=recette.id,
-                    numero=j + 1,
+                    ordre=j + 1,
                     description=etape_desc
                 )
                 db.session.add(etape)
