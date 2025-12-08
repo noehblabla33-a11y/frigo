@@ -5,6 +5,7 @@ API REST pour l'application Android
 from flask import Blueprint, jsonify, request
 from models.models import db, ListeCourses, StockFrigo, Ingredient
 from functools import wraps
+from sqlalchemy.orm import joinedload
 import hashlib
 import secrets
 
@@ -34,7 +35,8 @@ def health():
 @require_api_key
 def get_courses():
     try:
-        items = ListeCourses.query.filter_by(achete=False).all()
+        """items = ListeCourses.query.filter_by(achete=False).all()"""
+        items = ListeCourses.query.options(joinedload(ListeCourses.ingredient)).filter_by(achete=False).all()
         
         courses_list = []
         total_estime = 0
