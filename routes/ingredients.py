@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from models.models import db, Ingredient
 from werkzeug.utils import secure_filename
 from utils.pagination import paginate_query
+from utils.files import allowed_file
 import os
 
 ingredients_bp = Blueprint('ingredients', __name__)
@@ -23,10 +24,6 @@ CATEGORIES = [
 
 # Nombre d'éléments par page
 ITEMS_PER_PAGE = 24
-
-def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @ingredients_bp.route('/', methods=['GET', 'POST'])
 def liste():

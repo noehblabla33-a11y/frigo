@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
 from utils.pagination import paginate_query
+from utils.files import allowed_file
 from werkzeug.utils import secure_filename
 import os
 
@@ -14,10 +15,6 @@ TYPES_RECETTES = [
 
 # Nombre d'éléments par page
 ITEMS_PER_PAGE = 20
-
-def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @recettes_bp.route('/', methods=['GET', 'POST'])
 def liste():
