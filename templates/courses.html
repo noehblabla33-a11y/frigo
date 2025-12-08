@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Liste de courses{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style/courses.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <h3>🛒 Ma liste de courses</h3>
@@ -46,7 +50,7 @@
             {% else %}
             <div class="budget-no-price">
                 <p>💡 Aucun prix renseigné pour les ingrédients.</p>
-                <p style="font-size: 0.9em; color: #6c757d;">
+                <p style="font-size: 0.9em; color: rgba(255, 255, 255, 0.9);">
                     <a href="{{ url_for('ingredients.liste') }}">Ajoutez les prix</a> 
                     dans le catalogue pour voir le budget estimé.
                 </p>
@@ -55,78 +59,106 @@
         </div>
     </div>
     
+    <!-- Formulaire de validation des achats -->
     <form method="POST">
-        <table>
-            <thead>
-                <tr>
-                    <th>Acheté</th>
-                    <th>Ingrédient</th>
-                    <th>Quantité nécessaire</th>
-                    <th>Quantité achetée</th>
-                    <th>Unité</th>
-                    <th>Prix estimé</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in items %}
-                <tr>
-                    <td><input type="checkbox" name="achete_{{ item.id }}" checked></td>
-                    <td>{{ item.ingredient.nom }}</td>
-                    <td>{{ item.quantite }}</td>
-                    <td>
-                        <input type="number" step="0.01" 
-                               name="quantite_{{ item.id }}" 
-                               value="{{ item.quantite }}" 
-                               style="width: 100px;"
-                               class="quantite-input"
-                               data-prix="{{ item.ingredient.prix_unitaire }}"
-                               data-item-id="{{ item.id }}">
-                    </td>
-                    <td>{{ item.ingredient.unite }}</td>
-                    <td class="prix-ligne" id="prix-{{ item.id }}">
-                        {% if item.ingredient.prix_unitaire > 0 %}
-                        <span class="prix-estime">
-                            {{ "%.2f"|format(item.quantite * item.ingredient.prix_unitaire) }} €
-                        </span>
-                        {% else %}
-                        <span class="prix-inconnu">-</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ url_for('courses.retirer', id=item.id) }}" 
-                           class="btn btn-danger btn-small"
-                           onclick="return confirm('Retirer {{ item.ingredient.nom }} de la liste de courses ?')">
-                            ✖ Retirer
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <td colspan="5" style="text-align: right; font-weight: bold;">Total estimé :</td>
-                    <td colspan="2" id="total-footer" style="font-weight: bold; color: #28a745; font-size: 1.1em;">
-                        {% if total_estime > 0 %}
-                        {{ "%.2f"|format(total_estime) }} €
-                        {% else %}
-                        -
-                        {% endif %}
-                    </td>
-                </tr>
-            </tfoot>
-        </table>
-        <button type="submit" class="btn btn-success">Valider mes achats</button>
+        <div class="courses-table-container">
+            <table class="courses-table">
+                <thead>
+                    <tr>
+                        <th>Acheté</th>
+                        <th>Ingrédient</th>
+                        <th>Quantité nécessaire</th>
+                        <th>Quantité achetée</th>
+                        <th>Unité</th>
+                        <th>Prix estimé</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" 
+                                   name="achete_{{ item.id }}" 
+                                   class="courses-checkbox" 
+                                   checked>
+                        </td>
+                        <td class="ingredient-name-cell">{{ item.ingredient.nom }}</td>
+                        <td>{{ item.quantite }}</td>
+                        <td>
+                            <input type="number" 
+                                   step="0.01" 
+                                   name="quantite_{{ item.id }}" 
+                                   value="{{ item.quantite }}" 
+                                   class="quantite-input"
+                                   data-prix="{{ item.ingredient.prix_unitaire }}"
+                                   data-item-id="{{ item.id }}">
+                        </td>
+                        <td>{{ item.ingredient.unite }}</td>
+                        <td class="prix-ligne" id="prix-{{ item.id }}">
+                            {% if item.ingredient.prix_unitaire > 0 %}
+                            <span class="prix-estime">
+                                {{ "%.2f"|format(item.quantite * item.ingredient.prix_unitaire) }} €
+                            </span>
+                            {% else %}
+                            <span class="prix-inconnu">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions-cell">
+                            <a href="{{ url_for('courses.retirer', id=item.id) }}" 
+                               class="btn btn-danger btn-small"
+                               onclick="return confirm('Retirer {{ item.ingredient.nom }} de la liste de courses ?')">
+                                ✖ Retirer
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="5" style="text-align: right; font-weight: bold;">
+                            Total estimé :
+                        </td>
+                        <td colspan="2" id="total-footer">
+                            {% if total_estime > 0 %}
+                            {{ "%.2f"|format(total_estime) }} €
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <button type="submit" class="btn-valider-achats">
+            ✓ Valider mes achats
+        </button>
     </form>
+    
     {% else %}
-    <p>Votre liste de courses est vide ! Planifiez des recettes pour la générer automatiquement.</p>
+    
+    <!-- Message si liste vide -->
+    <div class="empty-courses">
+        <div class="empty-courses-icon">🛒</div>
+        <p>Votre liste de courses est vide !</p>
+        <p style="color: #6c757d; font-size: 0.95em;">
+            Planifiez des recettes pour la générer automatiquement.
+        </p>
+        <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" 
+           class="btn" 
+           style="margin-top: 15px;">
+            🥘 Voir les recettes disponibles
+        </a>
+    </div>
+    
     {% endif %}
 </div>
 
+<!-- Historique des achats -->
 <div class="card">
-    <h3>Historique des achats</h3>
+    <h3>📜 Historique des achats</h3>
     {% if historique %}
-    <table>
+    <table class="historique-table">
         <thead>
             <tr>
                 <th>Ingrédient</th>
@@ -143,7 +175,7 @@
                     {% if item.ingredient.prix_unitaire > 0 %}
                     {{ "%.2f"|format(item.quantite * item.ingredient.prix_unitaire) }} €
                     {% else %}
-                    -
+                    <span class="prix-inconnu">-</span>
                     {% endif %}
                 </td>
             </tr>
@@ -151,7 +183,10 @@
         </tbody>
     </table>
     {% else %}
-    <p>Aucun achat enregistré.</p>
+    <div class="empty-courses">
+        <div class="empty-courses-icon">📝</div>
+        <p>Aucun achat enregistré pour le moment.</p>
+    </div>
     {% endif %}
 </div>
 {% endblock %}
