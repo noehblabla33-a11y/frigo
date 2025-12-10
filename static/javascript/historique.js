@@ -1,5 +1,5 @@
 // ============================================
-// Fichier: static/javascript/historique.js
+// Fichier: static/javascript/historique.js (CORRIGÉ)
 // Graphiques et statistiques de l'historique
 // ============================================
 
@@ -138,6 +138,7 @@ function initChartTop(data) {
 
 /**
  * Graphique consommation par catégorie (doughnut)
+ * CORRIGÉ : Utilisation de closure pour accéder aux données
  */
 function initChartCategories(data) {
     const ctx = document.getElementById('chartCategories');
@@ -172,18 +173,18 @@ function initChartCategories(data) {
                         padding: 15,
                         font: { size: 12 },
                         generateLabels: function(chart) {
-                            const data = chart.data;
-                            if (data.labels.length && data.datasets.length) {
-                                return data.labels.map((label, i) => {
-                                    const count = data.datasets[0].data[i];
-                                    const cout = statsCategories.couts[i];
+                            const chartData = chart.data;
+                            if (chartData.labels.length && chartData.datasets.length) {
+                                return chartData.labels.map((label, i) => {
+                                    const count = chartData.datasets[0].data[i];
+                                    const cout = data.couts[i];  // ✅ Utilise 'data' au lieu de 'statsCategories'
                                     let text = `${label} (${count})`;
                                     if (cout > 0) {
                                         text += ` - ${cout.toFixed(2)}€`;
                                     }
                                     return {
                                         text: text,
-                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        fillStyle: chartData.datasets[0].backgroundColor[i],
                                         hidden: false,
                                         index: i
                                     };
@@ -201,7 +202,7 @@ function initChartCategories(data) {
                         label: function(context) {
                             const label = context.label || '';
                             const value = context.parsed || 0;
-                            const cout = data.couts[context.dataIndex] || 0;
+                            const cout = data.couts[context.dataIndex] || 0;  // ✅ Utilise 'data'
                             let result = `${label}: ${value} utilisations`;
                             if (cout > 0) {
                                 result += ` (${cout.toFixed(2)}€)`;
