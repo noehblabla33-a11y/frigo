@@ -102,17 +102,45 @@
             
             <div class="form-group">
                 <label>Unité de mesure</label>
-                <select name="unite">
+                <select name="unite" id="unite-select">
                     <option value="g">grammes (g)</option>
-                    <option value="cl">centilitres (cl)</option>
+                    <option value="ml">millilitres (ml)</option>
                     <option value="pièce">pièce(s)</option>
                 </select>
             </div>
-            
+
+            <div class="form-group">
+                <label>Poids moyen d'une pièce (g) - Optionnel</label>
+                <input type="number" 
+                    step="1" 
+                    name="poids_piece" 
+                    id="poids-piece-input"
+                    placeholder="Ex: 200 pour un avocat, 60 pour un œuf">
+                <small style="color: #6c757d;">
+                    Pour les ingrédients qui se comptent en pièces (avocat, œuf, etc.)
+                </small>
+            </div>
+
+            <!--
             <div class="form-group">
                 <label>Prix unitaire (€)</label>
                 <input type="number" step="0.01" name="prix_unitaire" placeholder="Prix par unité (optionnel)">
                 <small style="color: #6c757d;">Ex: 2.50 pour 2.50€/kg ou 2.50€/L</small>
+            </div>
+            -->
+
+            <div class="form-group">
+                <label>Prix unitaire 
+                    <span id="prix-label-detail">(€)</span>
+                </label>
+                <input type="number" 
+                    step="0.001" 
+                    name="prix_unitaire" 
+                    id="prix-unitaire-input"
+                    placeholder="Prix (optionnel)">
+                
+                <!-- Helper dynamique -->
+                <div id="prix-helper"></div>
             </div>
             
             <div class="form-group">
@@ -285,4 +313,5 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='javascript/collapsable.js') }}"></script>
+<script src="{{ url_for('static', filename='javascript/price-helper.js') }}"></script>
 {% endblock %}

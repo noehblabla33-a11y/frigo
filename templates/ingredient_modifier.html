@@ -23,14 +23,15 @@
         </div>
         
         <div class="form-group">
-            <label>Unité de mesure</label>
-            <select name="unite">
-                <option value="g" {% if ingredient.unite == 'g' %}selected{% endif %}>grammes (g)</option>
-                <option value="ml" {% if ingredient.unite == 'ml' %}selected{% endif %}>millilitres (ml)</option>
-                <option value="pièce" {% if ingredient.unite == 'pièce' %}selected{% endif %}>pièce(s)</option>
-            </select>
-        </div>
+        <label>Unité de mesure</label>
+        <select name="unite" id="unite-select">
+            <option value="g" {% if ingredient.unite == 'g' %}selected{% endif %}>grammes (g)</option>
+            <option value="ml" {% if ingredient.unite == 'ml' %}selected{% endif %}>millilitres (ml)</option>
+            <option value="pièce" {% if ingredient.unite == 'pièce' %}selected{% endif %}>pièce(s)</option>
+        </select>
+    </div>
         
+        <!--
         <div class="form-group">
             <label>Prix unitaire (€)</label>
             <input type="number" step="0.001" name="prix_unitaire" 
@@ -50,6 +51,22 @@
                 💡 Équivaut à {{ (ingredient.prix_unitaire * 1000)|round(2) }}€/kg
             </small>
             {% endif %}
+        </div>
+        -->
+
+        <div class="form-group">
+            <label>Prix unitaire 
+                <span id="prix-label-detail">(€)</span>
+            </label>
+            <input type="number" 
+                step="0.001" 
+                name="prix_unitaire" 
+                id="prix-unitaire-input"
+                value="{{ ingredient.prix_unitaire if ingredient.prix_unitaire else '' }}" 
+                placeholder="Prix">
+            
+            <!-- Helper dynamique -->
+            <div id="prix-helper"></div>
         </div>
 
         <div class="form-group">
@@ -112,7 +129,10 @@
             </p>
             
             <label>Poids moyen d'une pièce (g)</label>
-            <input type="number" step="1" name="poids_piece" 
+            <input type="number" 
+                step="1" 
+                name="poids_piece" 
+                id="poids-piece-input"
                 value="{{ ingredient.poids_piece if ingredient.poids_piece else '' }}" 
                 placeholder="Ex: 200 pour un avocat, 60 pour un œuf">
             <small style="color: #6c757d;">
@@ -189,4 +209,8 @@
     </p>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='javascript/price-helper.js') }}"></script>
 {% endblock %}
