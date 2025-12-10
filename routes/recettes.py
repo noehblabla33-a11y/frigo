@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
-from constants import TYPES_RECETTES, valider_type_recette  # Import depuis constants.py
-from utils.pagination import paginate_query  # Import depuis utils
-from utils.files import save_uploaded_file, delete_file  # Import depuis utils
+from constants import TYPES_RECETTES, valider_type_recette
+from utils.pagination import paginate_query
+from utils.files import save_uploaded_file, delete_file
+from utils.courses import ajouter_ingredients_manquants_courses
 import os
 
 recettes_bp = Blueprint('recettes', __name__)
@@ -152,32 +153,8 @@ def planifier_rapide(id):
     planifiee = RecettePlanifiee(recette_id=recette.id)
     db.session.add(planifiee)
     
-    # Ajouter les ingrédients manquants à la liste de courses
-    ingredients_recette = IngredientRecette.query.filter_by(recette_id=recette.id).all()
-    ingredients_ajoutes = 0
-    
-    for ing_rec in ingredients_recette:
-        stock = StockFrigo.query.filter_by(ingredient_id=ing_rec.ingredient_id).first()
-        quantite_disponible = stock.quantite if stock else 0
-        
-        if quantite_disponible < ing_rec.quantite:
-            manquant = ing_rec.quantite - quantite_disponible
-            
-            item = ListeCourses.query.filter_by(
-                ingredient_id=ing_rec.ingredient_id, 
-                achete=False
-            ).first()
-            
-            if item:
-                item.quantite += manquant
-            else:
-                item = ListeCourses(
-                    ingredient_id=ing_rec.ingredient_id, 
-                    quantite=manquant
-                )
-                db.session.add(item)
-            
-            ingredients_ajoutes += 1
+    # Ajouter les ingrédients manquants à la liste de courses (fonction factorisée)
+    ingredients_ajoutes = ajouter_ingredients_manquants_courses(recette.id)
     
     db.session.commit()
     
@@ -187,8 +164,8 @@ def planifier_rapide(id):
     else:
         flash(f'✓ "{recette.nom}" planifiée ! Tous les ingrédients sont déjà en stock.', 'success')
     
-    # Rediriger vers la page "Cuisiner avec mon frigo"
-    return redirect(url_for('recettes.cuisiner_avec_frigo'))
+    return redirect(url_for('recettes.detail', id=recette.id))
+
 
 
 @recettes_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])

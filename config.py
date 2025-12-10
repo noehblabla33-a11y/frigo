@@ -12,7 +12,7 @@ class Config:
     # ============================================
     # SÉCURITÉ
     # ============================================
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'votre-clef-secrete-a-changer'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'ma_clef'
     
     # ============================================
     # BASE DE DONNÉES
