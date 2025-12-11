@@ -86,8 +86,13 @@
                             <span class="unite-badge">{{ stock.ingredient.unite }}</span>
                         </td>
                         <td>
+                            {# MODIFICATION : Conversion en €/kg si unité est en g #}
                             {% if stock.ingredient.prix_unitaire > 0 %}
-                            <span class="prix-table">{{ stock.ingredient.prix_unitaire }}€/{{ stock.ingredient.unite }}</span>
+                                {% if stock.ingredient.unite == 'g' %}
+                                    <span class="prix-table">{{ "%.3f"|format(stock.ingredient.prix_unitaire * 1000) }}€/kg</span>
+                                {% else %}
+                                    <span class="prix-table">{{ "%.3f"|format(stock.ingredient.prix_unitaire) }}€/{{ stock.ingredient.unite }}</span>
+                                {% endif %}
                             {% else %}
                             <span style="color: #adb5bd;">-</span>
                             {% endif %}
@@ -115,30 +120,24 @@
                     <tr class="total-row-frigo">
                         <td colspan="5" style="text-align: right; font-weight: bold;">Valeur totale du stock :</td>
                         <td colspan="3" style="font-weight: bold; color: #28a745; font-size: 1.1em;">
-                            {% set valeur_totale = 0 %}
-                            {% set all_stocks = namespace(items=[]) %}
-                            {% set all_stocks.items = pagination.items %}
-                            
-                            {# Pour le total, on doit récupérer tous les stocks, pas seulement la page actuelle #}
-                            {% set tous_les_stocks = [] %}
-                            {% for s in tous_les_stocks %}
-                                {% if s.ingredient.prix_unitaire > 0 %}
-                                    {% set valeur_totale = valeur_totale + (s.quantite * s.ingredient.prix_unitaire) %}
+                            {# Valeur totale globale (passée depuis la route) #}
+                            {% if valeur_totale_globale > 0 %}
+                                {{ "%.2f"|format(valeur_totale_globale) }}€
+                                {% if pagination.pages > 1 %}
+                                    <br>
+                                    {# Calcul de la valeur de la page actuelle #}
+                                    {% set valeur_page = namespace(total=0) %}
+                                    {% for stock in stocks %}
+                                        {% if stock.ingredient.prix_unitaire > 0 %}
+                                            {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.prix_unitaire) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span style="font-size: 0.75em; font-weight: normal; color: #6c757d;">
+                                        ({{ "%.2f"|format(valeur_page.total) }}€ sur cette page)
+                                    </span>
                                 {% endif %}
-                            {% endfor %}
-                            
-                            {# Total pour la page actuelle seulement #}
-                            {% set valeur_page = 0 %}
-                            {% for stock in stocks %}
-                                {% if stock.ingredient.prix_unitaire > 0 %}
-                                    {% set valeur_page = valeur_page + (stock.quantite * stock.ingredient.prix_unitaire) %}
-                                {% endif %}
-                            {% endfor %}
-                            
-                            {% if valeur_page > 0 %}
-                            {{ "%.2f"|format(valeur_page) }}€ <span style="font-size: 0.8em;">(page actuelle)</span>
                             {% else %}
-                            -
+                                -
                             {% endif %}
                         </td>
                     </tr>
@@ -184,9 +183,14 @@
                         <div class="edit-status" id="status-grid-{{ stock.id }}"></div>
                     </div>
                     
+                    {# MODIFICATION : Conversion en €/kg si unité est en g #}
                     {% if stock.ingredient.prix_unitaire > 0 %}
-                    <p class="ingredient-prix">{{ stock.ingredient.prix_unitaire }}€/{{ stock.ingredient.unite }}</p>
-                    <p class="ingredient-stock">Valeur: {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</p>
+                        {% if stock.ingredient.unite == 'g' %}
+                            <p class="ingredient-prix">{{ "%.3f"|format(stock.ingredient.prix_unitaire * 1000) }}€/kg</p>
+                        {% else %}
+                            <p class="ingredient-prix">{{ "%.3f"|format(stock.ingredient.prix_unitaire) }}€/{{ stock.ingredient.unite }}</p>
+                        {% endif %}
+                        <p class="ingredient-stock">Valeur: {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</p>
                     {% endif %}
                 </div>
                 <div class="item-actions">
@@ -223,40 +227,29 @@
                 {% endfor %}
             </select>
             <small style="color: #6c757d;">
-                Vous ne trouvez pas votre ingrédient ? 
-                <a href="{{ url_for('ingredients.liste') }}">Ajoutez-le au catalogue d'abord</a>
+                Vous ne trouvez pas votre ingrédient ?
+                <a href="{{ url_for('ingredients.liste') }}" style="color: #667eea;">Ajoutez-le au catalogue !</a>
             </small>
         </div>
         
         <div class="form-group">
-            <label>Quantité</label>
-            <input type="number" step="0.01" name="quantite" required id="quantite-input">
-            <span id="unite-display"></span>
+            <label>Action</label>
+            <select name="action" required id="action-select">
+                <option value="add">Ajouter au stock</option>
+                <option value="remove">Retirer du stock</option>
+                <option value="set">Définir la quantité exacte</option>
+            </select>
         </div>
         
         <div class="form-group">
-            <label>Action</label>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                    <input type="radio" name="action" value="add" checked>
-                    <span>➕ Ajouter (ex: retour de courses)</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                    <input type="radio" name="action" value="remove">
-                    <span>➖ Retirer (ex: consommation)</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-                    <input type="radio" name="action" value="set">
-                    <span>✏️ Définir (remplace la quantité)</span>
-                </label>
-            </div>
+            <label>Quantité <span id="unite-label"></span></label>
+            <input type="number" step="0.01" name="quantite" required min="0">
+            <small id="action-help" style="color: #6c757d;"></small>
         </div>
         
         <button type="submit" class="btn">Valider</button>
     </form>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="{{ url_for('static', filename='javascript/frigo.js') }}"></script>
+<script src="{{ url_for('static', filename='script/frigo.js') }}"></script>
 {% endblock %}

@@ -99,15 +99,28 @@ def liste():
     view_mode = request.args.get('view', 'grid')
     page = request.args.get('page', 1, type=int)
     
-    query = StockFrigo.query.join(Ingredient).order_by(Ingredient.nom)
+    # ✅ OPTIMISATION : Filtrer les stocks à 0 au niveau de la requête SQL
+    query = (StockFrigo.query
+             .join(Ingredient)
+             .filter(StockFrigo.quantite > 0)  # 🔥 Nouvelle ligne : ne récupérer que les stocks > 0
+             .order_by(Ingredient.nom))
+    
     pagination = paginate_query(query, page, ITEMS_PER_PAGE)
     tous_ingredients = Ingredient.query.order_by(Ingredient.nom).all()
+    
+    # Calculer la valeur totale de TOUS les stocks (toutes pages confondues)
+    valeur_totale_globale = 0
+    tous_les_stocks = query.all()  # Récupère tous les stocks filtrés
+    for stock in tous_les_stocks:
+        if stock.ingredient.prix_unitaire > 0:
+            valeur_totale_globale += stock.quantite * stock.ingredient.prix_unitaire
     
     return render_template('frigo.html',
                          stocks=pagination['items'],
                          pagination=pagination,
                          tous_ingredients=tous_ingredients,
-                         view_mode=view_mode)
+                         view_mode=view_mode,
+                         valeur_totale_globale=valeur_totale_globale)
 
 
 @frigo_bp.route('/vider/<int:id>')
