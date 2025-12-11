@@ -225,7 +225,7 @@
                         </td>
                         <td>{{ ing.unite }}</td>
                         <td>
-                            {{ ing.prix_unitaire|prix_lisible(ing.unite) }}
+                            {{ ing.prix_unitaire|prix_lisible(ing.unite, ing) }}
                         </td>
                         <td>
                             {% if ing.stock %}
@@ -277,7 +277,7 @@
                     <h4>{{ ing.nom }}</h4>
                     <p class="ingredient-unite">Unité: {{ ing.unite }}</p>
                     {% if ing.prix_unitaire > 0 %}
-                    <p class="ingredient-prix">{{ ing.prix_unitaire|prix_lisible(ing.unite) }}</p>
+                    <p class="ingredient-prix">{{ ing.prix_unitaire|prix_lisible(ing.unite, ing) }}</p>
                     {% endif %}
                 </div>
                 <div class="item-actions">

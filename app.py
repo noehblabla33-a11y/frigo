@@ -136,14 +136,25 @@ def create_app():
         return dict(versioned_url_for=versioned_url_for)
 
     @app.template_filter('prix_lisible')
-    def prix_lisible_filter(prix, unite):
+    def prix_lisible_filter(prix, unite, ingredient=None):
         """
         Affiche le prix de manière lisible
+        - Si l'ingrédient a un poids_piece, affiche le prix par pièce
         - Si l'unité est 'g', convertit en €/kg pour l'affichage
         - Sinon, affiche le prix tel quel
+        
+        Args:
+            prix: Le prix unitaire (float)
+            unite: L'unité (str) - 'g', 'kg', 'ml', 'L', etc.
+            ingredient: L'objet Ingredient (optionnel) pour vérifier poids_piece
         """
         if not prix or prix == 0:
             return "Prix non renseigné"
+        
+        # Si l'ingrédient a un poids_piece, afficher le prix par pièce
+        if ingredient and hasattr(ingredient, 'poids_piece') and ingredient.poids_piece and ingredient.poids_piece > 0:
+            prix_piece = prix * ingredient.poids_piece
+            return f"{prix_piece:.2f}€/pièce"
         
         if unite == 'g':
             # Convertir €/g en €/kg pour l'affichage

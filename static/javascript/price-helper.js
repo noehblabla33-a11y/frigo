@@ -1,5 +1,6 @@
 /**
  * Gestion intelligente du prix des ingrédients avec CONVERSION AUTOMATIQUE
+ * Version simplifiée - utilise poids_piece de la base de données
  * Fichier: static/javascript/price-helper.js
  */
 
@@ -9,13 +10,17 @@
     // Variable pour stocker le mode de saisie (piece ou gramme)
     let modeSaisie = 'gramme'; // 'piece' ou 'gramme'
     
+    // ============================================
+    // CONTRÔLES DE MODE DE SAISIE
+    // ============================================
+    
     /**
-     * Crée les contrôles de mode de saisie
+     * Crée les contrôles de mode de saisie (pièce vs gramme)
      */
     function createModeSaisieControls() {
         const prixFormGroup = document.querySelector('input[name="prix_unitaire"]')?.closest('.form-group');
         const poidsPieceInput = document.getElementById('poids-piece-input') || 
-                                 document.querySelector('input[name="poids_piece"]');
+                                document.querySelector('input[name="poids_piece"]');
         
         if (!prixFormGroup || !poidsPieceInput) return;
         
@@ -24,7 +29,7 @@
         // Ne créer les contrôles que si poids_piece est défini
         if (poidsPiece <= 0) return;
         
-        // Chercher si les contrôles existent déjà
+        // Ne pas dupliquer
         if (document.getElementById('mode-saisie-controls')) return;
         
         // Créer les contrôles
@@ -51,42 +56,46 @@
                 <label style="display: flex; align-items: center; cursor: pointer;">
                     <input type="radio" name="mode_saisie" value="piece" 
                            style="margin-right: 5px;">
-                    <span style="color: #28a745; font-weight: 600;">✨ Prix par pièce (€/pièce)</span>
+                    <span>Prix par pièce (€)</span>
                 </label>
-            </div>
-            <div id="prix-piece-input-container" style="display: none; margin-top: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #28a745;">
-                    Prix par pièce (€)
-                </label>
-                <input type="number" 
-                       step="0.01" 
-                       id="prix-piece-temp"
-                       placeholder="Ex: 2.50"
-                       style="width: 100%; padding: 10px; border: 2px solid #28a745; border-radius: 5px; font-size: 1.1em;">
-                <small style="color: #6c757d; display: block; margin-top: 5px;">
-                    Le prix sera automatiquement converti en €/g pour l'enregistrement
-                </small>
             </div>
         `;
         
-        // Insérer AVANT le form-group du prix (pas dedans)
+        // Insérer avant le form-group du prix
         prixFormGroup.parentNode.insertBefore(controls, prixFormGroup);
         
-        // Attacher les événements sur les radio buttons
-        const radioButtons = controls.querySelectorAll('input[name="mode_saisie"]');
-        radioButtons.forEach(radio => {
+        // Créer le champ prix par pièce (caché par défaut)
+        const prixPieceContainer = document.createElement('div');
+        prixPieceContainer.id = 'prix-piece-input-container';
+        prixPieceContainer.className = 'form-group';
+        prixPieceContainer.style.display = 'none';
+        prixPieceContainer.innerHTML = `
+            <label>Prix par pièce (€)</label>
+            <input type="number" 
+                   step="0.01" 
+                   id="prix-piece-temp" 
+                   placeholder="Ex: 1.50 pour un avocat à 1.50€">
+            <small style="color: #6c757d; display: block; margin-top: 5px;">
+                Le prix sera automatiquement converti en €/g (${poidsPiece}g par pièce)
+            </small>
+        `;
+        
+        // Insérer après les contrôles de mode
+        controls.parentNode.insertBefore(prixPieceContainer, controls.nextSibling);
+        
+        // Attacher les événements
+        document.querySelectorAll('input[name="mode_saisie"]').forEach(radio => {
             radio.addEventListener('change', function() {
-                changeModeSaisie(this.value);
+                modeSaisie = this.value;
+                toggleModeSaisie(this.value);
             });
         });
     }
     
     /**
-     * Change le mode de saisie
+     * Bascule entre les modes de saisie
      */
-    function changeModeSaisie(mode) {
-        modeSaisie = mode;
-        
+    function toggleModeSaisie(mode) {
         const prixFormGroup = document.querySelector('input[name="prix_unitaire"]')?.closest('.form-group');
         const prixInput = document.getElementById('prix-unitaire-input') || 
                           document.getElementById('prix_input') ||
@@ -98,7 +107,7 @@
         if (!prixFormGroup || !prixInput) return;
         
         if (mode === 'piece') {
-            // CORRECTION : Masquer tout le form-group du prix €/g
+            // Masquer le champ prix €/g
             prixFormGroup.style.display = 'none';
             
             // Afficher le champ prix par pièce
@@ -106,7 +115,7 @@
                 prixPieceContainer.style.display = 'block';
             }
             
-            // Si un prix existe déjà en €/g, le convertir en prix/pièce
+            // Convertir le prix existant si présent
             const prixGramme = parseFloat(prixInput.value) || 0;
             const poidsPieceInput = document.getElementById('poids-piece-input') || 
                                      document.querySelector('input[name="poids_piece"]');
@@ -118,7 +127,7 @@
             }
             
         } else {
-            // CORRECTION : Afficher tout le form-group du prix €/g
+            // Afficher le champ prix €/g
             prixFormGroup.style.display = 'block';
             
             // Masquer le champ prix par pièce
@@ -139,7 +148,7 @@
                           document.getElementById('prix_input') ||
                           document.querySelector('input[name="prix_unitaire"]');
         const poidsPieceInput = document.getElementById('poids-piece-input') || 
-                                 document.querySelector('input[name="poids_piece"]');
+                                document.querySelector('input[name="poids_piece"]');
         
         if (!prixPieceInput || !prixInput || !poidsPieceInput) return;
         
@@ -148,7 +157,7 @@
         
         if (prixPiece > 0 && poidsPiece > 0) {
             const prixGramme = prixPiece / poidsPiece;
-            prixInput.value = prixGramme.toFixed(6); // Plus de précision
+            prixInput.value = prixGramme.toFixed(6);
             
             updatePrixHelper();
         } else {
@@ -156,12 +165,16 @@
         }
     };
     
+    // ============================================
+    // AFFICHAGE DU HELPER DE PRIX
+    // ============================================
+    
     /**
      * Met à jour le helper de prix selon le contexte
      */
     window.updatePrixHelper = function() {
         const poidsPieceInput = document.getElementById('poids-piece-input') || 
-                                 document.querySelector('input[name="poids_piece"]');
+                                document.querySelector('input[name="poids_piece"]');
         const prixLabel = document.getElementById('prix-label-detail');
         const prixHelper = document.getElementById('prix-helper');
         const prixInput = document.getElementById('prix-unitaire-input') || 
@@ -170,13 +183,7 @@
         const uniteSelect = document.getElementById('unite-select') || 
                             document.querySelector('select[name="unite"]');
         
-        if (!prixInput || !uniteSelect) {
-            return;
-        }
-        
-        if (!prixHelper) {
-            return;
-        }
+        if (!prixInput || !uniteSelect || !prixHelper) return;
         
         // Réinitialiser
         prixHelper.innerHTML = '';
@@ -186,7 +193,7 @@
         const unite = uniteSelect.value;
         const prixActuel = parseFloat(prixInput.value) || 0;
         
-        // Mettre à jour le label si présent
+        // Mettre à jour le label
         if (prixLabel) {
             if (poidsPiece > 0 && unite === 'g') {
                 prixLabel.textContent = modeSaisie === 'piece' ? '(€/pièce)' : '(€/g)';
@@ -199,9 +206,9 @@
             }
         }
         
-        // Générer le contenu du helper
+        // Générer le helper
         if (poidsPiece > 0 && unite === 'g' && modeSaisie === 'gramme') {
-            // MODE GRAMME avec poids_piece : Afficher les conversions
+            // MODE GRAMME avec poids_piece
             if (prixActuel > 0) {
                 const prixParPiece = prixActuel * poidsPiece;
                 const prixParKg = prixActuel * 1000;
@@ -223,7 +230,7 @@
             }
             
         } else if (poidsPiece > 0 && unite === 'g' && modeSaisie === 'piece') {
-            // MODE PIÈCE : Afficher la conversion en €/g
+            // MODE PIÈCE
             if (prixActuel > 0) {
                 const prixParPiece = prixActuel * poidsPiece;
                 const prixParKg = prixActuel * 1000;
@@ -274,37 +281,33 @@
                     </small>
                 `;
                 prixHelper.style.display = 'block';
-            } else {
-                prixHelper.innerHTML = `
-                    <small style="color: #6c757d; display: block; margin-top: 10px;">
-                        Entrez le prix en €/ml (ex: 0.003 pour 3€/L)
-                    </small>
-                `;
-                prixHelper.style.display = 'block';
             }
-            
-        } else {
-            // MODE PIÈCE directement
-            prixHelper.innerHTML = `
-                <small style="color: #6c757d; display: block; margin-top: 10px;">
-                    Ex: 2.50 pour 2.50€/${unite}
-                </small>
-            `;
-            prixHelper.style.display = 'block';
         }
     };
     
-    /**
-     * Met à jour l'affichage quand on change le prix
-     */
-    window.updatePrixDisplay = function() {
-        updatePrixHelper();
-    };
+    // ============================================
+    // ÉVÉNEMENTS
+    // ============================================
     
     /**
-     * Attache les événements aux éléments du formulaire
+     * Attache tous les événements nécessaires
      */
     function attachEventListeners() {
+        // Unité select
+        const uniteSelect = document.getElementById('unite-select') || 
+                            document.querySelector('select[name="unite"]');
+        
+        if (uniteSelect) {
+            uniteSelect.addEventListener('change', function() {
+                const existingControls = document.getElementById('mode-saisie-controls');
+                if (existingControls) {
+                    existingControls.remove();
+                }
+                createModeSaisieControls();
+                updatePrixHelper();
+            });
+        }
+        
         // Prix input
         const prixInput = document.getElementById('prix-unitaire-input') || 
                           document.getElementById('prix_input') ||
@@ -312,40 +315,14 @@
         
         if (prixInput) {
             prixInput.addEventListener('input', updatePrixHelper);
-            prixInput.addEventListener('change', updatePrixHelper);
-        }
-        
-        // Unité select
-        const uniteSelect = document.getElementById('unite-select') || 
-                            document.querySelector('select[name="unite"]');
-        
-        if (uniteSelect) {
-            uniteSelect.addEventListener('change', function() {
-                // Recréer les contrôles si nécessaire
-                const existingControls = document.getElementById('mode-saisie-controls');
-                if (existingControls) {
-                    existingControls.remove();
-                }
-                createModeSaisieControls();
-                updatePrixHelper();
-            });
         }
         
         // Poids pièce input
         const poidsPieceInput = document.getElementById('poids-piece-input') || 
-                                 document.querySelector('input[name="poids_piece"]');
+                                document.querySelector('input[name="poids_piece"]');
         
         if (poidsPieceInput) {
             poidsPieceInput.addEventListener('input', function() {
-                // Recréer les contrôles
-                const existingControls = document.getElementById('mode-saisie-controls');
-                if (existingControls) {
-                    existingControls.remove();
-                }
-                createModeSaisieControls();
-                updatePrixHelper();
-            });
-            poidsPieceInput.addEventListener('change', function() {
                 const existingControls = document.getElementById('mode-saisie-controls');
                 if (existingControls) {
                     existingControls.remove();
@@ -355,7 +332,7 @@
             });
         }
         
-        // Prix par pièce input (sera créé dynamiquement)
+        // Prix par pièce (créé dynamiquement)
         document.addEventListener('input', function(e) {
             if (e.target.id === 'prix-piece-temp') {
                 window.updatePrixFromPiece();
@@ -363,13 +340,14 @@
         });
     }
     
-    /**
-     * Initialisation au chargement du DOM
-     */
+    // ============================================
+    // INITIALISATION
+    // ============================================
+    
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🔧 Initialisation du price-helper avec conversion automatique...');
+        console.log('🔧 Initialisation du price-helper...');
         
-        // Créer les contrôles de mode de saisie
+        // Créer les contrôles de mode
         createModeSaisieControls();
         
         // Attacher les événements
@@ -378,6 +356,6 @@
         // Initialiser l'affichage
         updatePrixHelper();
         
-        console.log('✅ Price-helper initialisé avec mode de saisie intelligent');
+        console.log('✅ Price-helper initialisé avec succès');
     });
 })();
