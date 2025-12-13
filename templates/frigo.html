@@ -98,11 +98,7 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if stock.ingredient.prix_unitaire > 0 %}
-                            <span class="valeur-stock">{{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</span>
-                            {% else %}
-                            <span style="color: #adb5bd;">-</span>
-                            {% endif %}
+                            {{ stock.ingredient.prix_unitaire|prix_lisible(stock.ingredient.unite, stock.ingredient) }}
                         </td>
                         <td>
                             <span class="date-modif">{{ stock.date_modification.strftime('%d/%m/%y %H:%M') }}</span>
@@ -185,12 +181,8 @@
                     
                     {# MODIFICATION : Conversion en €/kg si unité est en g #}
                     {% if stock.ingredient.prix_unitaire > 0 %}
-                        {% if stock.ingredient.unite == 'g' %}
-                            <p class="ingredient-prix">{{ "%.3f"|format(stock.ingredient.prix_unitaire * 1000) }}€/kg</p>
-                        {% else %}
-                            <p class="ingredient-prix">{{ "%.3f"|format(stock.ingredient.prix_unitaire) }}€/{{ stock.ingredient.unite }}</p>
-                        {% endif %}
-                        <p class="ingredient-stock">Valeur: {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</p>
+                    <p class="ingredient-prix">{{ stock.ingredient.prix_unitaire|prix_lisible(stock.ingredient.unite, stock.ingredient) }}</p>
+                    <p class="ingredient-stock">Valeur: {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</p>
                     {% endif %}
                 </div>
                 <div class="item-actions">

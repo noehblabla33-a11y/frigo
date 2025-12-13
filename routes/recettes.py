@@ -219,7 +219,7 @@ def modifier(id):
         
         j = 0
         while True:
-            etape_desc = request.form.get(f'etape_{j}')
+            etape_desc = request.form.get(f'etape_desc_{j}')
             if not etape_desc:
                 break
             if etape_desc.strip():
