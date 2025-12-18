@@ -5,7 +5,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/frigo.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/view-toggle-improved.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/frigo-grid.css') }}">
 {% endblock %}
 
@@ -15,18 +14,6 @@
 <div class="card">
     <div class="catalogue-header">
         <h3>❄️ Contenu de mon frigo</h3>
-        <div class="view-toggle">
-            <a href="{{ url_for('frigo.liste', view='grid', page=pagination.page) }}" 
-               class="view-toggle-btn {% if view_mode == 'grid' %}active{% endif %}"
-               title="Vue en grille">
-                <span class="icon">⊞</span>
-            </a>
-            <a href="{{ url_for('frigo.liste', view='list', page=pagination.page) }}" 
-               class="view-toggle-btn {% if view_mode == 'list' %}active{% endif %}"
-               title="Vue en liste">
-                <span class="icon">☰</span>
-            </a>
-        </div>
     </div>
     
     <p style="margin-bottom: 20px;">
@@ -186,5 +173,5 @@
     </form>
 </div>
 
-<script src="{{ url_for('static', filename='script/frigo.js') }}"></script>
+<script src="{{ url_for('static', filename='javascript/frigo.js') }}"></script>
 {% endblock %}

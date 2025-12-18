@@ -6,7 +6,6 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/collapsable.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/ingredients.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/view-toggle-improved.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -149,18 +148,6 @@
 <div class="card">
     <div class="catalogue-header">
         <h3>📦 Catalogue d'ingrédients</h3>
-        <div class="view-toggle">
-            <a href="{{ url_for('ingredients.liste', search=search_query, categorie=categorie_filter, stock=stock_filter, view='grid') }}" 
-               class="view-toggle-btn {% if view_mode == 'grid' %}active{% endif %}"
-               title="Vue en grille">
-                <span class="icon">⊞</span>
-            </a>
-            <a href="{{ url_for('ingredients.liste', search=search_query, categorie=categorie_filter, stock=stock_filter, view='list') }}" 
-               class="view-toggle-btn {% if view_mode == 'list' %}active{% endif %}"
-               title="Vue en liste">
-                <span class="icon">☰</span>
-            </a>
-        </div>
     </div>
     
     <p style="margin-bottom: 20px;">
