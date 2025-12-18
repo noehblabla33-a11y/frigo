@@ -10,16 +10,6 @@
     <h3>🛒 Ma liste de courses</h3>
     {% if items %}
     
-    <!-- Budget prévisionnel -->
-    {% set total_estime = 0 %}
-    {% set items_avec_prix = 0 %}
-    {% for item in items %}
-        {% if item.ingredient.prix_unitaire > 0 %}
-            {% set total_estime = total_estime + (item.quantite * item.ingredient.prix_unitaire) %}
-            {% set items_avec_prix = items_avec_prix + 1 %}
-        {% endif %}
-    {% endfor %}
-    
     <div class="budget-card">
         <div class="budget-header">
             <span class="budget-icon">💰</span>
