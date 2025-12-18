@@ -2,8 +2,17 @@
 config.py
 Configuration technique de l'application Flask
 Contient les paramètres liés à l'infrastructure : base de données, sécurité, uploads, etc.
+
+✅ VERSION OPTIMISÉE - PHASE 1
+- Charge les variables depuis .env
+- Fallback sur valeurs par défaut en dev
+- Validation stricte en production
 """
 import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
 
 
 class Config:
@@ -12,7 +21,8 @@ class Config:
     # ============================================
     # SÉCURITÉ
     # ============================================
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'ma_clef'
+    # ✅ CHARGÉ DEPUIS .env avec fallback sécurisé
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-CHANGE-IN-PRODUCTION'
     
     # ============================================
     # BASE DE DONNÉES
@@ -25,24 +35,20 @@ class Config:
     # UPLOAD DE FICHIERS
     # ============================================
     UPLOAD_FOLDER = 'static/uploads'
-    MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5MB max
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 5 * 1024 * 1024))  # 5MB par défaut
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     
     # ============================================
     # PAGINATION
     # ============================================
-    ITEMS_PER_PAGE_DEFAULT = 24
-    ITEMS_PER_PAGE_RECETTES = 20  # Pagination spécifique pour les recettes
+    ITEMS_PER_PAGE_DEFAULT = int(os.environ.get('ITEMS_PER_PAGE_DEFAULT', 24))
+    ITEMS_PER_PAGE_RECETTES = int(os.environ.get('ITEMS_PER_PAGE_RECETTES', 20))
     
     # ============================================
     # API / AUTHENTIFICATION
     # ============================================
-    API_KEY = os.environ.get('API_KEY') or 'ma_clef'
-    
-    # ⚠️ IMPORTANT : En production, définir ces variables d'environnement :
-    # export SECRET_KEY="votre-vraie-clef-secrete-complexe"
-    # export API_KEY="votre-vraie-clef-api-complexe"
-    # export DATABASE_URL="postgresql://user:pass@host/dbname"  # Pour PostgreSQL en prod
+    # ✅ CHARGÉ DEPUIS .env avec fallback sécurisé
+    API_KEY = os.environ.get('API_KEY') or 'dev-api-key-CHANGE-IN-PRODUCTION'
     
     # ============================================
     # CACHE / PERFORMANCE
@@ -55,6 +61,22 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = False
     SQLALCHEMY_ECHO = True  # Afficher les requêtes SQL en développement
+    
+    @classmethod
+    def init_app(cls, app):
+        """Initialisation spécifique au développement"""
+        # Afficher un avertissement si les clés par défaut sont utilisées
+        if cls.SECRET_KEY == 'dev-secret-key-CHANGE-IN-PRODUCTION':
+            app.logger.warning(
+                '⚠️  SECRET_KEY par défaut utilisée ! '
+                'Définissez SECRET_KEY dans votre fichier .env'
+            )
+        
+        if cls.API_KEY == 'dev-api-key-CHANGE-IN-PRODUCTION':
+            app.logger.warning(
+                '⚠️  API_KEY par défaut utilisée ! '
+                'Définissez API_KEY dans votre fichier .env'
+            )
 
 
 class ProductionConfig(Config):
@@ -63,21 +85,30 @@ class ProductionConfig(Config):
     TESTING = False
     SQLALCHEMY_ECHO = False
     
-    # En production, forcer l'utilisation de variables d'environnement sécurisées
-    def __init__(self):
-        super().__init__()
+    @classmethod
+    def init_app(cls, app):
+        """Initialisation spécifique à la production"""
+        # ⚠️ VALIDATION STRICTE : En production, les secrets DOIVENT être définis
         
-        # Vérifier que les secrets sont définis en production
-        if not os.environ.get('SECRET_KEY'):
+        if not os.environ.get('SECRET_KEY') or cls.SECRET_KEY == 'dev-secret-key-CHANGE-IN-PRODUCTION':
             raise ValueError(
-                "⚠️ ERREUR CRITIQUE : SECRET_KEY doit être définie en production!\n"
-                "Définissez-la avec: export SECRET_KEY='votre-clef-secrete-complexe'"
+                "⚠️  ERREUR CRITIQUE : SECRET_KEY doit être définie en production!\n"
+                "Définissez-la avec: export SECRET_KEY='votre-clef-secrete-complexe'\n"
+                "Ou ajoutez-la dans votre fichier .env"
             )
         
-        if not os.environ.get('API_KEY'):
+        if not os.environ.get('API_KEY') or cls.API_KEY == 'dev-api-key-CHANGE-IN-PRODUCTION':
             raise ValueError(
-                "⚠️ ERREUR CRITIQUE : API_KEY doit être définie en production!\n"
-                "Définissez-la avec: export API_KEY='votre-clef-api-complexe'"
+                "⚠️  ERREUR CRITIQUE : API_KEY doit être définie en production!\n"
+                "Définissez-la avec: export API_KEY='votre-clef-api-complexe'\n"
+                "Ou ajoutez-la dans votre fichier .env"
+            )
+        
+        # Vérifier que la base de données n'est pas SQLite en production
+        if 'sqlite' in cls.SQLALCHEMY_DATABASE_URI.lower():
+            app.logger.warning(
+                '⚠️  SQLite détectée en production ! '
+                'Utilisez PostgreSQL ou MySQL pour de meilleures performances.'
             )
 
 
@@ -88,6 +119,10 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False  # Désactiver CSRF pour les tests
     SQLALCHEMY_ECHO = False
 
+
+# ============================================
+# HELPER FUNCTIONS
+# ============================================
 
 # Dictionnaire pour faciliter la sélection de la configuration
 config_by_name = {
@@ -107,8 +142,41 @@ def get_config(config_name=None):
     
     Returns:
         Classe de configuration appropriée
+    
+    Exemples:
+        >>> config = get_config('development')
+        >>> config = get_config()  # Utilise FLASK_ENV
     """
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development')
     
     return config_by_name.get(config_name, DevelopmentConfig)
+
+
+# ============================================
+# GUIDE D'UTILISATION
+# ============================================
+"""
+COMMENT UTILISER CETTE CONFIGURATION :
+
+1. DÉVELOPPEMENT LOCAL :
+   - Copiez .env.example vers .env
+   - Modifiez les valeurs dans .env
+   - Lancez l'application : python manage.py
+
+2. PRODUCTION :
+   - Définissez les variables d'environnement :
+     export FLASK_ENV=production
+     export SECRET_KEY="votre-clef-tres-secrete"
+     export API_KEY="votre-clef-api-unique"
+     export DATABASE_URL="postgresql://user:pass@host/db"
+   
+   - Ou utilisez un fichier .env (ne pas commiter !)
+
+3. TESTS :
+   - export FLASK_ENV=testing
+   - pytest
+
+GÉNÉRATION DE CLÉS SÉCURISÉES :
+    python -c "import secrets; print(secrets.token_hex(32))"
+"""

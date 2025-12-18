@@ -1,30 +1,71 @@
+"""
+app.py
+Point d'entrée de l'application Flask
+
+✅ VERSION OPTIMISÉE - PHASE 1
+- Utilise config.py pour la configuration
+- Support des variables d'environnement via .env
+- Gestion propre des blueprints
+"""
 from flask import Flask
 from flask_migrate import Migrate
 from models.models import db
-from routes import frigo_bp, recettes_bp, planification_bp, courses_bp, main_bp, historique_bp, ingredients_bp, api_bp
+from routes import (
+    frigo_bp, recettes_bp, planification_bp, courses_bp, 
+    main_bp, historique_bp, ingredients_bp, api_bp
+)
+from config import get_config
 import os
 
-def create_app():
+
+def create_app(config_name=None):
+    """
+    Application Factory Pattern
+    
+    Args:
+        config_name: 'development', 'production', 'testing' ou None
+                     Si None, utilise la variable d'environnement FLASK_ENV
+    
+    Returns:
+        Flask: Instance de l'application configurée
+    """
     app = Flask(__name__)
     
-    # Configuration
-    app.config['SECRET_KEY'] = 'votre-clef-secrete-a-changer'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///frigo.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['UPLOAD_FOLDER'] = 'static/uploads'
-    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max
-    app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    # ============================================
+    # CONFIGURATION
+    # ============================================
+    # Charger la configuration appropriée depuis config.py
+    config_class = get_config(config_name)
+    app.config.from_object(config_class)
     
-    # Créer le dossier uploads s'il n'existe pas
-    os.makedirs(os.path.join(app.root_path, 'static/uploads'), exist_ok=True)
+    # Appeler l'initialisation spécifique à l'environnement (si définie)
+    if hasattr(config_class, 'init_app'):
+        config_class.init_app(app)
     
-    # Initialiser la base de données
+    # ============================================
+    # INITIALISATION DES EXTENSIONS
+    # ============================================
+    
+    # Base de données
     db.init_app(app)
     
-    # Initialiser Flask-Migrate
+    # Migrations
     migrate = Migrate(app, db)
     
-    # Enregistrer les blueprints (routes)
+    # ============================================
+    # CRÉATION DES DOSSIERS NÉCESSAIRES
+    # ============================================
+    # Créer le dossier uploads s'il n'existe pas
+    uploads_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
+    os.makedirs(uploads_path, exist_ok=True)
+    
+    # Créer le dossier logs s'il n'existe pas (pour futur logging)
+    logs_path = os.path.join(app.root_path, 'logs')
+    os.makedirs(logs_path, exist_ok=True)
+    
+    # ============================================
+    # ENREGISTREMENT DES BLUEPRINTS
+    # ============================================
     app.register_blueprint(main_bp)
     app.register_blueprint(ingredients_bp, url_prefix='/ingredients')
     app.register_blueprint(frigo_bp, url_prefix='/frigo')
@@ -33,94 +74,47 @@ def create_app():
     app.register_blueprint(courses_bp, url_prefix='/courses')
     app.register_blueprint(historique_bp, url_prefix='/historique')
     app.register_blueprint(api_bp, url_prefix='/api/v1')
-
-    # Configuration du cache pour les ressources statiques
+    
+    # ============================================
+    # CONFIGURATION DU CACHE POUR LES RESSOURCES STATIQUES
+    # ============================================
     @app.after_request
     def add_cache_headers(response):
         """
-        Ajoute des en-têtes de cache appropriés selon le type de ressource
+        Ajoute des en-têtes de cache pour les ressources statiques
+        Améliore les performances en permettant au navigateur de mettre en cache
         """
-        # Ne pas cacher les réponses d'erreur
-        if response.status_code >= 400:
-            return response
-        
-        path = response.headers.get('X-Request-Path', '')
-        
-        # Images uploadées par l'utilisateur (uploads/)
-        if '/static/uploads/' in path:
-            # Cache long (1 an) car les noms de fichiers changent si le contenu change
-            response.cache_control.public = True
-            response.cache_control.max_age = 31536000  # 1 an
-            response.headers['Vary'] = 'Accept-Encoding'
-            
-        # Images statiques, CSS, JS (static/ hors uploads)
-        elif path.startswith('/static/'):
-            # Distinction par type de fichier
-            if any(ext in path for ext in ['.css', '.js']):
-                # CSS/JS : cache moyen (1 semaine) avec validation
-                response.cache_control.public = True
-                response.cache_control.max_age = 604800  # 1 semaine
-                response.cache_control.must_revalidate = True
-                response.headers['Vary'] = 'Accept-Encoding'
-                
-            elif any(ext in path for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']):
-                # Images : cache long (1 mois)
-                response.cache_control.public = True
-                response.cache_control.max_age = 2592000  # 1 mois
-                response.headers['Vary'] = 'Accept-Encoding'
-                
-            elif any(ext in path for ext in ['.woff', '.woff2', '.ttf', '.eot']):
-                # Polices : cache très long (1 an)
-                response.cache_control.public = True
-                response.cache_control.max_age = 31536000  # 1 an
-                response.headers['Vary'] = 'Accept-Encoding'
-                
-            else:
-                # Autres fichiers statiques : cache court (1 jour)
-                response.cache_control.public = True
-                response.cache_control.max_age = 86400  # 1 jour
-        
-        # Pages HTML dynamiques : pas de cache ou cache très court
-        elif response.content_type and 'text/html' in response.content_type:
-            response.cache_control.no_cache = True
-            response.cache_control.must_revalidate = True
-            response.headers['Vary'] = 'Cookie'
-        
-        # API/JSON : pas de cache
-        elif response.content_type and 'application/json' in response.content_type:
-            response.cache_control.no_store = True
-            response.cache_control.no_cache = True
-
-
-        # Configuration CORS pour permettre les requêtes depuis android
-        # Permettre les requêtes depuis n'importe quelle origine en développement
-        # En production, remplacer '*' par l'origine spécifique de votre app
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,X-API-Key')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+        # Ne pas mettre en cache les pages HTML
+        if response.content_type.startswith('text/html'):
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        # Mettre en cache les ressources statiques (CSS, JS, images)
+        elif (response.content_type.startswith('text/css') or 
+              response.content_type.startswith('application/javascript') or
+              response.content_type.startswith('image/')):
+            # Cache pour 1 an (31536000 secondes)
+            response.headers['Cache-Control'] = f'public, max-age={app.config["SEND_FILE_MAX_AGE_DEFAULT"]}'
         
         return response
     
-    @app.before_request
-    def store_request_path():
-        """
-        Stocke le chemin de la requête pour l'utiliser dans after_request
-        """
-        from flask import request, g
-        g.request_path = request.path
-    
+    # ============================================
+    # CONTEXT PROCESSORS (UTILITAIRES POUR TEMPLATES)
+    # ============================================
     @app.context_processor
     def utility_processor():
         """
-        Ajoute des fonctions utilitaires aux templates
+        Ajoute des fonctions utilitaires aux templates Jinja2
         """
         def versioned_url_for(endpoint, **values):
             """
             Génère une URL avec un paramètre de version basé sur le timestamp du fichier
-            Utile pour forcer le rechargement du cache quand un fichier change
+            Force le rechargement du cache quand un fichier change
+            
+            Usage dans les templates :
+                {{ versioned_url_for('static', filename='style/main.css') }}
             """
             from flask import url_for
-            import os
             
             if endpoint == 'static':
                 filename = values.get('filename', None)
@@ -134,7 +128,10 @@ def create_app():
             return url_for(endpoint, **values)
         
         return dict(versioned_url_for=versioned_url_for)
-
+    
+    # ============================================
+    # FILTRES JINJA2 PERSONNALISÉS
+    # ============================================
     @app.template_filter('prix_lisible')
     def prix_lisible_filter(prix, unite, ingredient=None):
         """
@@ -170,7 +167,6 @@ def create_app():
         else:
             return f"{prix:.2f}€/{unite}"
 
-
     @app.template_filter('quantite_lisible')
     def quantite_lisible_filter(quantite, ingredient):
         """
@@ -181,79 +177,49 @@ def create_app():
         if not quantite or quantite == 0:
             return "0"
         
-        # Si l'ingrédient a un poids par pièce défini
-        if ingredient.poids_piece and ingredient.poids_piece > 0:
+        # Si l'ingrédient a un poids_piece, convertir en pièces
+        if ingredient and hasattr(ingredient, 'poids_piece') and ingredient.poids_piece and ingredient.poids_piece > 0:
             nb_pieces = quantite / ingredient.poids_piece
-            
-            # Si c'est proche d'un nombre entier (±10%)
-            nb_pieces_arrondi = round(nb_pieces)
-            if abs(nb_pieces - nb_pieces_arrondi) / nb_pieces < 0.1:
-                # Afficher en pièces en utilisant le nom de l'ingrédient
-                if nb_pieces_arrondi == 1:
-                    return f"1 {ingredient.nom}"
-                else:
-                    # Gestion du pluriel
-                    nom_pluriel = pluraliser(ingredient.nom)
-                    return f"{nb_pieces_arrondi} {nom_pluriel}"
+            if nb_pieces >= 1:
+                return f"{nb_pieces:.1f} pièce(s)"
             else:
-                # Quantité non standard, afficher en grammes ET en pièces approximatif
-                return f"{quantite:.0f}g (≈{nb_pieces:.1f} {ingredient.nom})"
+                # Quantité trop petite pour une pièce, afficher en grammes
+                return f"{quantite:.0f} {ingredient.unite}"
         
-        # Sinon, affichage normal
-        if ingredient.unite == 'g':
-            if quantite >= 1000:
-                return f"{quantite/1000:.1f}kg"
-            else:
-                return f"{quantite:.0f}g"
-        elif ingredient.unite == 'ml':
-            if quantite >= 1000:
-                return f"{quantite/1000:.1f}L"
-            else:
-                return f"{quantite:.0f}ml"
-        else:
-            return f"{quantite:.0f}{ingredient.unite}"
-
-    def pluraliser(nom):
-        """
-        Gère le pluriel français de base
-        """
-        nom_lower = nom.lower()
+        # Affichage normal
+        return f"{quantite:.0f} {ingredient.unite}"
+    
+    # ============================================
+    # LOGGING
+    # ============================================
+    if not app.debug and not app.testing:
+        import logging
+        from logging.handlers import RotatingFileHandler
         
-        # Cas spéciaux
-        exceptions = {
-            'oeuf': 'oeufs',
-            'chou': 'choux'
-        }
+        # Créer un handler pour écrire dans un fichier
+        file_handler = RotatingFileHandler(
+            os.path.join(logs_path, 'frigo.log'),
+            maxBytes=10240000,  # 10MB
+            backupCount=10
+        )
         
-        if nom_lower in exceptions:
-            # Préserver la casse (majuscule initiale si nécessaire)
-            resultat = exceptions[nom_lower]
-            return resultat.capitalize() if nom[0].isupper() else resultat
+        # Format des logs
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
         
-        # Règles générales
-        # Déjà au pluriel
-        if nom_lower.endswith('s') or nom_lower.endswith('x') or nom_lower.endswith('z'):
-            return nom
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+        app.logger.setLevel(logging.INFO)
         
-        # -au, -eau, -eu → -aux, -eaux, -eux
-        if nom_lower.endswith('au') or nom_lower.endswith('eau') or nom_lower.endswith('eu'):
-            return nom + 'x'
-        
-        # -al → -aux
-        if nom_lower.endswith('al'):
-            return nom[:-2] + 'aux'
-        
-        # Règle générale : ajouter 's'
-        return nom + 's'
-
-
+        app.logger.info('🚀 Application Frigo démarrée')
+    
     return app
 
+
+# ============================================
+# POINT D'ENTRÉE POUR LE DÉVELOPPEMENT
+# ============================================
 if __name__ == '__main__':
     app = create_app()
-    app.run(
-        host='0.0.0.0',  # Écoute sur toutes les interfaces
-        port=5000,
-        debug=True
-    )
-
+    app.run(host='0.0.0.0', port=5000)
