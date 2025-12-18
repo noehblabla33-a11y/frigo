@@ -6,11 +6,11 @@ db = SQLAlchemy()
 class Ingredient(db.Model):
     """Catalogue des ingrédients (référentiel permanent)"""
     id = db.Column(db.Integer, primary_key=True)
-    nom = db.Column(db.String(100), nullable=False, unique=True)
+    nom = db.Column(db.String(100), nullable=False, unique=True, index=True)
     unite = db.Column(db.String(20), default='g')
     prix_unitaire = db.Column(db.Float, default=0)
     image = db.Column(db.String(200), nullable=True)
-    categorie = db.Column(db.String(50), nullable=True)
+    categorie = db.Column(db.String(50), nullable=True, index=True)
     poids_piece = db.Column(db.Float, nullable=True)
     calories = db.Column(db.Float, default=0)        # kcal pour 100g/100ml
     proteines = db.Column(db.Float, default=0)       # g pour 100g/100ml
@@ -103,7 +103,7 @@ class StockFrigo(db.Model):
     """Stock actuel dans le frigo"""
     id = db.Column(db.Integer, primary_key=True)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), 
-                             nullable=False, unique=True)
+                             nullable=False, unique=True, index=True)
     quantite = db.Column(db.Float, default=0)
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, 
@@ -314,8 +314,8 @@ class EtapeRecette(db.Model):
 class IngredientRecette(db.Model):
     """Table de liaison entre recettes et ingrédients"""
     id = db.Column(db.Integer, primary_key=True)
-    recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False)
+    recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False, index=True)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False, index=True)
     quantite = db.Column(db.Float, nullable=False)
     
     # Relations
@@ -328,10 +328,10 @@ class RecettePlanifiee(db.Model):
     """Modèle pour les recettes planifiées"""
     id = db.Column(db.Integer, primary_key=True)
     recette_id = db.Column(db.Integer, db.ForeignKey('recette.id', ondelete='CASCADE'), 
-                          nullable=False)
-    date_planification = db.Column(db.DateTime, default=datetime.utcnow)
+                          nullable=False, index=True)
+    date_planification = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     date_preparation = db.Column(db.DateTime, nullable=True)
-    preparee = db.Column(db.Boolean, default=False)
+    preparee = db.Column(db.Boolean, default=False, index=True)
 
 
     def to_dict(self, include_recette=False):
@@ -369,9 +369,9 @@ class RecettePlanifiee(db.Model):
 class ListeCourses(db.Model):
     """Modèle pour la liste de courses"""
     id = db.Column(db.Integer, primary_key=True)
-    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False, index=True)
     quantite = db.Column(db.Float, nullable=False)
-    achete = db.Column(db.Boolean, default=False)
+    achete = db.Column(db.Boolean, default=False, index=True)
     
     # Relations
     ingredient = db.relationship('Ingredient', backref='courses')
