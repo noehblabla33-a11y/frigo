@@ -278,6 +278,43 @@
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
+/* ========== CELLULES SPÉCIFIQUES ========== */
+.item-img-cell {
+    width: 80px;
+    padding: 10px !important;
+}
+
+.item-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    object-position: center; /* Centre l'image dans le conteneur */
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-xs);
+    display: block; /* Force le block display pour éviter l'étirement */
+}
+
+.item-thumbnail-placeholder {
+    width: 60px;
+    height: 60px;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    color: #dee2e6;
+}
+
+.item-name-cell {
+    font-weight: 600;
+}
+
+.actions-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
 /* ========== FILTRES ET RECHERCHE ========== */
 .search-filters {
     display: flex;
