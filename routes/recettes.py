@@ -151,16 +151,27 @@ def planifier_rapide(id):
     planifiee = RecettePlanifiee(recette_id=recette.id)
     db.session.add(planifiee)
     
-    # Ajouter les ingrédients manquants à la liste de courses (fonction factorisée)
-    ingredients_ajoutes = ajouter_ingredients_manquants_courses(recette.id)
-    
+    resultat = ajouter_ingredients_manquants_courses(recette.id)
     db.session.commit()
-    
-    # Message personnalisé selon le contexte
-    if ingredients_ajoutes > 0:
-        flash(f'✓ "{recette.nom}" planifiée ! {ingredients_ajoutes} ingrédient(s) ajouté(s) à la liste de courses.', 'success')
+
+    nb_ajoutes = resultat['ajoutes']  # ✅ Accéder au dict
+    nb_maj = resultat['maj']
+    cout_total = resultat['cout_total']
+
+    if nb_ajoutes > 0 or nb_maj > 0:
+        msg_parts = []
+        if nb_ajoutes > 0:
+            msg_parts.append(f'{nb_ajoutes} ingrédient(s) ajouté(s)')
+        if nb_maj > 0:
+            msg_parts.append(f'{nb_maj} quantité(s) augmentée(s)')
+        
+        message = f'✓ "{recette.nom}" planifiée ! {" et ".join(msg_parts)} à la liste de courses.'
+        if cout_total > 0:
+            message += f' (≈ {cout_total:.2f}€)'
+        
+        flash(message, 'success')
     else:
-        flash(f'✓ "{recette.nom}" planifiée ! Tous les ingrédients sont déjà en stock.', 'success')
+        flash(f'✓ "{recette.nom}" planifiée ! Vous avez déjà tous les ingrédients.', 'success')
     
     return redirect(url_for('recettes.detail', id=recette.id))
 
