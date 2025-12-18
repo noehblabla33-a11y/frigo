@@ -46,9 +46,9 @@ def annuler(id):
     message = f'✓ Planification de "{nom_recette}" annulée.'
     if resultat['supprimes'] > 0 or resultat['retires'] > 0:
         details = []
-        if resultat['supprimes'] > 0:
+        if resultat['reduits'] > 0:
             details.append(f'{resultat["supprimes"]} ingrédient(s) retiré(s) de la liste de courses')
-        if resultat['retires'] > 0:
+        if resultat['reduits'] > 0:
             details.append(f'{resultat["retires"]} quantité(s) réduite(s)')
         message += ' ' + ', '.join(details) + '.'
     
