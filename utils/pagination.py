@@ -1,33 +1,95 @@
 """
-Helper pour la pagination des listes
-"""
+utils/pagination.py
+Utilitaires de pagination pour l'application
 
-def paginate_query(query, page, per_page=20):
+✅ VERSION OPTIMISÉE - PHASE 2
+- Fonction unique centralisée
+- Support de la config Flask
+- Gestion des cas limites
+- Documentation complète
+"""
+from flask import current_app
+
+
+def paginate_query(query, page, per_page=None):
     """
-    Pagine une requête SQLAlchemy
+    Fonction de pagination réutilisable pour toutes les routes
     
     Args:
-        query: Query SQLAlchemy
-        page: Numéro de page (commence à 1)
-        per_page: Nombre d'éléments par page
+        query: Requête SQLAlchemy à paginer
+        page (int): Numéro de page (commence à 1)
+        per_page (int, optional): Nombre d'items par page
+                                  Si None, utilise ITEMS_PER_PAGE_DEFAULT depuis config
     
     Returns:
-        dict avec items, total, page, pages, has_prev, has_next
+        dict: Dictionnaire contenant les informations de pagination
+            - items: Liste des items de la page actuelle
+            - total: Nombre total d'items
+            - page: Numéro de page actuel
+            - pages: Nombre total de pages
+            - per_page: Nombre d'items par page
+            - has_prev: Booléen indiquant s'il y a une page précédente
+            - has_next: Booléen indiquant s'il y a une page suivante
+            - prev_page: Numéro de la page précédente (ou None)
+            - next_page: Numéro de la page suivante (ou None)
+    
+    Exemples:
+        >>> from models.models import Ingredient
+        >>> query = Ingredient.query.order_by(Ingredient.nom)
+        >>> pagination = paginate_query(query, page=1, per_page=24)
+        >>> for ingredient in pagination['items']:
+        ...     print(ingredient.nom)
+        
+        >>> # Avec config automatique
+        >>> pagination = paginate_query(query, page=2)  # Utilise ITEMS_PER_PAGE_DEFAULT
     """
+    # ============================================
+    # RÉCUPÉRATION DES PARAMÈTRES
+    # ============================================
+    
+    # Si per_page n'est pas spécifié, utiliser la config Flask
+    if per_page is None:
+        per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
+    
+    # ============================================
+    # VALIDATION ET NORMALISATION
+    # ============================================
+    
+    # S'assurer que per_page est au moins 1
+    per_page = max(1, per_page)
+    
     # S'assurer que page est au moins 1
     page = max(1, page)
     
-    # Compter le total d'éléments
+    # ============================================
+    # CALCUL DE LA PAGINATION
+    # ============================================
+    
+    # Compter le nombre total d'items
     total = query.count()
     
     # Calculer le nombre total de pages
-    pages = (total + per_page - 1) // per_page if total > 0 else 1
+    if total > 0:
+        pages = (total + per_page - 1) // per_page  # Division avec arrondi supérieur
+    else:
+        pages = 1  # Au moins une page même si vide
     
-    # S'assurer que page ne dépasse pas le nombre de pages
+    # S'assurer que page ne dépasse pas le nombre de pages disponibles
     page = min(page, pages)
     
-    # Récupérer les éléments de la page
-    items = query.limit(per_page).offset((page - 1) * per_page).all()
+    # ============================================
+    # RÉCUPÉRATION DES ITEMS
+    # ============================================
+    
+    # Calculer l'offset pour la requête SQL
+    offset = (page - 1) * per_page
+    
+    # Récupérer les items de la page actuelle
+    items = query.limit(per_page).offset(offset).all()
+    
+    # ============================================
+    # CONSTRUCTION DU RÉSULTAT
+    # ============================================
     
     return {
         'items': items,
@@ -42,30 +104,58 @@ def paginate_query(query, page, per_page=20):
     }
 
 
-def get_page_range(current_page, total_pages, max_pages=5):
+def paginate_list(items_list, page, per_page=None):
     """
-    Calcule la plage de pages à afficher dans la pagination
+    Paginer une liste Python (quand on ne peut pas paginer au niveau SQL)
+    
+    Utile quand on a déjà récupéré tous les items et qu'on doit les filtrer en Python
+    (par exemple, filtrage complexe par stock)
     
     Args:
-        current_page: Page actuelle
-        total_pages: Nombre total de pages
-        max_pages: Nombre maximum de pages à afficher
+        items_list: Liste d'items à paginer
+        page (int): Numéro de page (commence à 1)
+        per_page (int, optional): Nombre d'items par page
     
     Returns:
-        Liste des numéros de page à afficher
+        dict: Même format que paginate_query()
+    
+    Exemple:
+        >>> # Cas où on doit filtrer en Python
+        >>> all_ingredients = Ingredient.query.all()
+        >>> filtered = [ing for ing in all_ingredients if ing.stock and ing.stock.quantite > 0]
+        >>> pagination = paginate_list(filtered, page=1, per_page=24)
     """
-    if total_pages <= max_pages:
-        return list(range(1, total_pages + 1))
+    # Si per_page n'est pas spécifié, utiliser la config Flask
+    if per_page is None:
+        per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
     
-    # Calculer le début et la fin de la plage
-    half = max_pages // 2
+    # Validation
+    per_page = max(1, per_page)
+    page = max(1, page)
     
-    if current_page <= half:
-        # Début de la pagination
-        return list(range(1, max_pages + 1))
-    elif current_page >= total_pages - half:
-        # Fin de la pagination
-        return list(range(total_pages - max_pages + 1, total_pages + 1))
+    # Calculs
+    total = len(items_list)
+    
+    if total > 0:
+        pages = (total + per_page - 1) // per_page
     else:
-        # Milieu de la pagination
-        return list(range(current_page - half, current_page + half + 1))
+        pages = 1
+    
+    page = min(page, pages)
+    
+    # Découpage de la liste
+    start = (page - 1) * per_page
+    end = start + per_page
+    items = items_list[start:end]
+    
+    return {
+        'items': items,
+        'total': total,
+        'page': page,
+        'pages': pages,
+        'per_page': per_page,
+        'has_prev': page > 1,
+        'has_next': page < pages,
+        'prev_page': page - 1 if page > 1 else None,
+        'next_page': page + 1 if page < pages else None
+    }
