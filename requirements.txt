@@ -1,4 +1,27 @@
+# ============================================
+# CORE FLASK
+# ============================================
 Flask==3.0.0
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
-requests
+
+# ============================================
+# SÉCURITÉ & ENVIRONNEMENT
+# ============================================
+python-dotenv==1.0.0
+Werkzeug==3.0.1
+
+# ============================================
+# BASE DE DONNÉES
+# ============================================
+# SQLite est inclus par défaut dans Python
+# Pour PostgreSQL en production, décommenter :
+# psycopg2-binary==2.9.9
+
+# ============================================
+# OPTIONNEL (selon vos besoins)
+# ============================================
+# Flask-WTF==1.2.1          # Pour la protection CSRF
+# Flask-Caching==2.1.0      # Pour le cache
+# gunicorn==21.2.0          # Serveur WSGI pour production
+# sentry-sdk[flask]==1.39.1 # Monitoring des erreurs
