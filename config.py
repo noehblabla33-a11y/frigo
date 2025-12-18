@@ -22,7 +22,7 @@ class Config:
     # SÉCURITÉ
     # ============================================
     # ✅ CHARGÉ DEPUIS .env avec fallback sécurisé
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-CHANGE-IN-PRODUCTION'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'ma_clef'
     
     # ============================================
     # BASE DE DONNÉES
@@ -54,6 +54,19 @@ class Config:
     # CACHE / PERFORMANCE
     # ============================================
     SEND_FILE_MAX_AGE_DEFAULT = 31536000  # 1 an pour les fichiers statiques
+
+    
+    COMPRESS_MIMETYPES = [
+        'text/html',
+        'text/css',
+        'text/xml',
+        'text/plain',
+        'application/json',
+        'application/javascript',
+        'application/xml'
+    ]
+    COMPRESS_LEVEL = 6  # 1-9 (6 = bon compromis)
+    COMPRESS_MIN_SIZE = 500
 
 
 class DevelopmentConfig(Config):

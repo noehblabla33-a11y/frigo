@@ -1,14 +1,10 @@
 """
 app.py
 Point d'entrée de l'application Flask
-
-✅ VERSION OPTIMISÉE - PHASE 1
-- Utilise config.py pour la configuration
-- Support des variables d'environnement via .env
-- Gestion propre des blueprints
 """
 from flask import Flask
 from flask_migrate import Migrate
+from flask_compress import Compress
 from models.models import db
 from routes import (
     frigo_bp, recettes_bp, planification_bp, courses_bp, 
@@ -51,6 +47,9 @@ def create_app(config_name=None):
     
     # Migrations
     migrate = Migrate(app, db)
+
+    # Compression gzip
+    Compress(app)
     
     # ============================================
     # CRÉATION DES DOSSIERS NÉCESSAIRES
