@@ -79,7 +79,6 @@ def liste():
     search_query = request.args.get('search', '')
     categorie_filter = request.args.get('categorie', '')
     stock_filter = request.args.get('stock', '')
-    view_mode = request.args.get('view', 'grid')
     page = request.args.get('page', 1, type=int)
 
     items_per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
@@ -147,8 +146,7 @@ def liste():
                          categories_count=categories_count,
                          search_query=search_query,
                          categorie_filter=categorie_filter,
-                         stock_filter=stock_filter,
-                         view_mode=view_mode)
+                         stock_filter=stock_filter)
 
 @ingredients_bp.route('/modifier/<int:id>', methods=['GET', 'POST'])
 def modifier(id):

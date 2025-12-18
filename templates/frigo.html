@@ -37,8 +37,6 @@
     </p>
     
     {% if stocks %}
-        {% if view_mode == 'list' %}
-        <!-- MODE LISTE -->
         <div class="frigo-list">
             <table class="frigo-table">
                 <thead>
@@ -140,67 +138,12 @@
                 </tfoot>
             </table>
         </div>
-        {% else %}
-        <!-- MODE GRILLE - Utilise les mêmes classes que les ingrédients -->
-        <div class="item-grid">
-            {% for stock in stocks %}
-            <div class="item-card">
-                <div class="item-image">
-                    {% if stock.ingredient.image %}
-                    <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" 
-                         alt="{{ stock.ingredient.nom }}"
-                         loading="lazy">
-                    {% else %}
-                    <div class="no-image">📦</div>
-                    {% endif %}
-                </div>
-                <div class="item-info">
-                    <h4>{{ stock.ingredient.nom }}</h4>
-                    
-                    <!-- Édition rapide de la quantité -->
-                    <div class="quick-edit-container" data-stock-id="{{ stock.id }}">
-                        <div class="quantite-display" onclick="enableEdit({{ stock.id }})">
-                            <span class="quantite-value" id="quantite-display-{{ stock.id }}">{{ stock.quantite }}</span>
-                            <span class="quantite-unite">{{ stock.ingredient.unite }}</span>
-                            <span class="edit-icon">✏️</span>
-                        </div>
-                        <div class="quantite-edit" id="quantite-edit-{{ stock.id }}" style="display: none;">
-                            <input type="number" 
-                                   step="0.01" 
-                                   class="quantite-input-inline" 
-                                   id="quantite-input-grid-{{ stock.id }}"
-                                   value="{{ stock.quantite }}"
-                                   data-stock-id="{{ stock.id }}"
-                                   data-original="{{ stock.quantite }}">
-                            <span class="quantite-unite-edit">{{ stock.ingredient.unite }}</span>
-                            <button class="btn-inline btn-inline-save" onclick="saveQuantiteGrid({{ stock.id }})">✓</button>
-                            <button class="btn-inline btn-inline-cancel" onclick="cancelEdit({{ stock.id }})">✖</button>
-                        </div>
-                        <div class="edit-status" id="status-grid-{{ stock.id }}"></div>
-                    </div>
-                    
-                    {# MODIFICATION : Conversion en €/kg si unité est en g #}
-                    {% if stock.ingredient.prix_unitaire > 0 %}
-                    <p class="ingredient-prix">{{ stock.ingredient.prix_unitaire|prix_lisible(stock.ingredient.unite, stock.ingredient) }}</p>
-                    <p class="ingredient-stock">Valeur: {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€</p>
-                    {% endif %}
-                </div>
-                <div class="item-actions">
-                    <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
-                       class="btn btn-danger btn-small" 
-                       onclick="return confirm('Retirer cet ingrédient du frigo ?')">
-                        Vider
-                    </a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
         
         <!-- Pagination -->
         {{ render_pagination(pagination, 'frigo.liste', view=view_mode) }}
+        
     {% else %}
-    <p>Votre frigo est vide ! Ajoutez des ingrédients ci-dessous.</p>
+        <p>Votre frigo est vide ! Ajoutez des ingrédients ci-dessous.</p>
     {% endif %}
 </div>
 

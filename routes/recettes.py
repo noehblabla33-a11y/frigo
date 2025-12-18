@@ -91,7 +91,6 @@ def liste():
     type_filter = request.args.get('type', '')
     ingredient_filter_str = request.args.get('ingredient', '')
     ingredient_filter = int(ingredient_filter_str) if ingredient_filter_str else None
-    view_mode = request.args.get('view', 'grid')
     page = request.args.get('page', 1, type=int)
     
     # Récupérer ITEMS_PER_PAGE depuis la config Flask
@@ -125,11 +124,10 @@ def liste():
                          recettes=pagination['items'],
                          pagination=pagination,
                          ingredients=ingredients,
-                         types_recettes=TYPES_RECETTES,  # ✅ Depuis constants.py
+                         types_recettes=TYPES_RECETTES,
                          search_query=search_query,
                          type_filter=type_filter,
-                         ingredient_filter=ingredient_filter,
-                         view_mode=view_mode)
+                         ingredient_filter=ingredient_filter)
 
 
 @recettes_bp.route('/<int:id>')

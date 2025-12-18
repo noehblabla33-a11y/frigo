@@ -121,14 +121,6 @@
                 </small>
             </div>
 
-            <!--
-            <div class="form-group">
-                <label>Prix unitaire (€)</label>
-                <input type="number" step="0.01" name="prix_unitaire" placeholder="Prix par unité (optionnel)">
-                <small style="color: #6c757d;">Ex: 2.50 pour 2.50€/kg ou 2.50€/L</small>
-            </div>
-            -->
-
             <div class="form-group">
                 <label>Prix unitaire 
                     <span id="prix-label-detail">(€)</span>
@@ -179,8 +171,6 @@
     </p>
     
     {% if ingredients %}
-        {% if view_mode == 'list' %}
-        <!-- MODE LISTE -->
         <div class="item-list">
             <table class="item-table">
                 <thead>
@@ -250,48 +240,6 @@
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <!-- MODE GRILLE -->
-        <div class="item-grid">
-            {% for ing in ingredients %}
-            <div class="item-card">
-                {% if ing.categorie %}
-                <div class="category-badge">
-                    {% for cat_name, cat_icon in categories %}
-                        {% if cat_name == ing.categorie %}
-                            {{ cat_icon }} {{ cat_name }}
-                        {% endif %}
-                    {% endfor %}
-                </div>
-                {% endif %}
-                <div class="item-image">
-                    {% if ing.image %}
-                    <img src="{{ url_for('static', filename=ing.image.replace('static/', '')) }}" 
-                         alt="{{ ing.nom }}"
-                         loading="lazy">
-                    {% else %}
-                    <div class="no-image">📦</div>
-                    {% endif %}
-                </div>
-                <div class="item-info">
-                    <h4>{{ ing.nom }}</h4>
-                    <p class="ingredient-unite">Unité: {{ ing.unite }}</p>
-                    {% if ing.prix_unitaire > 0 %}
-                    <p class="ingredient-prix">{{ ing.prix_unitaire|prix_lisible(ing.unite, ing) }}</p>
-                    {% endif %}
-                </div>
-                <div class="item-actions">
-                    <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" class="btn btn-small">Modifier</a>
-                    <a href="{{ url_for('ingredients.supprimer', id=ing.id) }}" 
-                       class="btn btn-danger btn-small" 
-                       onclick="return confirm('Supprimer cet ingrédient ?')">
-                        Supprimer
-                    </a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
         
         <!-- Pagination -->
         {{ render_pagination(pagination, 'ingredients.liste',

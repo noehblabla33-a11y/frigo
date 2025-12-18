@@ -240,8 +240,6 @@
     </div>
     
     {% if recettes %}
-        {% if view_mode == 'list' %}
-        <!-- MODE LISTE -->
         <div class="item-list">
             <table class="item-table">
                 <thead>
@@ -311,81 +309,6 @@
                 </tbody>
             </table>
         </div>
-        {% else %}
-        <!-- MODE GRILLE -->
-        <div class="recettes-grid">
-            {% for recette in recettes %}
-            {% set dispo = recette.calculer_disponibilite_ingredients() %}
-            <div class="recette-card">
-                <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link">
-                    <div class="recette-image">
-                        {% if recette.image %}
-                        <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
-                            alt="{{ recette.nom }}"
-                            loading="lazy">
-                        {% else %}
-                        <div class="no-image">🍳</div>
-                        {% endif %}
-                        
-                        <!-- Badge type à GAUCHE -->
-                        {% if recette.type_recette %}
-                        <span class="recette-type-badge">{{ recette.type_recette }}</span>
-                        {% endif %}
-                        
-                        <!-- NOUVEAU : Badge "Réalisable" à DROITE -->
-                        {% if dispo.realisable %}
-                        <span class="badge-realisable">✓ Réalisable</span>
-                        {% endif %}
-                    </div>
-                    <div class="recette-info">
-                        <h4>{{ recette.nom }}</h4>
-                        <div class="recette-meta">
-                            <span class="recette-ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
-                            {% if recette.temps_preparation %}
-                            <span class="recette-temps">⏱️ {{ recette.temps_preparation }} min</span>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- NOUVEAU : Barre de progression des ingrédients disponibles -->
-                        {% if dispo.pourcentage > 0 %}
-                        <div class="disponibilite-bar">
-                            <div class="disponibilite-progress" 
-                                style="width: {{ dispo.pourcentage }}%; 
-                                        background: {% if dispo.realisable %}#28a745{% elif dispo.pourcentage >= 75 %}#ffc107{% elif dispo.pourcentage >= 50 %}#ff9800{% else %}#f44336{% endif %};">
-                            </div>
-                        </div>
-                        <p class="disponibilite-text" 
-                        style="color: {% if dispo.realisable %}#28a745{% elif dispo.pourcentage >= 75 %}#ffc107{% elif dispo.pourcentage >= 50 %}#ff9800{% else %}#f44336{% endif %}; font-size: 0.85em;">
-                            {{ dispo.pourcentage }}% disponible
-                        </p>
-                        {% endif %}
-                        
-                        {% set cout = recette.calculer_cout() %}
-                        {% if cout > 0 %}
-                        <p class="recette-cout">≈ {{ cout }}€</p>
-                        {% endif %}
-                    </div>
-                </a>
-                <div class="recette-actions">
-                    <form method="POST" 
-                        action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
-                        style="display: inline;">
-                        <button type="submit" 
-                                class="btn btn-small"
-                                style="background: #28a745; color: white;">
-                            📅 Planifier
-                        </button>
-                    </form>
-                    <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
-                    class="btn btn-danger btn-small"
-                    onclick="return confirm('Supprimer cette recette ?')">
-                        🗑️
-                    </a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
         
         <!-- Pagination -->
         {{ render_pagination(pagination, 'recettes.liste',

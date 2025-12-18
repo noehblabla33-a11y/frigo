@@ -95,8 +95,7 @@ def liste():
     # ============================================
     # AFFICHAGE DE LA LISTE (GET)
     # ============================================
-    
-    view_mode = request.args.get('view', 'grid')
+
     page = request.args.get('page', 1, type=int)
     
     # ✅ OPTIMISATION : Filtrer les stocks à 0 au niveau de la requête SQL
@@ -119,7 +118,6 @@ def liste():
                          stocks=pagination['items'],
                          pagination=pagination,
                          tous_ingredients=tous_ingredients,
-                         view_mode=view_mode,
                          valeur_totale_globale=valeur_totale_globale)
 
 
