@@ -180,7 +180,6 @@
                         <th>Catégorie</th>
                         <th>Unité</th>
                         <th>Prix (en kg/L)</th>
-                        <th> </th>
                         <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
@@ -216,15 +215,6 @@
                         <td>{{ ing.unite }}</td>
                         <td>
                             {{ ing.prix_unitaire|prix_lisible(ing.unite, ing) }}
-                        </td>
-                        <td>
-                            {% if ing.stock %}
-                            <span class="stock-badge stock-available badge">
-                                ✓ {{ ing.stock.quantite }} {{ ing.unite }}
-                            </span>
-                            {% else %}
-                            <span class="stock-badge stock-empty badge">✗ Pas en stock</span>
-                            {% endif %}
                         </td>
                         <td class="actions-cell">
                             <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" 
