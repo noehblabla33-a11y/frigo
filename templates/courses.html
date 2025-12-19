@@ -104,20 +104,6 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot>
-                    <tr class="total-row">
-                        <td colspan="5" style="text-align: right; font-weight: bold;">
-                            Total estimé :
-                        </td>
-                        <td colspan="2" id="total-footer">
-                            {% if total_estime > 0 %}
-                            {{ "%.2f"|format(total_estime) }} €
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                    </tr>
-                </tfoot>
             </table>
         </div>
         <button type="submit" class="btn-valider-achats">
