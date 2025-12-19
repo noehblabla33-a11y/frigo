@@ -1,24 +1,41 @@
+"""
+models/models.py
+Modèles de données pour l'application Frigo
+
+SYSTÈME D'UNITÉS REFACTORÉ :
+- Les quantités sont stockées dans l'unité NATIVE de l'ingrédient
+- Pour un œuf (unite='pièce'), on stocke 2 (pas 120g)
+- Pour de la farine (unite='g'), on stocke 500
+- Pour du lait (unite='ml'), on stocke 250
+
+Les calculs de nutrition et de coût utilisent utils.units pour convertir
+vers grammes quand nécessaire.
+"""
+
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
 db = SQLAlchemy()
 
+
 class Ingredient(db.Model):
     """Catalogue des ingrédients (référentiel permanent)"""
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False, unique=True, index=True)
-    unite = db.Column(db.String(20), default='g')
-    prix_unitaire = db.Column(db.Float, default=0)
+    unite = db.Column(db.String(20), default='g')  # 'g', 'ml', ou 'pièce'
+    prix_unitaire = db.Column(db.Float, default=0)  # Prix par unité native (€/g, €/ml, €/pièce)
     image = db.Column(db.String(200), nullable=True)
     categorie = db.Column(db.String(50), nullable=True, index=True)
-    poids_piece = db.Column(db.Float, nullable=True)
-    calories = db.Column(db.Float, default=0)        # kcal pour 100g/100ml
-    proteines = db.Column(db.Float, default=0)       # g pour 100g/100ml
-    glucides = db.Column(db.Float, default=0)        # g pour 100g/100ml
-    lipides = db.Column(db.Float, default=0)         # g pour 100g/100ml
-    fibres = db.Column(db.Float, default=0)          # g pour 100g/100ml
-    sucres = db.Column(db.Float, default=0)          # g pour 100g/100ml
-    sel = db.Column(db.Float, default=0)             # g pour 100g/100ml
+    poids_piece = db.Column(db.Float, nullable=True)  # Poids en grammes (requis si unite='pièce')
+    
+    # Valeurs nutritionnelles pour 100g ou 100ml
+    calories = db.Column(db.Float, default=0)
+    proteines = db.Column(db.Float, default=0)
+    glucides = db.Column(db.Float, default=0)
+    lipides = db.Column(db.Float, default=0)
+    fibres = db.Column(db.Float, default=0)
+    sucres = db.Column(db.Float, default=0)
+    sel = db.Column(db.Float, default=0)
     
     # Relations
     stock = db.relationship('StockFrigo', backref=db.backref('ingredient', lazy='joined'),
@@ -26,12 +43,39 @@ class Ingredient(db.Model):
                             cascade='all, delete-orphan',
                             lazy='select')
 
-    def get_nutrition_for_quantity(self, quantite):
+    def get_quantite_en_grammes(self, quantite_native: float) -> float:
         """
-        Calcule les valeurs nutritionnelles pour une quantité donnée
-        Les valeurs sont stockées pour 100g/100ml
+        Convertit une quantité en unité native vers grammes.
+        Utilisé pour les calculs nutritionnels.
+        
+        Args:
+            quantite_native: Quantité dans l'unité native (ex: 2 pour 2 œufs)
+        
+        Returns:
+            Quantité en grammes
         """
-        if quantite <= 0:
+        if quantite_native <= 0:
+            return 0
+        
+        if self.unite == 'pièce' and self.poids_piece and self.poids_piece > 0:
+            return quantite_native * self.poids_piece
+        
+        # Pour g et ml, c'est déjà l'unité de base
+        return quantite_native
+
+    def get_nutrition_for_quantity(self, quantite_native: float) -> dict:
+        """
+        Calcule les valeurs nutritionnelles pour une quantité donnée.
+        La quantité est en unité NATIVE de l'ingrédient.
+        Les valeurs nutritionnelles sont stockées pour 100g/100ml.
+        
+        Args:
+            quantite_native: Quantité dans l'unité native (ex: 2 pour 2 œufs)
+        
+        Returns:
+            Dict avec les valeurs nutritionnelles
+        """
+        if quantite_native <= 0:
             return {
                 'calories': 0,
                 'proteines': 0,
@@ -42,8 +86,11 @@ class Ingredient(db.Model):
                 'sel': 0
             }
         
-        # Convertir la quantité en base 100
-        factor = quantite / 100.0
+        # Convertir en grammes pour le calcul
+        quantite_grammes = self.get_quantite_en_grammes(quantite_native)
+        
+        # Factor pour 100g
+        factor = quantite_grammes / 100.0
         
         return {
             'calories': round(self.calories * factor, 1),
@@ -55,16 +102,29 @@ class Ingredient(db.Model):
             'sel': round(self.sel * factor, 2)
         }
 
+    def calculer_prix(self, quantite_native: float) -> float:
+        """
+        Calcule le prix pour une quantité donnée.
+        
+        Le prix_unitaire est stocké :
+        - en €/pièce pour les ingrédients en pièces
+        - en €/g pour les ingrédients en grammes
+        - en €/ml pour les ingrédients en millilitres
+        
+        Args:
+            quantite_native: Quantité dans l'unité native
+        
+        Returns:
+            Prix en euros
+        """
+        if quantite_native <= 0 or not self.prix_unitaire or self.prix_unitaire <= 0:
+            return 0
+        
+        return round(quantite_native * self.prix_unitaire, 2)
+
     def to_dict(self, include_stock=False, include_nutrition=False):
         """
         Convertit l'ingrédient en dictionnaire pour JSON
-        
-        Args:
-            include_stock: Inclure les infos de stock du frigo
-            include_nutrition: Inclure les valeurs nutritionnelles
-        
-        Returns:
-            dict: Données de l'ingrédient au format JSON
         """
         data = {
             'id': self.id,
@@ -76,7 +136,6 @@ class Ingredient(db.Model):
             'poids_piece': self.poids_piece
         }
         
-        # Inclure le stock si demandé
         if include_stock:
             data['stock'] = {
                 'en_stock': self.stock is not None and self.stock.quantite > 0,
@@ -84,7 +143,6 @@ class Ingredient(db.Model):
                 'date_modification': self.stock.date_modification.isoformat() if self.stock else None
             }
         
-        # Inclure les valeurs nutritionnelles si demandé
         if include_nutrition:
             data['nutrition'] = {
                 'calories': self.calories,
@@ -101,12 +159,13 @@ class Ingredient(db.Model):
     def __repr__(self):
         return f'<Ingredient {self.nom}>'
 
+
 class StockFrigo(db.Model):
-    """Stock actuel dans le frigo"""
+    """Stock actuel dans le frigo - quantités en unités natives"""
     id = db.Column(db.Integer, primary_key=True)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), 
                              nullable=False, unique=True, index=True)
-    quantite = db.Column(db.Float, default=0)
+    quantite = db.Column(db.Float, default=0)  # En unité native de l'ingrédient
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, 
                                  onupdate=datetime.utcnow)
@@ -114,12 +173,6 @@ class StockFrigo(db.Model):
     def to_dict(self, include_ingredient=False):
         """
         Convertit le stock en dictionnaire pour JSON
-        
-        Args:
-            include_ingredient: Inclure les détails de l'ingrédient
-        
-        Returns:
-            dict: Données du stock au format JSON
         """
         data = {
             'id': self.id,
@@ -131,7 +184,6 @@ class StockFrigo(db.Model):
             'date_modification': self.date_modification.isoformat()
         }
         
-        # Inclure les détails complets de l'ingrédient si demandé
         if include_ingredient:
             data['ingredient'] = self.ingredient.to_dict()
         
@@ -140,11 +192,12 @@ class StockFrigo(db.Model):
     def __repr__(self):
         return f'<StockFrigo {self.ingredient.nom}: {self.quantite}>'
 
+
 class Recette(db.Model):
     """Modèle pour les recettes"""
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False)
-    instructions = db.Column(db.Text)  # Gardé pour compatibilité
+    instructions = db.Column(db.Text)
     image = db.Column(db.String(200), nullable=True)
     type_recette = db.Column(db.String(50), nullable=True)
     temps_preparation = db.Column(db.Integer, nullable=True)
@@ -158,17 +211,20 @@ class Recette(db.Model):
     planifications = db.relationship('RecettePlanifiee', backref='recette_ref', 
                                     cascade='all, delete-orphan')
     
-    def calculer_cout(self):
-        """Calcule le coût estimé de la recette"""
+    def calculer_cout(self) -> float:
+        """
+        Calcule le coût estimé de la recette.
+        Les quantités sont en unités natives, les prix aussi.
+        """
         cout_total = 0
         for ing_rec in self.ingredients:
-            if ing_rec.ingredient.prix_unitaire > 0:
-                cout_total += ing_rec.quantite * ing_rec.ingredient.prix_unitaire
+            cout_total += ing_rec.ingredient.calculer_prix(ing_rec.quantite)
         return round(cout_total, 2)
 
-    def calculer_nutrition(self):
+    def calculer_nutrition(self) -> dict:
         """
-        Calcule les valeurs nutritionnelles totales de la recette
+        Calcule les valeurs nutritionnelles totales de la recette.
+        Les quantités sont en unités natives, converties pour le calcul.
         """
         nutrition = {
             'calories': 0,
@@ -185,20 +241,20 @@ class Recette(db.Model):
             for key in nutrition.keys():
                 nutrition[key] += ing_nutrition[key]
         
-        # Arrondir les résultats
         return {k: round(v, 1) for k, v in nutrition.items()}
 
-    def calculer_disponibilite_ingredients(self):
+    def calculer_disponibilite_ingredients(self) -> dict:
         """
-        Calcule le pourcentage d'ingrédients disponibles dans le frigo
-        Retourne un dictionnaire avec les détails
+        Calcule le pourcentage d'ingrédients disponibles dans le frigo.
+        Les comparaisons se font en unités natives.
         """
         if not self.ingredients:
             return {
                 'pourcentage': 0,
                 'ingredients_disponibles': [],
                 'ingredients_manquants': [],
-                'realisable': False
+                'realisable': False,
+                'score': 0
             }
         
         total_ingredients = len(self.ingredients)
@@ -224,31 +280,19 @@ class Recette(db.Model):
                 })
         
         pourcentage = (len(disponibles) / total_ingredients * 100) if total_ingredients > 0 else 0
-        realisable = len(manquants) == 0
         
         return {
             'pourcentage': round(pourcentage, 1),
             'ingredients_disponibles': disponibles,
             'ingredients_manquants': manquants,
-            'realisable': realisable,
-            'score': len(disponibles)  # Pour le tri
+            'realisable': len(manquants) == 0,
+            'score': len(disponibles)
         }
-
 
     def to_dict(self, include_ingredients=False, include_etapes=False, 
                 include_nutrition=False, include_cout=False, include_disponibilite=False):
         """
         Convertit la recette en dictionnaire pour JSON
-        
-        Args:
-            include_ingredients: Inclure la liste des ingrédients
-            include_etapes: Inclure les étapes de préparation
-            include_nutrition: Inclure les valeurs nutritionnelles
-            include_cout: Inclure le coût estimé
-            include_disponibilite: Inclure la disponibilité des ingrédients
-        
-        Returns:
-            dict: Données de la recette au format JSON
         """
         data = {
             'id': self.id,
@@ -259,7 +303,6 @@ class Recette(db.Model):
             'temps_preparation': self.temps_preparation
         }
         
-        # Inclure les ingrédients si demandé
         if include_ingredients:
             data['ingredients'] = [
                 {
@@ -267,13 +310,13 @@ class Recette(db.Model):
                     'ingredient_nom': ing_rec.ingredient.nom,
                     'quantite': ing_rec.quantite,
                     'unite': ing_rec.ingredient.unite,
-                    'prix_unitaire': ing_rec.ingredient.prix_unitaire
+                    'prix_unitaire': ing_rec.ingredient.prix_unitaire,
+                    'poids_piece': ing_rec.ingredient.poids_piece
                 }
                 for ing_rec in self.ingredients
             ]
             data['nb_ingredients'] = len(self.ingredients)
         
-        # Inclure les étapes si demandé
         if include_etapes:
             data['etapes'] = [
                 {
@@ -285,15 +328,12 @@ class Recette(db.Model):
             ]
             data['nb_etapes'] = len(self.etapes)
         
-        # Inclure les valeurs nutritionnelles si demandé
         if include_nutrition:
             data['nutrition'] = self.calculer_nutrition()
         
-        # Inclure le coût si demandé
         if include_cout:
             data['cout_estime'] = self.calculer_cout()
         
-        # Inclure la disponibilité si demandé
         if include_disponibilite:
             data['disponibilite'] = self.calculer_disponibilite_ingredients()
         
@@ -302,23 +342,32 @@ class Recette(db.Model):
     def __repr__(self):
         return f'<Recette {self.nom}>'
 
+
 class EtapeRecette(db.Model):
     """Étapes de préparation d'une recette avec minuteurs optionnels"""
     id = db.Column(db.Integer, primary_key=True)
     recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False)
     ordre = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text, nullable=False)
-    duree_minutes = db.Column(db.Integer, nullable=True)  # Minuteur optionnel
+    duree_minutes = db.Column(db.Integer, nullable=True)
     
     def __repr__(self):
         return f'<EtapeRecette {self.recette_id} - Étape {self.ordre}>'
 
+
 class IngredientRecette(db.Model):
-    """Table de liaison entre recettes et ingrédients"""
+    """
+    Table de liaison entre recettes et ingrédients.
+    
+    La quantité est stockée en UNITÉ NATIVE de l'ingrédient :
+    - Pour un œuf (unite='pièce') : quantite=2 signifie 2 œufs
+    - Pour de la farine (unite='g') : quantite=500 signifie 500g
+    - Pour du lait (unite='ml') : quantite=250 signifie 250ml
+    """
     id = db.Column(db.Integer, primary_key=True)
     recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False, index=True)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False, index=True)
-    quantite = db.Column(db.Float, nullable=False)
+    quantite = db.Column(db.Float, nullable=False)  # En unité native de l'ingrédient
     
     # Relations
     ingredient = db.relationship('Ingredient', backref='recettes')
@@ -329,6 +378,7 @@ class IngredientRecette(db.Model):
     
     def __repr__(self):
         return f'<IngredientRecette R:{self.recette_id} I:{self.ingredient_id}>'
+
 
 class RecettePlanifiee(db.Model):
     """Modèle pour les recettes planifiées"""
@@ -347,12 +397,6 @@ class RecettePlanifiee(db.Model):
     def to_dict(self, include_recette=False):
         """
         Convertit la recette planifiée en dictionnaire pour JSON
-        
-        Args:
-            include_recette: Inclure les détails complets de la recette
-        
-        Returns:
-            dict: Données de la planification au format JSON
         """
         data = {
             'id': self.id,
@@ -363,7 +407,6 @@ class RecettePlanifiee(db.Model):
             'preparee': self.preparee
         }
         
-        # Inclure les détails de la recette si demandé
         if include_recette:
             data['recette'] = self.recette_ref.to_dict(
                 include_ingredients=True,
@@ -371,16 +414,16 @@ class RecettePlanifiee(db.Model):
             )
         
         return data
-
     
     def __repr__(self):
         return f'<RecettePlanifiee {self.recette_id} - {self.date_planification}>'
 
+
 class ListeCourses(db.Model):
-    """Modèle pour la liste de courses"""
+    """Modèle pour la liste de courses - quantités en unités natives"""
     id = db.Column(db.Integer, primary_key=True)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False, index=True)
-    quantite = db.Column(db.Float, nullable=False)
+    quantite = db.Column(db.Float, nullable=False)  # En unité native de l'ingrédient
     achete = db.Column(db.Boolean, default=False, index=True)
     
     # Relations
@@ -393,12 +436,6 @@ class ListeCourses(db.Model):
     def to_dict(self, include_ingredient=False):
         """
         Convertit l'item de course en dictionnaire pour JSON
-        
-        Args:
-            include_ingredient: Inclure les détails de l'ingrédient
-        
-        Returns:
-            dict: Données de l'item au format JSON
         """
         data = {
             'id': self.id,
@@ -409,7 +446,6 @@ class ListeCourses(db.Model):
             'achete': self.achete
         }
         
-        # Inclure les détails complets de l'ingrédient si demandé
         if include_ingredient:
             data['ingredient'] = self.ingredient.to_dict()
         

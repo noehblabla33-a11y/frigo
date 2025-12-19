@@ -128,8 +128,7 @@
                                 <option value="">Sélectionner...</option>
                                 {% for ing in ingredients %}
                                 <option value="{{ ing.id }}" 
-                                        data-unite="{{ ing.unite }}"
-                                        data-poids-piece="{{ ing.poids_piece if ing.poids_piece else '' }}">
+                                        data-unite="{{ ing.unite }}">
                                     {{ ing.nom }}
                                 </option>
                                 {% endfor %}
@@ -150,15 +149,6 @@
                                    value="g" 
                                    readonly 
                                    style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
-                        </div>
-                        
-                        <div class="form-group" style="flex: 2;">
-                            <small class="piece-helper" 
-                                   style="color: #667eea; 
-                                          font-weight: 600; 
-                                          display: none; 
-                                          line-height: 2.5;">
-                            </small>
                         </div>
                         
                         <div class="form-group" style="flex: 0;">
@@ -316,9 +306,13 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='javascript/recettes.js') }}"></script>
 <script src="{{ url_for('static', filename='javascript/collapsable.js') }}"></script>
-<script src="{{ url_for('static', filename='javascript/ingredient-pieces.js') }}"></script>
+<script src="{{ url_for('static', filename='javascript/recettes.js') }}"></script>
+<script src="{{ url_for('static', filename='javascript/ingredient-units.js') }}"></script>
+<script>
+    window.ingredientCount = 1;
+    window.etapeCount = 1;
+</script>
 <script>
 // Fonction pour ajouter un nouvel ingrédient dynamiquement
 function ajouterIngredient() {
@@ -333,9 +327,7 @@ function ajouterIngredient() {
             <select name="ingredient_${ingredientCount}" class="ingredient-select searchable-select" required>
                 <option value="">Sélectionner...</option>
                 {% for ing in ingredients %}
-                <option value="{{ ing.id }}" 
-                        data-unite="{{ ing.unite }}"
-                        data-poids-piece="{{ ing.poids_piece if ing.poids_piece else '' }}">
+                <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
                     {{ ing.nom }}
                 </option>
                 {% endfor %}
@@ -356,15 +348,6 @@ function ajouterIngredient() {
                    value="g" 
                    readonly 
                    style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
-        </div>
-        
-        <div class="form-group" style="flex: 2;">
-            <small class="piece-helper" 
-                   style="color: #667eea; 
-                          font-weight: 600; 
-                          display: none; 
-                          line-height: 2.5;">
-            </small>
         </div>
         
         <div class="form-group" style="flex: 0;">

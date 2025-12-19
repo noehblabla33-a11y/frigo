@@ -45,7 +45,6 @@ def annuler(id):
     # Message personnalisé selon ce qui a été fait
     message = f'✓ Planification de "{nom_recette}" annulée.'
     
-    # ✅ CORRECTION: utiliser les bonnes clés du dictionnaire avec .get()
     supprimes = resultat.get('supprimes', 0)
     reduits = resultat.get('reduits', 0)
     

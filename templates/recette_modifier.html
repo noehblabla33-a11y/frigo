@@ -64,9 +64,7 @@
                             <option value="">Sélectionner...</option>
                             {% for ing in ingredients %}
                             <option value="{{ ing.id }}" 
-                                    data-unite="{{ ing.unite }}"
-                                    data-poids-piece="{{ ing.poids_piece if ing.poids_piece else '' }}"
-                                    {% if ing_rec.ingredient_id == ing.id %}selected{% endif %}>
+                                    data-unite="{{ ing.unite }}">
                                 {{ ing.nom }}
                             </option>
                             {% endfor %}
@@ -88,15 +86,6 @@
                                value="{{ ing_rec.ingredient.unite }}" 
                                readonly 
                                style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
-                    </div>
-                    
-                    <div class="form-group" style="flex: 2;">
-                        <small class="piece-helper" 
-                               style="color: #667eea; 
-                                      font-weight: 600; 
-                                      display: none; 
-                                      line-height: 2.5;">
-                        </small>
                     </div>
                     
                     <div class="form-group" style="flex: 0;">
@@ -138,15 +127,6 @@
                                value="g" 
                                readonly 
                                style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
-                    </div>
-                    
-                    <div class="form-group" style="flex: 2;">
-                        <small class="piece-helper" 
-                               style="color: #667eea; 
-                                      font-weight: 600; 
-                                      display: none; 
-                                      line-height: 2.5;">
-                        </small>
                     </div>
                     
                     <div class="form-group" style="flex: 0;">
@@ -276,7 +256,12 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='javascript/recettes.js') }}"></script>
-<script src="{{ url_for('static', filename='javascript/ingredient-pieces.js') }}"></script>
+<script src="{{ url_for('static', filename='javascript/ingredient-units.js') }}"></script>
+<script>
+    window.ingredientCount = 1;
+    window.etapeCount = 1;
+</script>
+
 <script>
 // Initialiser le compteur d'étapes avec le nombre existant
 {% if recette.etapes %}
@@ -305,9 +290,7 @@ function ajouterIngredient() {
             <select name="ingredient_${ingredientCount}" class="ingredient-select searchable-select" required>
                 <option value="">Sélectionner...</option>
                 {% for ing in ingredients %}
-                <option value="{{ ing.id }}" 
-                        data-unite="{{ ing.unite }}"
-                        data-poids-piece="{{ ing.poids_piece if ing.poids_piece else '' }}">
+                <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
                     {{ ing.nom }}
                 </option>
                 {% endfor %}
@@ -328,15 +311,6 @@ function ajouterIngredient() {
                    value="g" 
                    readonly 
                    style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
-        </div>
-        
-        <div class="form-group" style="flex: 2;">
-            <small class="piece-helper" 
-                   style="color: #667eea; 
-                          font-weight: 600; 
-                          display: none; 
-                          line-height: 2.5;">
-            </small>
         </div>
         
         <div class="form-group" style="flex: 0;">
@@ -384,9 +358,6 @@ function updateRemoveButtons() {
 // Initialisation au chargement
 document.addEventListener('DOMContentLoaded', () => {
     updateRemoveButtons();
-    
-    // Initialiser les helpers pour les ingrédients existants
-    window.IngredientPiecesHelper.init();
     
     // Cacher le bouton de suppression de la première étape si une seule étape
     const allEtapes = document.querySelectorAll('.etape-row');
