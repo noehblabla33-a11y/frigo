@@ -5,7 +5,7 @@
 
 from flask import Blueprint, render_template, jsonify
 from sqlalchemy import func, desc, case
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -24,11 +24,11 @@ def calculer_statistiques_categories():
         func.count(IngredientRecette.id).label('count'),
         func.sum(IngredientRecette.quantite * Ingredient.prix_unitaire).label('cout')
     ).select_from(RecettePlanifiee)\
-    .join(Recette, RecettePlanifiee.recette_id == Recette.id)\
-    .join(IngredientRecette, Recette.id == IngredientRecette.recette_id)\
-    .join(Ingredient, IngredientRecette.ingredient_id == Ingredient.id)\
+    .join(Recette)\
+    .join(IngredientRecette)\
+    .join(Ingredient)\
     .filter(RecettePlanifiee.preparee == True)\
-    .group_by('categorie')\
+    .group_by(Ingredient.categorie)\
     .all()
     
     return {
