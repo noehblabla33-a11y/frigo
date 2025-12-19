@@ -51,11 +51,12 @@ def liste():
             db.session.add(ing_recette)
         
         # Ajouter les étapes avec durée optionnelle
-        for ordre, description in enumerate(parse_etapes_list(request.form), start=1):
+        for ordre, (description, duree_minutes) in enumerate(parse_etapes_list(request.form), start=1):
             etape = EtapeRecette(
                 recette_id=recette.id,
                 ordre=ordre,
-                description=description
+                description=description,
+                duree_minutes=duree_minutes
             )
             db.session.add(etape)
         
@@ -154,7 +155,8 @@ def planifier_rapide(id):
     else:
         flash(f'✓ "{recette.nom}" planifiée ! Vous avez déjà tous les ingrédients.', 'success')
     
-    return redirect(url_for('recettes.detail', id=recette.id))
+    next_url = request.form.get('next') or request.referrer or url_for('recettes.liste')
+    return redirect(next_url)
 
 
 
@@ -195,11 +197,12 @@ def modifier(id):
         # Mise à jour des étapes
         EtapeRecette.query.filter_by(recette_id=id).delete()
         
-        for ordre, description in enumerate(parse_etapes_list(request.form), start=1):
+        for ordre, (description, duree_minutes) in enumerate(parse_etapes_list(request.form), start=1):
             etape = EtapeRecette(
                 recette_id=recette.id,
                 ordre=ordre,
-                description=description
+                description=description,
+                duree_minutes=duree_minutes  # ✅ AJOUT
             )
             db.session.add(etape)
         

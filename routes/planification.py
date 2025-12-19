@@ -44,12 +44,17 @@ def annuler(id):
     
     # Message personnalisé selon ce qui a été fait
     message = f'✓ Planification de "{nom_recette}" annulée.'
-    if resultat['supprimes'] > 0 or resultat['retires'] > 0:
+    
+    # ✅ CORRECTION: utiliser les bonnes clés du dictionnaire avec .get()
+    supprimes = resultat.get('supprimes', 0)
+    reduits = resultat.get('reduits', 0)
+    
+    if supprimes > 0 or reduits > 0:
         details = []
-        if resultat['reduits'] > 0:
-            details.append(f'{resultat["supprimes"]} ingrédient(s) retiré(s) de la liste de courses')
-        if resultat['reduits'] > 0:
-            details.append(f'{resultat["retires"]} quantité(s) réduite(s)')
+        if supprimes > 0:
+            details.append(f'{supprimes} ingrédient(s) retiré(s) de la liste de courses')
+        if reduits > 0:
+            details.append(f'{reduits} quantité(s) réduite(s)')
         message += ' ' + ', '.join(details) + '.'
     
     flash(message, 'info')

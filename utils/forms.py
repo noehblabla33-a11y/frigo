@@ -4,7 +4,7 @@ Utilitaires pour la validation et le parsing des formulaires
 
 Factorise les conversions de types et validations répétées dans les routes.
 """
-from typing import Optional, Any, List, Tuple
+from typing import Optional, Any, List, Tuple, Generator
 
 
 def parse_float(value: Any, default: float = 0.0) -> float:
@@ -481,31 +481,36 @@ def parse_ingredients_list(form_data: dict) -> List[Tuple[int, float]]:
     return ingredients
 
 
-def parse_etapes_list(form_data: dict) -> List[str]:
+def parse_etapes_list(form_data: dict) -> Generator[Tuple[str, Optional[int]], None, None]:
     """
     Parse la liste des étapes depuis un formulaire de recette.
     
-    Attend des champs nommés etape_desc_0, etape_desc_1, etc.
+    Attend des champs nommés etape_desc_0, etape_duree_0, etape_desc_1, etape_duree_1, etc.
     
     Args:
         form_data: Dictionnaire du formulaire
     
-    Returns:
-        list: Liste des descriptions d'étapes (non vides)
-    """
-    etapes = []
-    j = 0
+    Yields:
+        tuple: (description, duree_minutes) pour chaque étape non vide
+               duree_minutes est None si non spécifié
     
+    Example:
+        >>> for description, duree in parse_etapes_list(request.form):
+        ...     etape = EtapeRecette(description=description, duree_minutes=duree)
+    """
+    i = 0
     while True:
-        etape_desc = form_data.get(f'etape_desc_{j}')
+        desc_key = f'etape_desc_{i}'
+        duree_key = f'etape_duree_{i}'
         
-        if etape_desc is None:
+        if desc_key not in form_data:
             break
         
-        etape_desc = etape_desc.strip()
-        if etape_desc:
-            etapes.append(etape_desc)
+        description = form_data.get(desc_key, '').strip()
+        if description:
+            # Récupérer aussi la durée
+            duree_str = form_data.get(duree_key, '').strip()
+            duree_minutes = int(duree_str) if duree_str and duree_str.isdigit() else None
+            yield (description, duree_minutes)
         
-        j += 1
-    
-    return etapes
+        i += 1
