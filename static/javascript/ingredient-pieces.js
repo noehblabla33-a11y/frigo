@@ -178,8 +178,6 @@
                 updateUniteEtHelper(select);
             }
         });
-        
-        console.log(`✅ ${selects.length} select(s) d'ingrédients initialisé(s) avec logique intelligente`);
     }
 
     /**
@@ -260,8 +258,6 @@
      * Initialisation au chargement du DOM
      */
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🔧 Initialisation du système de pièces avec logique intelligente...');
-        
         // Initialiser les selects
         initIngredientSelects();
         
@@ -273,8 +269,6 @@
         
         // Améliorer le style des helpers
         styleHelpers();
-        
-        console.log('✅ Système initialisé - Unité intelligente selon le type d\'ingrédient');
     });
 
     // Exposer les fonctions globalement pour être utilisées par d'autres scripts

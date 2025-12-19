@@ -345,8 +345,6 @@
     // ============================================
     
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('🔧 Initialisation du price-helper...');
-        
         // Créer les contrôles de mode
         createModeSaisieControls();
         
@@ -355,7 +353,5 @@
         
         // Initialiser l'affichage
         updatePrixHelper();
-        
-        console.log('✅ Price-helper initialisé avec succès');
     });
 })();
