@@ -66,7 +66,7 @@ def paginate_query(query, page, per_page=None):
     # ============================================
     
     # Compter le nombre total d'items
-    total = query.count()
+    total = db.session.query(func.count()).select_from(query.subquery()).scalar()
     
     # Calculer le nombre total de pages
     if total > 0:
