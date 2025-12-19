@@ -9,7 +9,8 @@ Utilitaires de pagination pour l'application
 - Documentation complète
 """
 from flask import current_app
-
+from models.models import db
+from sqlalchemy import func
 
 def paginate_query(query, page, per_page=None):
     """
