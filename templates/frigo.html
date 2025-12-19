@@ -79,11 +79,16 @@
                                     <span class="prix-table">{{ "%.3f"|format(stock.ingredient.prix_unitaire) }}€/{{ stock.ingredient.unite }}</span>
                                 {% endif %}
                             {% else %}
-                            <span style="color: #adb5bd;">-</span>
+                                <span style="color: #adb5bd;">-</span>
                             {% endif %}
                         </td>
                         <td>
-                            {{ stock.ingredient.prix_unitaire|prix_lisible(stock.ingredient.unite, stock.ingredient) }}
+                            {% if stock.ingredient.prix_unitaire > 0 %}
+                                {% set valeur_stock = stock.quantite * stock.ingredient.prix_unitaire %}
+                                <span class="valeur-stock">{{ "%.2f"|format(valeur_stock) }}€</span>
+                            {% else %}
+                                <span style="color: #adb5bd;">-</span>
+                            {% endif %}
                         </td>
                         <td>
                             <span class="date-modif">{{ stock.date_modification.strftime('%d/%m/%y %H:%M') }}</span>
