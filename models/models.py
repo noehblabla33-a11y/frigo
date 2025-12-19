@@ -322,6 +322,10 @@ class IngredientRecette(db.Model):
     
     # Relations
     ingredient = db.relationship('Ingredient', backref='recettes')
+
+    __table_args__ = (
+        db.Index('idx_ing_recette_composite', 'recette_id', 'ingredient_id'),
+    )
     
     def __repr__(self):
         return f'<IngredientRecette R:{self.recette_id} I:{self.ingredient_id}>'
@@ -335,6 +339,10 @@ class RecettePlanifiee(db.Model):
     date_preparation = db.Column(db.DateTime, nullable=True)
     preparee = db.Column(db.Boolean, default=False, index=True)
 
+    __table_args__ = (
+        db.Index('idx_planif_preparee_date', 'preparee', 'date_preparation'),
+        db.Index('idx_planif_preparee_recette', 'preparee', 'recette_id'),
+    )
 
     def to_dict(self, include_recette=False):
         """
@@ -377,6 +385,10 @@ class ListeCourses(db.Model):
     
     # Relations
     ingredient = db.relationship('Ingredient', backref='courses')
+
+    __table_args__ = (
+        db.Index('idx_courses_achete_ingredient', 'achete', 'ingredient_id'),
+    )
 
     def to_dict(self, include_ingredient=False):
         """
