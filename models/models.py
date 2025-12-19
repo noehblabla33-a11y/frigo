@@ -21,7 +21,7 @@ class Ingredient(db.Model):
     sel = db.Column(db.Float, default=0)             # g pour 100g/100ml
     
     # Relations
-    stock = db.relationship('StockFrigo', backref=dbbackref('ingredient', lazy='joined'),
+    stock = db.relationship('StockFrigo', backref=db.backref('ingredient', lazy='joined'),
                             uselist=False, 
                             cascade='all, delete-orphan',
                             lazy='select')
