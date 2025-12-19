@@ -1,17 +1,12 @@
 """
 routes/courses.py
 Gestion de la liste de courses
-
-✅ VERSION OPTIMISÉE - PHASE 2
-- Gestion d'erreurs robuste
-- Validation des données
-- Transactions sécurisées
-- Logs appropriés
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from models.models import db, ListeCourses, StockFrigo
 from utils.database import db_transaction_with_flash
 from sqlalchemy.orm import joinedload
+from utils.forms import parse_float, parse_positive_float, parse_checkbox
 
 courses_bp = Blueprint('courses', __name__)
 
@@ -40,31 +35,13 @@ def liste():
                 item_id = str(item.id)
                 
                 # Vérifier si l'item est coché
-                if not request.form.get(f'achete_{item_id}'):
+                if not parse_checkbox(request.form.get(f'achete_{item_id}')):
                     continue
-                
-                # ✅ VALIDATION : Quantité achetée
-                try:
-                    quantite_str = request.form.get(f'quantite_{item_id}', '').strip()
-                    
-                    if not quantite_str:
-                        erreurs.append(f'{item.ingredient.nom}: quantité manquante')
-                        continue
-                    
-                    quantite = float(quantite_str)
-                    
-                    if quantite <= 0:
-                        erreurs.append(f'{item.ingredient.nom}: quantité invalide ({quantite})')
-                        continue
-                    
-                    if quantite > item.quantite * 10:  # Sécurité: max 10x la quantité prévue
-                        erreurs.append(
-                            f'{item.ingredient.nom}: quantité excessive ({quantite} vs {item.quantite} prévue)'
-                        )
-                        continue
-                
-                except ValueError:
-                    erreurs.append(f'{item.ingredient.nom}: format de quantité invalide')
+
+                quantite = parse_float(request.form.get(f'quantite_{item_id}'))
+
+                if quantite <= 0:
+                    erreurs.append(f'{item.ingredient.nom}: quantité invalide ou manquante')
                     continue
                 
                 # ✅ TRANSACTION SÉCURISÉE

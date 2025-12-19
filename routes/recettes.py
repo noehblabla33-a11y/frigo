@@ -5,6 +5,7 @@ from constants import TYPES_RECETTES, valider_type_recette
 from utils.pagination import paginate_query
 from utils.files import save_uploaded_file, delete_file
 from utils.courses import ajouter_ingredients_manquants_courses
+from utils.forms import parse_float, parse_int_or_none, clean_string_or_none,parse_ingredients_list, parse_etapes_list
 import os
 
 recettes_bp = Blueprint('recettes', __name__)
@@ -14,9 +15,9 @@ recettes_bp = Blueprint('recettes', __name__)
 def liste():
     if request.method == 'POST':
         nom = request.form.get('nom')
-        instructions = request.form.get('instructions')
-        type_recette = request.form.get('type_recette')
-        temps_preparation = request.form.get('temps_preparation')
+        instructions = clean_string_or_none(request.form.get('instructions'))
+        type_recette = clean_string_or_none(request.form.get('type_recette'))
+        temps_preparation = parse_int_or_none(request.form.get('temps_preparation'))
         
         # Validation du type de recette avec fonction depuis constants.py
         if type_recette and not valider_type_recette(type_recette):
@@ -26,8 +27,8 @@ def liste():
         recette = Recette(
             nom=nom, 
             instructions=instructions,
-            type_recette=type_recette if type_recette else None,
-            temps_preparation=int(temps_preparation) if temps_preparation else None
+            type_recette=type_recette,
+            temps_preparation=temps_preparation
         )
         
         # Gestion du fichier avec fonction factorisée
@@ -41,43 +42,22 @@ def liste():
         db.session.commit()
         
         # Ajouter les ingrédients
-        i = 0
-        while True:
-            ing_id = request.form.get(f'ingredient_{i}')
-            if not ing_id:
-                break
-            
-            # Gérer la conversion avec chaîne vide
-            quantite_str = request.form.get(f'quantite_{i}', '').strip()
-            quantite = float(quantite_str) if quantite_str else 0.0
-            
-            if ing_id and quantite > 0:
-                ing_recette = IngredientRecette(
-                    recette_id=recette.id,
-                    ingredient_id=ing_id,
-                    quantite=quantite
-                )
-                db.session.add(ing_recette)
-            i += 1
+        for ing_id, quantite in parse_ingredients_list(request.form):
+            ing_recette = IngredientRecette(
+                recette_id=recette.id,
+                ingredient_id=ing_id,
+                quantite=quantite
+            )
+            db.session.add(ing_recette)
         
         # Ajouter les étapes avec durée optionnelle
-        j = 0
-        while True:
-            etape_desc = request.form.get(f'etape_desc_{j}')
-            if not etape_desc:
-                break
-            if etape_desc.strip():
-                duree_str = request.form.get(f'etape_duree_{j}')
-                duree = int(duree_str) if duree_str and duree_str.strip() else None
-                
-                etape = EtapeRecette(
-                    recette_id=recette.id,
-                    ordre=j + 1,
-                    description=etape_desc,
-                    duree_minutes=duree
-                )
-                db.session.add(etape)
-            j += 1
+        for ordre, description in enumerate(parse_etapes_list(request.form), start=1):
+            etape = EtapeRecette(
+                recette_id=recette.id,
+                ordre=ordre,
+                description=description
+            )
+            db.session.add(etape)
         
         db.session.commit()
         flash(f'Recette "{nom}" créée !', 'success')
@@ -184,10 +164,9 @@ def modifier(id):
     
     if request.method == 'POST':
         recette.nom = request.form.get('nom')
-        recette.instructions = request.form.get('instructions')
-        recette.type_recette = request.form.get('type_recette')
-        temps_prep = request.form.get('temps_preparation')
-        recette.temps_preparation = int(temps_prep) if temps_prep else None
+        recette.instructions = clean_string_or_none(request.form.get('instructions'))
+        recette.type_recette = clean_string_or_none(request.form.get('type_recette'))
+        recette.temps_preparation = parse_int_or_none(request.form.get('temps_preparation'))
         
         # Gestion de l'image avec fonctions factorisées
         if 'image' in request.files:
@@ -205,41 +184,24 @@ def modifier(id):
         # Mise à jour des ingrédients
         IngredientRecette.query.filter_by(recette_id=id).delete()
         
-        i = 0
-        while True:
-            ing_id = request.form.get(f'ingredient_{i}')
-            if not ing_id:
-                break
-            
-            # Gérer la conversion avec chaîne vide
-            quantite_str = request.form.get(f'quantite_{i}', '').strip()
-            quantite = float(quantite_str) if quantite_str else 0.0
-            
-            if ing_id and quantite > 0:
-                ing_recette = IngredientRecette(
-                    recette_id=recette.id,
-                    ingredient_id=ing_id,
-                    quantite=quantite
-                )
-                db.session.add(ing_recette)
-            i += 1
+        for ing_id, quantite in parse_ingredients_list(request.form):
+            ing_recette = IngredientRecette(
+                recette_id=recette.id,
+                ingredient_id=ing_id,
+                quantite=quantite
+            )
+            db.session.add(ing_recette)
         
         # Mise à jour des étapes
         EtapeRecette.query.filter_by(recette_id=id).delete()
         
-        j = 0
-        while True:
-            etape_desc = request.form.get(f'etape_desc_{j}')
-            if not etape_desc:
-                break
-            if etape_desc.strip():
-                etape = EtapeRecette(
-                    recette_id=recette.id,
-                    ordre=j + 1,
-                    description=etape_desc
-                )
-                db.session.add(etape)
-            j += 1
+        for ordre, description in enumerate(parse_etapes_list(request.form), start=1):
+            etape = EtapeRecette(
+                recette_id=recette.id,
+                ordre=ordre,
+                description=description
+            )
+            db.session.add(etape)
         
         db.session.commit()
         

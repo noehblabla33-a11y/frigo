@@ -1,17 +1,12 @@
 """
 routes/frigo.py
 Gestion du stock du frigo
-
-✅ VERSION OPTIMISÉE - PHASE 2
-- Utilise utils/pagination.py (pas de duplication)
-- Transactions sécurisées
-- Gestion d'erreurs robuste
-- Logs appropriés
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from models.models import db, Ingredient, StockFrigo
 from utils.database import db_transaction_with_flash, db_transaction
-from utils.pagination import paginate_query  # ✅ Import depuis utils
+from utils.pagination import paginate_query
+from utils.forms import parse_float, parse_positive_float
 from sqlalchemy.orm import joinedload
 
 frigo_bp = Blueprint('frigo', __name__)
@@ -25,22 +20,13 @@ def liste():
     if request.method == 'POST':
         try:
             ingredient_id = request.form.get('ingredient_id')
-            quantite_str = request.form.get('quantite', '0').strip()
             action = request.form.get('action', 'set')
-            
-            # ✅ VALIDATION
+
             if not ingredient_id:
                 flash('Aucun ingrédient sélectionné.', 'danger')
                 return redirect(url_for('frigo.liste'))
-            
-            try:
-                quantite = float(quantite_str)
-                if quantite < 0:
-                    flash('La quantité ne peut pas être négative.', 'danger')
-                    return redirect(url_for('frigo.liste'))
-            except ValueError:
-                flash('Format de quantité invalide.', 'danger')
-                return redirect(url_for('frigo.liste'))
+
+            quantite = parse_positive_float(request.form.get('quantite'))
             
             # Récupérer l'ingrédient
             ingredient = Ingredient.query.get_or_404(ingredient_id)
@@ -191,14 +177,7 @@ def update_quantite(stock_id):
         
         # Récupérer la nouvelle quantité depuis le JSON
         data = request.get_json()
-        nouvelle_quantite = float(data.get('quantite', 0))
-        
-        # ✅ VALIDATION
-        if nouvelle_quantite < 0:
-            return jsonify({
-                'success': False,
-                'message': 'La quantité ne peut pas être négative'
-            }), 400
+        nouvelle_quantite = parse_positive_float(data.get('quantite'))
         
         # ✅ TRANSACTION SÉCURISÉE (sans flash pour AJAX)
         with db_transaction():

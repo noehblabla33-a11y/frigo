@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from utils.pagination import paginate_query
 from utils.files import allowed_file, save_uploaded_file, delete_file
 from utils.database import db_transaction_with_flash, db_delete_with_check
+from utils.forms import parse_float, parse_float_or_none, clean_string, clean_string_or_none, parse_nutrition_values
 from constants import CATEGORIES, valider_categorie
 import os
 
@@ -12,25 +13,20 @@ ingredients_bp = Blueprint('ingredients', __name__)
 @ingredients_bp.route('/', methods=['GET', 'POST'])
 def liste():
     if request.method == 'POST':
-        nom = request.form.get('nom')
-        unite = request.form.get('unite', 'g')
-        prix_unitaire = float(request.form.get('prix_unitaire') or 0)
-        categorie = request.form.get('categorie')
+        nom = clean_string(request.form.get('nom'))
+        unite = clean_string(request.form.get('unite'), 'g')
+        prix_unitaire = parse_float(request.form.get('prix_unitaire'))
+        categorie = clean_string_or_none(request.form.get('categorie'))
 
         # Vérification de catégorie
         if categorie and not valider_categorie(categorie):
             flash(f'Catégorie invalide : {categorie}', 'danger')
             return redirect(url_for('ingredients.liste'))
-        
-        calories = float(request.form.get('calories') or 0)
-        proteines = float(request.form.get('proteines') or 0)
-        glucides = float(request.form.get('glucides') or 0)
-        lipides = float(request.form.get('lipides') or 0)
-        fibres = float(request.form.get('fibres') or 0)
-        sucres = float(request.form.get('sucres') or 0)
-        sel = float(request.form.get('sel') or 0)
-        poids_piece_str = request.form.get('poids_piece')
-        poids_piece = float(poids_piece_str) if poids_piece_str else None
+
+        # Valeurs nutritionnelles (une seule ligne !)
+        nutrition = parse_nutrition_values(request.form)
+
+        poids_piece = parse_float_or_none(request.form.get('poids_piece'))
 
         ingredient = Ingredient.query.filter_by(nom=nom).first()
         if ingredient:
@@ -46,15 +42,9 @@ def liste():
                     nom=nom,
                     unite=unite,
                     prix_unitaire=prix_unitaire,
-                    categorie=categorie if categorie else None,
-                    calories=calories,
-                    proteines=proteines,
-                    glucides=glucides,
-                    lipides=lipides,
-                    fibres=fibres,
-                    sucres=sucres,
-                    sel=sel,
-                    poids_piece=poids_piece
+                    categorie=categorie,
+                    poids_piece=poids_piece,
+                    **nutrition
                 )
                 
                 # Gérer l'upload de l'image
@@ -155,22 +145,17 @@ def modifier(id):
     if request.method == 'POST':
         try:
             with db_transaction_with_flash(success_message=f'Ingrédient "{ingredient.nom}" modifié !', error_message='Erreur lors de la modification'):
-                ingredient.nom = request.form.get('nom')
-                ingredient.unite = request.form.get('unite')
-                ingredient.prix_unitaire = float(request.form.get('prix_unitaire') or 0)
-                ingredient.categorie = request.form.get('categorie')
-                
+                ingredient.nom = clean_string(request.form.get('nom'))
+                ingredient.unite = clean_string(request.form.get('unite'), 'g')
+                ingredient.prix_unitaire = parse_float(request.form.get('prix_unitaire'))
+                ingredient.categorie = clean_string_or_none(request.form.get('categorie'))
+
                 # Valeurs nutritionnelles
-                ingredient.calories = float(request.form.get('calories') or 0)
-                ingredient.proteines = float(request.form.get('proteines') or 0)
-                ingredient.glucides = float(request.form.get('glucides') or 0)
-                ingredient.lipides = float(request.form.get('lipides') or 0)
-                ingredient.fibres = float(request.form.get('fibres') or 0)
-                ingredient.sucres = float(request.form.get('sucres') or 0)
-                ingredient.sel = float(request.form.get('sel') or 0)
-                
-                poids_piece_str = request.form.get('poids_piece')
-                ingredient.poids_piece = float(poids_piece_str) if poids_piece_str else None
+                nutrition = parse_nutrition_values(request.form)
+                for key, value in nutrition.items():
+                    setattr(ingredient, key, value)
+
+                ingredient.poids_piece = parse_float_or_none(request.form.get('poids_piece'))
                 
                 # Gérer l'upload de la nouvelle image
                 if 'image' in request.files:
