@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from sqlalchemy.orm import joinedload
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
 from constants import TYPES_RECETTES, valider_type_recette
 from utils.pagination import paginate_query
@@ -97,7 +98,7 @@ def liste():
     items_per_page = current_app.config.get('ITEMS_PER_PAGE_RECETTES', 20)
     
     # Construire la requête
-    query = Recette.query
+    query = Recette.query.options(joinedload(Recette.ingredients).joinedload(IngredientRecette.ingredient))
     
     # Filtre par recherche
     if search_query:
@@ -241,6 +242,7 @@ def modifier(id):
             j += 1
         
         db.session.commit()
+        
         flash(f'Recette "{recette.nom}" modifiée !', 'success')
         return redirect(url_for('recettes.detail', id=recette.id))
     
