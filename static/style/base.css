@@ -3,6 +3,7 @@
 /* STYLES DE BASE - VERSION CHALEUREUSE        */
 /* Palette chaleureuse avec animations douces  */
 /* ============================================ */
+@import url('tables.css');
 
 /* ========== VARIABLES CSS - PALETTE CHALEUREUSE ========== */
 :root {
