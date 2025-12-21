@@ -64,7 +64,8 @@
                             <option value="">Sélectionner...</option>
                             {% for ing in ingredients %}
                             <option value="{{ ing.id }}" 
-                                    data-unite="{{ ing.unite }}">
+                                    data-unite="{{ ing.unite }}"
+                                    {% if ing.id == ing_rec.ingredient_id %}selected{% endif %}>
                                 {{ ing.nom }}
                             </option>
                             {% endfor %}
@@ -330,17 +331,42 @@ function ajouterIngredient() {
     }
     
     ingredientCount++;
-    
-    // Réinitialiser les helpers pour la nouvelle ligne
-    window.IngredientPiecesHelper.init();
+    if (typeof initIngredientUnits === 'function') {
+        initIngredientUnits();
+    }
+    const newSelect = div.querySelector('.ingredient-select');
+    newSelect.addEventListener('change', function() {
+        updateUniteDisplay(this);
+    });
+    initSelectSearch();
 }
 
 // Fonction pour supprimer un ingrédient
 function removeIngredient(index) {
-    const row = document.querySelector(`.ingredient-row[data-ingredient-row="${index}"]`);
+    const row = document.querySelector(`[data-ingredient-row="${index}"]`);
     if (row) {
         row.remove();
-        updateRemoveButtons();
+        
+        // Renuméroter tous les ingrédients restants
+        const rows = document.querySelectorAll('.ingredient-row');
+        rows.forEach((r, i) => {
+            r.dataset.ingredientRow = i;
+            
+            // Renommer le select
+            const select = r.querySelector('.ingredient-select');
+            if (select) select.name = `ingredient_${i}`;
+            
+            // Renommer l'input quantité
+            const quantite = r.querySelector('input[name^="quantite_"]');
+            if (quantite) quantite.name = `quantite_${i}`;
+            
+            // Mettre à jour le onclick du bouton supprimer
+            const btn = r.querySelector('.btn-remove-ingredient');
+            if (btn) btn.setAttribute('onclick', `removeIngredient(${i})`);
+        });
+        
+        // Mettre à jour le compteur
+        ingredientCount = rows.length;
     }
 }
 
