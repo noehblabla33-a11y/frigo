@@ -1,6 +1,7 @@
 /* ============================================ */
 /* Fichier: static/style/ingredients.css        */
 /* STYLES SPÉCIFIQUES AUX INGRÉDIENTS          */
+/* Version purgée - tableaux dans tables.css   */
 /* ============================================ */
 
 /* ========== BADGES CATÉGORIE ========== */
@@ -33,54 +34,25 @@
     font-weight: 500;
 }
 
-/* ========== IMAGES DES INGRÉDIENTS ========== */
-.item-image {
-    width: 100%;
-    height: 180px;
-    overflow: hidden;
-    background: var(--bg-light);
-    display: flex;
+/* ========== BADGES DE STOCK ========== */
+.stock-badge {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    position: relative;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    font-weight: 500;
 }
 
-.item-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform var(--transition-slow);
+.stock-available {
+    background: linear-gradient(135deg, #d4f4dd, #e8f9ed);
+    color: #2d5f3e;
 }
 
-.item-card:hover .item-image img {
-    transform: scale(1.1);
-}
-
-.no-image {
-    font-size: 3.5em;
-    color: #dee2e6;
-}
-
-.no-image-small {
-    font-size: 2em;
-    color: #dee2e6;
-}
-
-/* ========== CONTENU DE LA CARTE ========== */
-.item-info {
-    padding: 15px;
-    min-height: 120px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.item-info h4 {
-    margin: 0 0 8px 0;
-    color: var(--text-primary);
-    font-size: 1.1em;
-    font-weight: 600;
-    line-height: 1.3;
+.stock-empty {
+    background: linear-gradient(135deg, #ffe6e6, #fff0f0);
+    color: #8b2e2e;
 }
 
 /* ========== INFORMATIONS INGRÉDIENT ========== */
@@ -108,121 +80,6 @@
     color: var(--danger);
     font-size: 0.9em;
     margin: 5px 0;
-}
-
-/* ========== ACTIONS ========== */
-.item-actions {
-    padding: 12px 15px;
-    border-top: 1px solid var(--border-light);
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-}
-
-/* ========== MODE LISTE / TABLE ========== */
-.item-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 8px;
-}
-
-.item-table thead {
-    background: var(--bg-cream);
-}
-
-.item-table th {
-    padding: 12px 15px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 0.95em;
-    border: none;
-}
-
-.item-table tbody tr {
-    background: var(--bg-white);
-    transition: all var(--transition-normal);
-    box-shadow: var(--shadow-xs);
-}
-
-.item-table tbody tr:hover {
-    transform: translateX(5px);
-    box-shadow: var(--shadow-md);
-    background: linear-gradient(to right, rgba(255, 107, 107, 0.03), var(--bg-white));
-}
-
-.item-table td {
-    padding: 15px;
-    color: var(--text-primary);
-    border-top: 1px solid var(--border-light);
-    border-bottom: 1px solid var(--border-light);
-    vertical-align: middle;
-}
-
-.item-table td:first-child {
-    border-left: 1px solid var(--border-light);
-    border-radius: var(--border-radius) 0 0 var(--border-radius);
-}
-
-.item-table td:last-child {
-    border-right: 1px solid var(--border-light);
-    border-radius: 0 var(--border-radius) var(--border-radius) 0;
-}
-
-/* ========== CELLULES SPÉCIFIQUES ========== */
-.item-img-cell {
-    width: 80px;
-    padding: 10px !important;
-}
-
-.item-thumbnail {
-    width: 60px;
-    height: 60px;
-    object-fit: cover;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-xs);
-}
-
-.item-thumbnail-placeholder {
-    width: 60px;
-    height: 60px;
-    background: var(--bg-light);
-    border-radius: var(--border-radius);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5em;
-    color: #dee2e6;
-}
-
-.item-name-cell {
-    font-weight: 600;
-}
-
-.actions-cell {
-    text-align: right;
-    white-space: nowrap;
-}
-
-/* ========== BADGES DE STOCK ========== */
-.stock-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.85em;
-    font-weight: 500;
-}
-
-.stock-available {
-    background: linear-gradient(135deg, #d4f4dd, #e8f9ed);
-    color: #2d5f3e;
-}
-
-.stock-empty {
-    background: linear-gradient(135deg, #ffe6e6, #fff0f0);
-    color: #8b2e2e;
 }
 
 /* ========== FORMULAIRE D'AJOUT ========== */
@@ -296,99 +153,6 @@
     font-size: 0.85em;
 }
 
-/* ========== RESPONSIVE ========== */
-@media (max-width: 768px) {
-    .item-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 15px;
-    }
-    
-    .item-image {
-        height: 120px;
-    }
-    
-    .item-info {
-        padding: 12px;
-        min-height: 100px;
-    }
-    
-    .item-info h4 {
-        font-size: 1em;
-    }
-    
-    .item-actions {
-        flex-direction: column;
-    }
-    
-    .item-actions .btn {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    /* Table en mode responsive */
-    .item-table {
-        font-size: 0.85em;
-    }
-    
-    .item-table th,
-    .item-table td {
-        padding: 10px 8px;
-    }
-    
-    .item-thumbnail,
-    .item-thumbnail-placeholder {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .item-img-cell {
-        width: 50px;
-    }
-    
-    /* Cacher certaines colonnes sur mobile */
-    .item-table th:nth-child(4),
-    .item-table td:nth-child(4) {
-        display: none;
-    }
-    
-    .search-filters {
-        flex-direction: column;
-    }
-    
-    .search-filters .form-group {
-        min-width: 100%;
-    }
-    
-    .catalogue-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-}
-
-/* ========== ANIMATION D'ENTRÉE ========== */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.item-card {
-    animation: fadeInUp 0.4s ease-out;
-}
-
-.item-card:nth-child(1) { animation-delay: 0.05s; }
-.item-card:nth-child(2) { animation-delay: 0.1s; }
-.item-card:nth-child(3) { animation-delay: 0.15s; }
-.item-card:nth-child(4) { animation-delay: 0.2s; }
-.item-card:nth-child(5) { animation-delay: 0.25s; }
-.item-card:nth-child(6) { animation-delay: 0.3s; }
-
 /* ========== ÉTATS VIDES ========== */
 .empty-ingredients {
     text-align: center;
@@ -412,6 +176,7 @@
     margin-bottom: 20px;
 }
 
+/* ========== HELPER DE PRIX ========== */
 #prix-helper {
     animation: fadeIn 0.3s ease-in;
 }
@@ -424,5 +189,27 @@
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .search-filters {
+        flex-direction: column;
+    }
+    
+    .search-filters .form-group {
+        min-width: 100%;
+    }
+    
+    .catalogue-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .ingredient-row {
+        flex-direction: column;
+        gap: 10px;
     }
 }

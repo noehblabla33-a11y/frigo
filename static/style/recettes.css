@@ -1,27 +1,163 @@
 /* ============================================ */
 /* Fichier: static/style/recettes.css           */
-/* Styles spécifiques aux pages recettes       */
+/* STYLES RECETTES - VERSION PURGÉE            */
+/* Les styles de tableaux sont dans tables.css */
 /* ============================================ */
 
-/* Styles pour les étapes dans le formulaire de création */
-#etapes-container {
-    margin-top: 15px;
+/* ========== DÉTAIL RECETTE ========== */
+.recette-detail-header {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
 }
 
-.etape-row {
+.recette-detail-image {
+    flex: 0 0 350px;
+    height: 250px;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+}
+
+.recette-detail-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-image-large {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-light);
+    font-size: 5em;
+    color: #dee2e6;
+}
+
+.recette-detail-info {
+    flex: 1;
+    min-width: 250px;
+}
+
+.recette-detail-info h2 {
+    margin: 0 0 15px 0;
+    color: var(--text-primary);
+}
+
+.type-badge-large {
+    display: inline-block;
+    padding: 6px 15px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.recette-detail-temps {
+    font-size: 1.1em;
+    margin: 15px 0;
+}
+
+.recette-detail-cout {
+    font-size: 1.3em;
+    margin: 10px 0;
+}
+
+.recette-detail-count {
+    color: var(--text-secondary);
+    margin: 10px 0;
+}
+
+.recette-detail-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ========== GRILLE D'INGRÉDIENTS DÉTAIL ========== */
+.ingredients-grid-detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.ingredient-detail-card {
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    padding: 15px;
     display: flex;
     gap: 15px;
-    margin-bottom: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    align-items: flex-start;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
 }
 
-.etape-number {
-    min-width: 35px;
-    height: 35px;
-    background: #667eea;
+.ingredient-detail-card:hover {
+    transform: translateX(5px);
+    box-shadow: var(--shadow-md);
+}
+
+.ingredient-detail-image {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-light);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ingredient-detail-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ingredient-detail-info h4 {
+    margin: 0 0 5px 0;
+    font-size: 1em;
+    color: var(--text-primary);
+}
+
+.ingredient-detail-quantite {
+    font-weight: bold;
+    color: var(--primary);
+    margin: 5px 0;
+}
+
+/* ========== ÉTAPES DE PRÉPARATION ========== */
+.etapes-list {
+    margin-top: 20px;
+}
+
+.etape-item {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+}
+
+.etape-item:hover {
+    transform: translateX(5px);
+    box-shadow: var(--shadow-md);
+}
+
+.etape-numero {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
     color: white;
     border-radius: 50%;
     display: flex;
@@ -29,83 +165,110 @@
     justify-content: center;
     font-weight: bold;
     font-size: 1.1em;
-    flex-shrink: 0;
 }
 
-.etape-inputs {
+.etape-contenu {
     flex: 1;
+}
+
+.etape-description {
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.etape-duree {
+    margin-top: 10px;
+    padding: 5px 12px;
+    background: #fff3cd;
+    color: #856404;
+    border-radius: 15px;
+    font-size: 0.9em;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* ========== FORMULAIRE ÉTAPES ========== */
+.etape-row {
     display: flex;
     gap: 15px;
     align-items: flex-start;
-}
-
-.etape-inputs textarea {
-    resize: vertical;
-}
-
-.btn-remove-etape, .btn-remove-ingredient {
-    padding: 8px 12px;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.2s;
-    flex-shrink: 0;
-    min-width: 40px;
-}
-
-.btn-remove-etape:hover, .btn-remove-ingredient:hover {
-    background: #c82333;
-    transform: scale(1.05);
-}
-
-/* Aperçu des étapes dans la page détail */
-.etapes-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.etape-preview-card {
-    display: flex;
-    gap: 15px;
+    margin-bottom: 15px;
     padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border-left: 4px solid #667eea;
-    transition: all 0.2s;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
 }
 
-.etape-preview-card:hover {
-    background: #e9ecef;
-    transform: translateX(5px);
-}
-
-.etape-preview-numero {
-    min-width: 40px;
-    height: 40px;
-    background: #667eea;
+.etape-number {
+    flex-shrink: 0;
+    width: 35px;
+    height: 35px;
+    background: var(--primary);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 1.2em;
-    flex-shrink: 0;
 }
 
-.etape-preview-content {
+.etape-inputs {
     flex: 1;
+    display: flex;
+    gap: 10px;
+}
+
+.btn-remove-etape {
+    background: var(--danger);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.btn-remove-etape:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+}
+
+/* ========== PREVIEW DES ÉTAPES ========== */
+.etapes-preview {
+    margin-top: 20px;
+}
+
+.etape-preview-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: var(--bg-white);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+    border-left: 4px solid var(--primary);
+}
+
+.etape-preview-numero {
+    flex-shrink: 0;
+    min-width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1em;
 }
 
 .etape-preview-content p {
     margin: 0 0 10px 0;
     line-height: 1.6;
-    color: #495057;
+    color: var(--text-primary);
 }
 
 .etape-preview-timer {
@@ -118,171 +281,36 @@
     font-weight: 600;
 }
 
-.btn-large {
-    padding: 15px 30px;
-    font-size: 1.2em;
+/* ========== BADGES ========== */
+.temps-badge {
+    color: var(--text-secondary);
+    font-size: 0.9em;
 }
 
-/* Styles pour le mode liste des recettes */
-.recette-list {
-    overflow-x: auto;
+.ingredients-count {
+    color: var(--text-secondary);
+    font-size: 0.9em;
 }
 
-.recette-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 15px;
-}
-
-.recette-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.recette-table th {
-    background: #667eea;
-    color: white;
+.cout-badge {
+    color: var(--success);
     font-weight: 600;
-    padding: 12px 15px;
-    text-align: left;
-    font-size: 0.95em;
-    border: none;
-}
-
-.recette-table th:first-child {
-    border-top-left-radius: 8px;
-}
-
-.recette-table th:last-child {
-    border-top-right-radius: 8px;
-}
-
-.recette-table tbody tr {
-    background: white;
-    transition: all 0.2s;
-}
-
-.recette-table tbody tr:hover {
-    background: #f8f9fa;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: scale(1.01);
-}
-
-.recette-table td {
-    padding: 15px;
-    border-bottom: 1px solid #e9ecef;
-    vertical-align: middle;
-}
-
-.recette-img-cell {
-    padding: 10px 15px;
-}
-
-.recette-thumbnail {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 8px;
-    display: block;
-}
-
-.recette-thumbnail-placeholder {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fa;
-    border-radius: 8px;
-    font-size: 1.5em;
-}
-
-.recette-name-cell {
-    font-size: 1.05em;
-}
-
-.recette-link-table {
-    color: #495057;
-    text-decoration: none;
-    transition: color 0.2s;
-}
-
-.recette-link-table:hover {
-    color: #667eea;
 }
 
 .type-badge-small {
     display: inline-block;
     padding: 4px 10px;
     background: #e7f3ff;
-    color: #667eea;
+    color: var(--primary);
     border-radius: 12px;
     font-size: 0.85em;
     font-weight: 600;
 }
 
-.temps-badge {
-    color: #6c757d;
-    font-size: 0.9em;
-}
-
-.ingredients-count {
-    color: #6c757d;
-    font-size: 0.9em;
-}
-
-.cout-badge {
-    color: #28a745;
-    font-weight: 600;
-    font-size: 1em;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-    .recette-table {
-        font-size: 0.9em;
-    }
-    
-    .recette-table th,
-    .recette-table td {
-        padding: 10px 8px;
-    }
-    
-    .recette-thumbnail,
-    .recette-thumbnail-placeholder {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .etape-row {
-        flex-direction: column;
-    }
-    
-    .etape-inputs {
-        flex-direction: column;
-    }
-}
-
-@media (max-width: 768px) {
-    .etape-number {
-        min-width: 30px;
-        height: 30px;
-        font-size: 1em;
-    }
-    
-    .etape-preview-numero {
-        min-width: 35px;
-        height: 35px;
-        font-size: 1em;
-    }
-}
-
-/* Style pour les informations nutrition */
+/* ========== NUTRITION ========== */
 .nutrition-card {
     background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    border-radius: 15px;
+    border-radius: var(--border-radius-lg);
     padding: 25px;
     margin: 20px 0;
     color: white;
@@ -311,7 +339,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 15px;
-    margin-top: 20px;
 }
 
 .nutrition-item {
@@ -319,7 +346,7 @@
     padding: 15px;
     border-radius: 10px;
     text-align: center;
-    transition: all 0.3s;
+    transition: all var(--transition-normal);
 }
 
 .nutrition-item:hover {
@@ -341,125 +368,48 @@
     letter-spacing: 1px;
 }
 
-.nutrition-unit {
-    font-size: 0.7em;
-    opacity: 0.8;
+/* ========== BOUTONS ========== */
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.2em;
 }
 
-.nutrition-highlight {
-    background: rgba(255, 255, 255, 0.3);
-    border: 2px solid white;
-}
-
-.nutrition-macros {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-top: 20px;
-}
-
-.macro-item {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 20px;
-    border-radius: 12px;
-    text-align: center;
-}
-
-.macro-item.proteines {
-    border-left: 4px solid #ff6b6b;
-}
-
-.macro-item.glucides {
-    border-left: 4px solid #ffd93d;
-}
-
-.macro-item.lipides {
-    border-left: 4px solid #6bcf7f;
-}
-
-.macro-label {
-    font-size: 0.85em;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-    opacity: 0.9;
-}
-
-.macro-value {
-    font-size: 2.5em;
-    font-weight: bold;
-    line-height: 1;
-}
-
-.macro-percentage {
-    font-size: 0.85em;
-    margin-top: 5px;
-    opacity: 0.8;
-}
-
-.nutrition-footer {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.3);
-    font-size: 0.85em;
-    text-align: center;
-    opacity: 0.9;
-}
-
-.recette-nutrition {
-    color: #28a745;
-    font-weight: 600;
-}
-
-.nutrition-preview {
-    color: #28a745;
-    font-weight: 600;
-    font-size: 0.95em;
-}
-
-/* Responsive */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
-    .nutrition-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .recette-detail-header {
+        flex-direction: column;
     }
     
-    .nutrition-macros {
+    .recette-detail-image {
+        flex: none;
+        width: 100%;
+        height: 200px;
+    }
+    
+    .recette-detail-actions {
+        flex-direction: column;
+    }
+    
+    .recette-detail-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .etape-row {
+        flex-direction: column;
+    }
+    
+    .etape-inputs {
+        flex-direction: column;
+    }
+    
+    .etape-number {
+        min-width: 30px;
+        height: 30px;
+        font-size: 1em;
+    }
+    
+    .ingredients-grid-detail {
         grid-template-columns: 1fr;
     }
-    
-    .nutrition-value {
-        font-size: 1.5em;
-    }
-    
-    .macro-value {
-        font-size: 2em;
-    }
-}
-
-/* Helpers pour les pièces */
-.piece-helper {
-    display: inline-block;
-    padding: 4px 8px;
-    background: #e7f3ff;
-    border-radius: 4px;
-    font-size: 0.9em;
-}
-
-.unite-display {
-    font-weight: 600;
-    color: #495057;
-}
-
-.ingredient-row {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    align-items: flex-end;
-}
-
-.ingredient-row .form-group {
-    margin-bottom: 0;
 }

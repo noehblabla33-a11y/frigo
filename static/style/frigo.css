@@ -1,299 +1,143 @@
 /* ============================================ */
-/* Fichier: static/frigo.css                    */
-/* Styles spécifiques à la page frigo          */
+/* Fichier: static/style/frigo.css              */
+/* STYLES FRIGO - VERSION PURGÉE               */
+/* Les styles de tableaux sont dans tables.css */
 /* ============================================ */
 
-/* Édition inline des quantités - Mode grille */
-.quick-edit-container {
-    margin: 10px 0;
+/* ========== EN-TÊTE FRIGO ========== */
+.frigo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
-.quantite-display {
+.frigo-header h3 {
+    margin: 0;
+}
+
+/* ========== STATISTIQUES FRIGO ========== */
+.frigo-stats {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+.frigo-stat-item {
+    background: var(--bg-white);
+    padding: 15px 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
     display: flex;
     align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 5px;
-    transition: background 0.2s;
+    gap: 10px;
 }
 
-.quantite-display:hover {
-    background: #e9ecef;
+.frigo-stat-value {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: var(--primary);
 }
 
-.quantite-value {
-    font-size: 1.3em;
-    font-weight: bold;
-    color: #667eea;
-}
-
-.quantite-unite {
-    color: #6c757d;
-    font-size: 0.95em;
-}
-
-.edit-icon {
+.frigo-stat-label {
+    color: var(--text-secondary);
     font-size: 0.9em;
-    margin-left: auto;
 }
 
-.quantite-edit {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.quantite-input-inline {
-    width: 80px;
-    padding: 8px;
-    border: 2px solid #667eea;
-    border-radius: 5px;
-    font-size: 1.1em;
-    font-weight: bold;
-}
-
-.quantite-unite-edit {
-    color: #6c757d;
-    font-size: 0.95em;
-}
-
-.btn-inline {
-    padding: 6px 10px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: all 0.2s;
-}
-
-.btn-inline-save {
-    background: #28a745;
-    color: white;
-}
-
-.btn-inline-save:hover {
-    background: #218838;
-}
-
-.btn-inline-cancel {
-    background: #dc3545;
-    color: white;
-}
-
-.btn-inline-cancel:hover {
-    background: #c82333;
-}
-
-.edit-status {
-    margin-top: 5px;
-    font-size: 0.85em;
-    padding: 3px 8px;
-    border-radius: 3px;
-}
-
-.edit-status.loading {
-    color: #856404;
-    background: #fff3cd;
-}
-
-.edit-status.success {
-    color: #155724;
-    background: #d4edda;
-}
-
-.edit-status.error {
-    color: #721c24;
-    background: #f8d7da;
-}
-
-/* Édition inline - Mode liste */
-.quantite-edit-inline {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.quantite-input-table {
-    width: 100px;
-    padding: 6px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 1em;
-    transition: border-color 0.2s;
-}
-
-.quantite-input-table:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
-}
-
-.btn-inline-mini {
-    padding: 4px 8px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: all 0.2s;
-}
-
-.btn-save-mini {
-    background: #28a745;
-    color: white;
-}
-
-.btn-save-mini:hover {
-    background: #218838;
-}
-
-.edit-status-mini {
-    font-size: 1em;
-    min-width: 20px;
-    text-align: center;
-}
-
-.edit-status-mini.loading {
-    color: #856404;
-}
-
-.edit-status-mini.success {
-    color: #28a745;
-}
-
-.edit-status-mini.error {
-    color: #dc3545;
-}
-
-/* Styles pour le tableau mode liste */
+/* ========== LISTE FRIGO ========== */
 .frigo-list {
     overflow-x: auto;
 }
 
-.frigo-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 15px;
-}
-
-.frigo-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.frigo-table th {
-    background: #667eea;
-    color: white;
-    font-weight: 600;
-    padding: 12px 15px;
-    text-align: left;
-    font-size: 0.95em;
-    border: none;
-}
-
-.frigo-table th:first-child {
-    border-top-left-radius: 8px;
-}
-
-.frigo-table th:last-child {
-    border-top-right-radius: 8px;
-}
-
-.frigo-table tbody tr {
-    background: white;
-    transition: all 0.2s;
-}
-
-.frigo-table tbody tr:hover {
-    background: #f8f9fa;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transform: scale(1.01);
-}
-
-.frigo-table td {
-    padding: 15px;
-    border-bottom: 1px solid #e9ecef;
-    vertical-align: middle;
-}
-
-.frigo-img-cell {
-    padding: 10px 15px;
-}
-
-.frigo-thumbnail {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 8px;
-    display: block;
-}
-
-.frigo-thumbnail-placeholder {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f8f9fa;
-    border-radius: 8px;
-    font-size: 1.5em;
-}
-
-.frigo-name-cell {
-    font-size: 1.05em;
-}
-
-.frigo-name-cell strong {
-    color: #495057;
-}
-
+/* ========== BADGES SPÉCIFIQUES ========== */
 .unite-badge {
     display: inline-block;
     padding: 4px 10px;
     background: #e7f3ff;
-    color: #667eea;
+    color: var(--primary);
     border-radius: 12px;
     font-size: 0.85em;
     font-weight: 600;
 }
 
 .valeur-stock {
-    color: #28a745;
+    color: var(--success);
     font-weight: 600;
 }
 
 .date-modif {
-    color: #6c757d;
+    color: var(--text-secondary);
     font-size: 0.9em;
 }
 
+/* ========== LIGNE DE TOTAL ========== */
 .total-row-frigo {
-    background: #f8f9fa;
+    background: var(--bg-cream);
     font-size: 1.1em;
 }
 
 .total-row-frigo td {
-    border-top: 2px solid #28a745 !important;
+    border-top: 2px solid var(--success) !important;
     padding: 15px 12px !important;
+    font-weight: 600;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-    .frigo-table {
-        font-size: 0.9em;
+/* ========== ÉDITION RAPIDE ========== */
+.quick-edit-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.quick-edit-input {
+    width: 80px;
+    padding: 6px 10px;
+    border: 2px solid var(--border-light);
+    border-radius: var(--border-radius);
+    font-size: 0.95em;
+    text-align: center;
+}
+
+.quick-edit-input:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+/* ========== MESSAGE VIDE ========== */
+.empty-frigo {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-secondary);
+}
+
+.empty-frigo-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-frigo-text {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .frigo-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
     
-    .frigo-table th,
-    .frigo-table td {
-        padding: 10px 8px;
+    .frigo-stats {
+        flex-direction: column;
+        width: 100%;
     }
     
-    .frigo-thumbnail,
-    .frigo-thumbnail-placeholder {
-        width: 40px;
-        height: 40px;
+    .frigo-stat-item {
+        width: 100%;
+        justify-content: center;
     }
 }
