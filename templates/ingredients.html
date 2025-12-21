@@ -236,10 +236,11 @@
                             <a href="{{ url_for('ingredients.modifier', id=ing.id) }}" 
                                class="btn-icon" 
                                title="Modifier">✏️</a>
+                            {# ✅ FACTORISÉ : Utilisation de data-confirm au lieu de onclick #}
                             <a href="{{ url_for('ingredients.supprimer', id=ing.id) }}" 
                                class="btn-icon btn-icon-danger" 
                                title="Supprimer"
-                               onclick="return confirm('Supprimer cet ingrédient ?')">🗑️</a>
+                               data-confirm="Supprimer l'ingrédient « {{ ing.nom }} » ?">🗑️</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -251,8 +252,7 @@
         {{ render_pagination(pagination, 'ingredients.liste',
                            search=search_query,
                            categorie=categorie_filter,
-                           stock=stock_filter
-                           ) }}
+                           stock=stock_filter) }}
     {% else %}
         {# État vide (factorisé) #}
         {{ render_empty_state(
@@ -267,6 +267,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{# Note: common.js doit être inclus dans base.html #}
 <script src="{{ url_for('static', filename='javascript/collapsable.js') }}"></script>
 <script src="{{ url_for('static', filename='javascript/price-helper.js') }}"></script>
 {% endblock %}

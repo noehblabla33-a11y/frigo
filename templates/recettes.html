@@ -64,8 +64,7 @@
     search_value=search_query,
     search_placeholder='Ex: Poulet, Tarte...',
     filters=filters,
-    active_filters=active_filters,
-    view_mode=view_mode|default('list')
+    active_filters=active_filters
 ) }}
 
 {# Afficher le nombre de résultats si filtres actifs #}
@@ -111,11 +110,11 @@
                 <input type="file" name="image" accept="image/*">
             </div>
             
-            {# Ingrédients #}
+            {# Ingrédients - avec data-attributes pour DynamicList #}
             <div class="form-group">
                 <label>Ingrédients</label>
                 <div id="ingredients-container">
-                    <div class="ingredient-row" data-ingredient-row="0">
+                    <div class="ingredient-row dynamic-item" data-index="0">
                         <div class="form-group" style="flex: 2;">
                             <select name="ingredient_0" class="ingredient-select searchable-select">
                                 <option value="">Sélectionner...</option>
@@ -138,21 +137,25 @@
                         <div class="form-group unite-display" style="flex: 0.5;">
                             <span class="unite-label">-</span>
                         </div>
+                        
+                        <button type="button" class="btn-icon btn-icon-danger btn-remove" style="display: none;">
+                            🗑️
+                        </button>
                     </div>
                 </div>
-                <button type="button" class="btn btn-small btn-secondary" onclick="ajouterIngredient()">
+                <button type="button" id="btn-add-ingredient" class="btn btn-small btn-secondary">
                     + Ajouter un ingrédient
                 </button>
             </div>
             
-            {# Étapes #}
+            {# Étapes - avec data-attributes pour DynamicList #}
             <div class="form-group">
                 <label>Étapes de préparation</label>
                 <p style="font-size: 0.9em; color: #6c757d; margin-bottom: 10px;">
                     Vous pouvez ajouter un minuteur optionnel pour chaque étape.
                 </p>
                 <div id="etapes-container">
-                    <div class="etape-row" data-etape="0">
+                    <div class="etape-row dynamic-item" data-index="0">
                         <div class="etape-number">1</div>
                         <div class="etape-inputs">
                             <div class="form-group" style="flex: 3; margin-bottom: 0;">
@@ -163,20 +166,17 @@
                             <div class="form-group" style="flex: 1; margin-bottom: 0;">
                                 <input type="number" 
                                     name="etape_duree_0" 
-                                    placeholder="⏱️ Minutes (opt.)"
+                                    placeholder="⏱️ Min"
                                     min="0"
-                                    title="Durée en minutes pour le minuteur (optionnel)">
+                                    title="Durée en minutes (optionnel)">
                             </div>
                         </div>
-                        <button type="button" 
-                                class="btn-remove-etape" 
-                                onclick="removeEtape(0)"
-                                style="display: none;">
-                            ✖
+                        <button type="button" class="btn-icon btn-icon-danger btn-remove" style="display: none;">
+                            🗑️
                         </button>
                     </div>
                 </div>
-                <button type="button" onclick="ajouterEtape()" class="btn" style="margin-top: 10px;">
+                <button type="button" id="btn-add-etape" class="btn btn-small btn-secondary">
                     + Ajouter une étape
                 </button>
             </div>
@@ -257,10 +257,11 @@
                             <a href="{{ url_for('recettes.modifier', id=recette.id) }}" 
                                class="btn-icon" 
                                title="Modifier">✏️</a>
+                            {# ✅ FACTORISÉ : Utilisation de data-confirm #}
                             <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
                                class="btn-icon btn-icon-danger" 
                                title="Supprimer"
-                               onclick="return confirm('Supprimer cette recette ?')">🗑️</a>
+                               data-confirm="Supprimer la recette « {{ recette.nom }} » ?">🗑️</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -272,8 +273,7 @@
         {{ render_pagination(pagination, 'recettes.liste',
                            search=search_query,
                            type=type_filter,
-                           ingredient=ingredient_filter,
-                           view=view_mode) }}
+                           ingredient=ingredient_filter) }}
     {% else %}
         {# État vide (factorisé) #}
         {{ render_empty_state(
@@ -288,131 +288,144 @@
 {% endblock %}
 
 {% block extra_js %}
+{# Note: common.js est déjà inclus dans base.html #}
 <script src="{{ url_for('static', filename='javascript/collapsable.js') }}"></script>
 <script src="{{ url_for('static', filename='javascript/recettes.js') }}"></script>
 <script src="{{ url_for('static', filename='javascript/ingredient-units.js') }}"></script>
+
 <script>
-    window.ingredientCount = 1;
-    window.etapeCount = 1;
-</script>
-<script>
-// Fonction pour ajouter un nouvel ingrédient dynamiquement
-function ajouterIngredient() {
-    const container = document.getElementById('ingredients-container');
-    if (!container) return;
+(function() {
+    'use strict';
     
-    const div = document.createElement('div');
-    div.className = 'ingredient-row';
-    div.dataset.ingredientRow = ingredientCount;
-    div.innerHTML = `
-        <div class="form-group" style="flex: 2;">
-            <select name="ingredient_${ingredientCount}" class="ingredient-select searchable-select" required>
-                <option value="">Sélectionner...</option>
-                {% for ing in ingredients %}
-                <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
-                    {{ ing.nom }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="form-group" style="flex: 1;">
-            <input type="number" 
-                   step="1" 
-                   name="quantite_${ingredientCount}" 
-                   placeholder="Quantité" 
-                   class="quantite-input"
-                   required>
-        </div>
-        
-        <div class="form-group unite-display" style="flex: 0.5;">
-            <span class="unite-label">-</span>
-        </div>
-        
-        <button type="button" class="btn-icon btn-icon-danger" onclick="this.parentElement.remove()">
-            🗑️
-        </button>
-    `;
+    // ============================================
+    // CONFIGURATION DES LISTES DYNAMIQUES
+    // ============================================
     
-    container.appendChild(div);
-    ingredientCount++;
-    
-    // Réinitialiser les selects searchable
-    if (typeof initSelectSearch === 'function') {
-        initSelectSearch();
-    }
-}
-
-// Fonction pour ajouter une nouvelle étape
-function ajouterEtape() {
-    const container = document.getElementById('etapes-container');
-    if (!container) return;
-    
-    const etapeNum = container.querySelectorAll('.etape-row').length;
-    
-    const div = document.createElement('div');
-    div.className = 'etape-row';
-    div.dataset.etape = etapeCount;
-    div.innerHTML = `
-        <div class="etape-number">${etapeNum + 1}</div>
-        <div class="etape-inputs">
-            <div class="form-group" style="flex: 3; margin-bottom: 0;">
-                <textarea name="etape_desc_${etapeCount}" 
-                        placeholder="Ex: Préchauffer le four à 180°C"
-                        rows="2"></textarea>
+    // Template pour un nouvel ingrédient
+    function getIngredientTemplate(index) {
+        return `
+            <div class="ingredient-row dynamic-item" data-index="${index}">
+                <div class="form-group" style="flex: 2;">
+                    <select name="ingredient_${index}" class="ingredient-select searchable-select" required>
+                        <option value="">Sélectionner...</option>
+                        {% for ing in ingredients %}
+                        <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">{{ ing.nom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <input type="number" step="1" name="quantite_${index}" 
+                           placeholder="Quantité" class="quantite-input" required>
+                </div>
+                <div class="form-group unite-display" style="flex: 0.5;">
+                    <span class="unite-label">-</span>
+                </div>
+                <button type="button" class="btn-icon btn-icon-danger btn-remove">🗑️</button>
             </div>
-            <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                <input type="number" 
-                    name="etape_duree_${etapeCount}" 
-                    placeholder="⏱️ Minutes (opt.)"
-                    min="0"
-                    title="Durée en minutes pour le minuteur (optionnel)">
-            </div>
-        </div>
-        <button type="button" 
-                class="btn-remove-etape" 
-                onclick="removeEtape(${etapeCount})">
-            ✖
-        </button>
-    `;
-    
-    container.appendChild(div);
-    etapeCount++;
-    
-    // Afficher le bouton supprimer sur la première étape s'il y en a plusieurs
-    updateRemoveButtons();
-}
-
-// Fonction pour supprimer une étape
-function removeEtape(index) {
-    const etapeRow = document.querySelector(`[data-etape="${index}"]`);
-    if (etapeRow) {
-        etapeRow.remove();
-        renumberEtapes();
-        updateRemoveButtons();
+        `;
     }
-}
-
-// Renuméroter les étapes après suppression
-function renumberEtapes() {
-    const etapes = document.querySelectorAll('.etape-row');
-    etapes.forEach((etape, index) => {
-        const numberEl = etape.querySelector('.etape-number');
-        if (numberEl) {
-            numberEl.textContent = index + 1;
-        }
+    
+    // Template pour une nouvelle étape
+    function getEtapeTemplate(index) {
+        return `
+            <div class="etape-row dynamic-item" data-index="${index}">
+                <div class="etape-number">${index + 1}</div>
+                <div class="etape-inputs">
+                    <div class="form-group" style="flex: 3; margin-bottom: 0;">
+                        <textarea name="etape_desc_${index}" 
+                                placeholder="Décrivez cette étape..." rows="2"></textarea>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <input type="number" name="etape_duree_${index}" 
+                               placeholder="⏱️ Min" min="0">
+                    </div>
+                </div>
+                <button type="button" class="btn-icon btn-icon-danger btn-remove">🗑️</button>
+            </div>
+        `;
+    }
+    
+    // ============================================
+    // INITIALISATION
+    // ============================================
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser la liste d'ingrédients avec DynamicList
+        const ingredientsList = new DynamicList('ingredients-container', {
+            itemSelector: '.ingredient-row',
+            removeButtonSelector: '.btn-remove',
+            minItems: 0,
+            onAdd: function(item, index) {
+                // Initialiser le select searchable
+                const select = item.querySelector('.ingredient-select');
+                if (select && window.SelectSearch) {
+                    new window.SelectSearch(select);
+                }
+                // Configurer l'affichage de l'unité
+                if (select) {
+                    select.addEventListener('change', function() {
+                        const option = this.options[this.selectedIndex];
+                        const unite = option.dataset.unite || '-';
+                        const uniteLabel = item.querySelector('.unite-label');
+                        if (uniteLabel) uniteLabel.textContent = unite;
+                    });
+                }
+            }
+        });
+        
+        // Initialiser la liste d'étapes avec DynamicList
+        const etapesList = new DynamicList('etapes-container', {
+            itemSelector: '.etape-row',
+            removeButtonSelector: '.btn-remove',
+            minItems: 0,
+            onRemove: function() {
+                // Renumeroter après suppression
+                etapesList.renumber('.etape-number');
+            }
+        });
+        
+        // Bouton ajouter ingrédient
+        document.getElementById('btn-add-ingredient')?.addEventListener('click', function() {
+            ingredientsList.add(getIngredientTemplate);
+        });
+        
+        // Bouton ajouter étape
+        document.getElementById('btn-add-etape')?.addEventListener('click', function() {
+            const newItem = etapesList.add(getEtapeTemplate);
+            // Renumeroter toutes les étapes
+            etapesList.renumber('.etape-number');
+        });
+        
+        // Délégation d'événements pour les boutons supprimer
+        document.getElementById('ingredients-container')?.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-remove')) {
+                const item = e.target.closest('.dynamic-item');
+                if (item) {
+                    ingredientsList.remove(parseInt(item.dataset.index));
+                }
+            }
+        });
+        
+        document.getElementById('etapes-container')?.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-remove')) {
+                const item = e.target.closest('.dynamic-item');
+                if (item) {
+                    etapesList.remove(parseInt(item.dataset.index));
+                }
+            }
+        });
+        
+        // Initialiser les selects existants
+        document.querySelectorAll('.ingredient-select').forEach(select => {
+            select.addEventListener('change', function() {
+                const option = this.options[this.selectedIndex];
+                const unite = option.dataset.unite || '-';
+                const row = this.closest('.ingredient-row');
+                const uniteLabel = row?.querySelector('.unite-label');
+                if (uniteLabel) uniteLabel.textContent = unite;
+            });
+        });
     });
-}
-
-// Afficher/masquer les boutons supprimer
-function updateRemoveButtons() {
-    const etapes = document.querySelectorAll('.etape-row');
-    etapes.forEach((etape, index) => {
-        const removeBtn = etape.querySelector('.btn-remove-etape');
-        if (removeBtn) {
-            removeBtn.style.display = etapes.length > 1 ? 'block' : 'none';
-        }
-    });
-}
+})();
 </script>
 {% endblock %}

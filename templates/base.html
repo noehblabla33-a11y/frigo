@@ -59,6 +59,7 @@
     </div>
     
     <!-- Scripts communs - avec versioning -->
+    <script src="{{ versioned_url_for('static', filename='javascript/common.js') }}"></script>
     <script src="{{ versioned_url_for('static', filename='javascript/select-search.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
