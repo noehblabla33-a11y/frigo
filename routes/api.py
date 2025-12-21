@@ -6,11 +6,14 @@ API REST pour l'application Android
 - Clé API chargée depuis config (pas hardcodée)
 - Requêtes optimisées avec joinedload (pas de N+1)
 - Gestion d'erreurs améliorée
+
+✅ REFACTORISÉ : Utilise utils/calculs.py pour le calcul du budget
 """
 from flask import Blueprint, jsonify, request, current_app
 from models.models import db, ListeCourses, StockFrigo, Ingredient
 from functools import wraps
 from sqlalchemy.orm import joinedload
+from utils.calculs import calculer_budget_courses, calculer_prix_item  # ✅ NOUVEAU
 
 api_bp = Blueprint('api', __name__)
 
@@ -52,32 +55,22 @@ def get_courses():
     """
     Récupérer la liste des courses à faire
     ✅ OPTIMISÉ : Utilise joinedload pour éviter les requêtes N+1
+    ✅ REFACTORISÉ : Utilise calculer_budget_courses pour le total
     """
     try:
-        # ✅ AVANT : items = ListeCourses.query.filter_by(achete=False).all()
-        # ❌ Causait une requête SQL par item pour accéder à item.ingredient
-        
-        # ✅ APRÈS : Charge les ingrédients en une seule requête
+        # ✅ Charge les ingrédients en une seule requête
         items = ListeCourses.query.options(
             joinedload(ListeCourses.ingredient)
         ).filter_by(achete=False).all()
         
-        courses_list = []
-        total_estime = 0
+        # ✅ REFACTORISÉ : Utilisation de la fonction centralisée avec détails
+        budget = calculer_budget_courses(items, include_details=True)
         
-        for item in items:
-            # Maintenant item.ingredient est déjà chargé, pas de requête supplémentaire !
-            prix_estime = item.quantite * (item.ingredient.prix_unitaire or 0)
-            total_estime += prix_estime
-            
+        # Enrichir les détails avec les infos supplémentaires pour l'API
+        courses_list = []
+        for item, detail in zip(items, budget.details):
             courses_list.append({
-                'id': item.id,
-                'ingredient_id': item.ingredient_id,
-                'ingredient_nom': item.ingredient.nom,
-                'quantite': item.quantite,
-                'unite': item.ingredient.unite,
-                'prix_unitaire': item.ingredient.prix_unitaire,
-                'prix_estime': prix_estime,
+                **detail,
                 'image': item.ingredient.image,
                 'categorie': item.ingredient.categorie,
                 'achete': False,
@@ -89,7 +82,7 @@ def get_courses():
             'success': True,
             'items': courses_list,
             'count': len(courses_list),
-            'total_estime': round(total_estime, 2)
+            'total_estime': budget.total_estime
         })
     
     except Exception as e:
@@ -103,6 +96,7 @@ def get_historique():
     """
     Récupérer l'historique des achats
     ✅ OPTIMISÉ : Utilise joinedload
+    ✅ REFACTORISÉ : Utilise calculer_prix_item
     """
     try:
         # ✅ Charge les ingrédients en une seule requête
@@ -116,7 +110,8 @@ def get_historique():
         historique_list = []
         
         for item in items:
-            prix_total = item.quantite * (item.ingredient.prix_unitaire or 0)
+            # ✅ REFACTORISÉ : Utilisation de la fonction centralisée
+            prix_total = calculer_prix_item(item)
             
             historique_list.append({
                 'id': item.id,
@@ -168,12 +163,18 @@ def sync_courses():
                 continue
             
             # Récupérer l'item de la liste de courses
-            item = ListeCourses.query.get(item_id)
-            if not item:
+            item = ListeCourses.query.options(
+                joinedload(ListeCourses.ingredient)
+            ).get(item_id)
+            
+            if not item or item.achete:
                 continue
             
             # Mettre à jour le stock du frigo
-            stock = StockFrigo.query.filter_by(ingredient_id=item.ingredient_id).first()
+            stock = StockFrigo.query.filter_by(
+                ingredient_id=item.ingredient_id
+            ).first()
+            
             if stock:
                 stock.quantite += quantite_achetee
             else:
@@ -183,7 +184,7 @@ def sync_courses():
                 )
                 db.session.add(stock)
             
-            # Marquer l'item comme acheté
+            # Marquer comme acheté
             item.achete = True
             items_modifies += 1
         
@@ -191,8 +192,8 @@ def sync_courses():
         
         return jsonify({
             'success': True,
-            'message': f'{items_modifies} article(s) synchronisé(s) et ajouté(s) au frigo',
-            'items_modifies': items_modifies
+            'items_modifies': items_modifies,
+            'message': f'{items_modifies} article(s) synchronisé(s)'
         })
     
     except Exception as e:
@@ -201,52 +202,41 @@ def sync_courses():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@api_bp.route('/courses/<int:item_id>', methods=['DELETE'])
+@api_bp.route('/frigo', methods=['GET'])
 @require_api_key
-def delete_course_item(item_id):
-    """Supprimer un item de la liste de courses"""
-    try:
-        item = ListeCourses.query.get_or_404(item_id)
-        nom = item.ingredient.nom
-        
-        db.session.delete(item)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'{nom} retiré de la liste'
-        })
-    
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Erreur dans delete_course_item: {str(e)}')
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@api_bp.route('/stock', methods=['GET'])
-@require_api_key
-def get_stock():
+def get_frigo():
     """
-    Récupérer l'état du stock (utile pour info dans l'app)
+    Récupérer le contenu du frigo
     ✅ OPTIMISÉ : Utilise joinedload
     """
     try:
-        # ✅ Charge les ingrédients en une seule requête
         stocks = StockFrigo.query.options(
             joinedload(StockFrigo.ingredient)
-        ).all()
+        ).filter(StockFrigo.quantite > 0).all()
         
-        # Sérialisation avec to_dict()
-        stock_list = [stock.to_dict() for stock in stocks]
+        frigo_list = []
+        
+        for stock in stocks:
+            frigo_list.append({
+                'id': stock.id,
+                'ingredient_id': stock.ingredient_id,
+                'ingredient_nom': stock.ingredient.nom,
+                'quantite': stock.quantite,
+                'unite': stock.ingredient.unite,
+                'prix_unitaire': stock.ingredient.prix_unitaire,
+                'image': stock.ingredient.image,
+                'categorie': stock.ingredient.categorie,
+                'date_modification': stock.date_modification.isoformat() if stock.date_modification else None
+            })
         
         return jsonify({
             'success': True,
-            'items': stock_list,
-            'count': len(stock_list)
+            'items': frigo_list,
+            'count': len(frigo_list)
         })
     
     except Exception as e:
-        current_app.logger.error(f'Erreur dans get_stock: {str(e)}')
+        current_app.logger.error(f'Erreur dans get_frigo: {str(e)}')
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
@@ -254,17 +244,22 @@ def get_stock():
 @require_api_key
 def get_ingredients():
     """
-    Récupérer la liste des ingrédients (pour recherche/ajout manuel)
-    ✅ OPTIMISÉ : Utilise joinedload pour charger le stock
+    Récupérer le catalogue des ingrédients
     """
     try:
-        # ✅ Charge le stock en même temps si nécessaire
-        ingredients = Ingredient.query.options(
-            joinedload(Ingredient.stock)
-        ).order_by(Ingredient.nom).all()
+        ingredients = Ingredient.query.order_by(Ingredient.nom).all()
         
-        # Sérialisation avec to_dict()
-        ingredients_list = [ing.to_dict(include_stock=True) for ing in ingredients]
+        ingredients_list = []
+        
+        for ing in ingredients:
+            ingredients_list.append({
+                'id': ing.id,
+                'nom': ing.nom,
+                'unite': ing.unite,
+                'prix_unitaire': ing.prix_unitaire,
+                'categorie': ing.categorie,
+                'image': ing.image
+            })
         
         return jsonify({
             'success': True,

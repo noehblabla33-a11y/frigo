@@ -1,10 +1,13 @@
 """
 routes/courses.py
 Gestion de la liste de courses
+
+✅ REFACTORISÉ : Utilise utils/calculs.py pour le calcul du budget
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from models.models import db, ListeCourses, StockFrigo
 from utils.database import db_transaction_with_flash
+from utils.calculs import calculer_budget_courses  # ✅ NOUVEAU
 from sqlalchemy.orm import joinedload
 from utils.forms import parse_float, parse_positive_float, parse_checkbox
 
@@ -30,57 +33,47 @@ def liste():
             items_valides = 0
             erreurs = []
             
-            # Traiter chaque item
             for item in items:
-                item_id = str(item.id)
+                checkbox_name = f'achete_{item.id}'
+                quantite_name = f'quantite_{item.id}'
                 
-                # Vérifier si l'item est coché
-                if not parse_checkbox(request.form.get(f'achete_{item_id}')):
-                    continue
-
-                quantite = parse_float(request.form.get(f'quantite_{item_id}'))
-
-                if quantite <= 0:
-                    erreurs.append(f'{item.ingredient.nom}: quantité invalide ou manquante')
-                    continue
+                # Vérifier si l'article est coché
+                est_achete = parse_checkbox(request.form.get(checkbox_name))
                 
-                # ✅ TRANSACTION SÉCURISÉE
-                try:
-                    with db_transaction_with_flash(
-                        success_message=None,  # On affichera un message global
-                        error_message=f'Erreur lors de l\'ajout de {item.ingredient.nom}'
-                    ):
-                        # Mettre à jour ou créer le stock
-                        stock = StockFrigo.query.filter_by(ingredient_id=item.ingredient_id).first()
+                if est_achete:
+                    try:
+                        # Récupérer la quantité achetée
+                        quantite_achetee = parse_positive_float(
+                            request.form.get(quantite_name, item.quantite)
+                        )
+                        
+                        # Mettre à jour le stock du frigo
+                        stock = StockFrigo.query.filter_by(
+                            ingredient_id=item.ingredient_id
+                        ).first()
                         
                         if stock:
-                            stock.quantite += quantite
+                            stock.quantite += quantite_achetee
                         else:
                             stock = StockFrigo(
                                 ingredient_id=item.ingredient_id,
-                                quantite=quantite
+                                quantite=quantite_achetee
                             )
                             db.session.add(stock)
                         
-                        # Marquer l'item comme acheté
+                        # Marquer comme acheté
                         item.achete = True
                         items_valides += 1
                         
-                        current_app.logger.info(
-                            f'Course validée: {item.ingredient.nom} '
-                            f'({quantite} {item.ingredient.unite})'
-                        )
-                
-                except Exception as e:
-                    erreurs.append(f'{item.ingredient.nom}: {str(e)}')
-                    current_app.logger.error(
-                        f'Erreur lors de la validation de {item.ingredient.nom}: {str(e)}'
-                    )
+                    except Exception as e:
+                        erreurs.append(f'{item.ingredient.nom}: {str(e)}')
             
-            # ✅ MESSAGES DE RÉSULTAT
+            # Commit des changements
+            db.session.commit()
+            
             if items_valides > 0:
                 flash(
-                    f'✓ {items_valides} article(s) acheté(s) et ajouté(s) au frigo !',
+                    f'✓ {items_valides} article(s) validé(s) et ajouté(s) au frigo !',
                     'success'
                 )
             
@@ -118,25 +111,16 @@ def liste():
          .limit(10)\
          .all()
         
-        # Calculer le budget estimé
-        total_estime = 0
-        items_avec_prix = 0
-        items_sans_prix = 0
-        
-        for item in items:
-            if item.ingredient.prix_unitaire and item.ingredient.prix_unitaire > 0:
-                total_estime += item.quantite * item.ingredient.prix_unitaire
-                items_avec_prix += 1
-            else:
-                items_sans_prix += 1
+        # ✅ REFACTORISÉ : Utilisation de la fonction centralisée
+        budget = calculer_budget_courses(items)
         
         return render_template(
             'courses.html',
             items=items,
             historique=historique,
-            total_estime=total_estime,
-            items_avec_prix=items_avec_prix,
-            items_sans_prix=items_sans_prix
+            total_estime=budget.total_estime,
+            items_avec_prix=budget.items_avec_prix,
+            items_sans_prix=budget.items_sans_prix
         )
     
     except Exception as e:
