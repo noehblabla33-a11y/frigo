@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
+{% from "macros/search_filters.html" import render_search_form, render_empty_state %}
 {% block title %}Mes recettes{% endblock %}
 
 {% block extra_css %}
@@ -7,128 +8,119 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/collapsable.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/list-grid-view.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/search-filters.css') }}">
 {% endblock %}
 
 {% block content %}
 <script>document.body.dataset.page = 'recettes';</script>
 
-<!-- Barre de recherche et filtres -->
-<div class="card">
-    <h3>🔍 Rechercher et filtrer</h3>
-    <form method="GET" action="{{ url_for('recettes.liste') }}">
-        <div class="search-filters">
-            <div class="form-group" style="flex: 2;">
-                <label>Recherche par nom</label>
-                <input type="text" name="search" placeholder="Ex: Poulet, Tarte..." 
-                       value="{{ search_query }}">
-            </div>
-            
-            <div class="form-group" style="flex: 1;">
-                <label>Type</label>
-                <select name="type">
-                    <option value="">Tous les types</option>
-                    {% for type in types_recettes %}
-                    <option value="{{ type }}" {% if type_filter == type %}selected{% endif %}>
-                        {{ type }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group" style="flex: 1;">
-                <label>Ingrédient</label>
-                <select name="ingredient" class="searchable-select">
-                    <option value="">Tous les ingrédients</option>
-                    {% for ing in ingredients %}
-                    <option value="{{ ing.id }}" {% if ingredient_filter == ing.id|string %}selected{% endif %}>
-                        {{ ing.nom }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group" style="flex: 0; align-self: flex-end;">
-                <button type="submit" class="btn">🔍 Rechercher</button>
-            </div>
-            
-            {% if search_query or type_filter or ingredient_filter %}
-            <div class="form-group" style="flex: 0; align-self: flex-end;">
-                <a href="{{ url_for('recettes.liste') }}" class="btn btn-secondary">✖ Effacer</a>
-            </div>
-            {% endif %}
-        </div>
-        <input type="hidden" name="view" value="{{ view_mode }}">
-    </form>
-    
-    {% if search_query or type_filter or ingredient_filter %}
-    <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border-radius: 5px;">
-        <strong>Filtres actifs :</strong>
-        {% if search_query %}
-        <span class="filter-badge">Nom: "{{ search_query }}"</span>
-        {% endif %}
-        {% if type_filter %}
-        <span class="filter-badge">Type: {{ type_filter }}</span>
-        {% endif %}
-        {% if ingredient_filter %}
-        {% for ing in ingredients %}
-            {% if ing.id == ingredient_filter|int %}
-            <span class="filter-badge">Ingrédient: {{ ing.nom }}</span>
-            {% endif %}
-        {% endfor %}
-        {% endif %}
-        <span style="color: #666;">({{ pagination.total }} résultat(s))</span>
-    </div>
-    {% endif %}
-</div>
+{# ============================================ #}
+{# FORMULAIRE DE RECHERCHE (FACTORISÉ) #}
+{# ============================================ #}
+{% set type_options = [] %}
+{% for type in types_recettes %}
+    {% set _ = type_options.append({'value': type, 'text': type}) %}
+{% endfor %}
 
-<!-- Formulaire de création de recette (collapsable) -->
-<div class="card card-collapsable">
-    <div class="collapsable-header" data-collapsable="form-ajout-recette">
-        <h3>➕ Créer une nouvelle recette </h3>
-    </div>
-    
-    <div id="form-ajout-recette" class="collapsable-content">    
-        <form method="POST" id="recetteForm" enctype="multipart/form-data">
-            <div class="form-group">
-                <label>Nom de la recette</label>
-                <input type="text" name="nom" required>
+{% set ingredient_options = [] %}
+{% for ing in ingredients %}
+    {% set _ = ingredient_options.append({'value': ing.id, 'text': ing.nom}) %}
+{% endfor %}
+
+{% set filters = [
+    {
+        'name': 'type',
+        'label': 'Type',
+        'type': 'select',
+        'placeholder': 'Tous les types',
+        'options': type_options,
+        'selected': type_filter
+    },
+    {
+        'name': 'ingredient',
+        'label': 'Ingrédient',
+        'type': 'select',
+        'searchable': true,
+        'placeholder': 'Tous les ingrédients',
+        'options': ingredient_options,
+        'selected': ingredient_filter
+    }
+] %}
+
+{% set active_filters = {} %}
+{% if type_filter %}
+    {% set _ = active_filters.update({'type': {'label': 'Type', 'value': type_filter}}) %}
+{% endif %}
+{% if ingredient_filter %}
+    {% for ing in ingredients %}
+        {% if ing.id == ingredient_filter|int %}
+            {% set _ = active_filters.update({'ingredient': {'label': 'Ingrédient', 'value': ingredient_filter, 'display': ing.nom}}) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+{{ render_search_form(
+    endpoint='recettes.liste',
+    search_value=search_query,
+    search_placeholder='Ex: Poulet, Tarte...',
+    filters=filters,
+    active_filters=active_filters,
+    view_mode=view_mode|default('list')
+) }}
+
+{# Afficher le nombre de résultats si filtres actifs #}
+{% if (search_query or type_filter or ingredient_filter) and pagination.total is defined %}
+<div style="margin: -10px 0 20px 0; padding-left: 5px;">
+    <span style="color: var(--text-secondary);">{{ pagination.total }} résultat(s)</span>
+</div>
+{% endif %}
+
+{# ============================================ #}
+{# FORMULAIRE D'AJOUT (COLLAPSABLE) #}
+{# ============================================ #}
+<div class="card">
+    <h3 data-collapsable="add-form" class="collapsable-header">
+        ➕ Créer une recette
+    </h3>
+    <div id="add-form" class="collapsable-content">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-row">
+                <div class="form-group" style="flex: 2;">
+                    <label>Nom de la recette *</label>
+                    <input type="text" name="nom" required placeholder="Ex: Poulet rôti aux herbes">
+                </div>
+                
+                <div class="form-group" style="flex: 1;">
+                    <label>Type de recette</label>
+                    <select name="type_recette">
+                        <option value="">Aucun</option>
+                        {% for type in types_recettes %}
+                        <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group" style="flex: 1;">
+                    <label>Temps de préparation (min)</label>
+                    <input type="number" name="temps_preparation" min="0" placeholder="Ex: 30">
+                </div>
             </div>
             
             <div class="form-group">
-                <label>Type de recette</label>
-                <select name="type_recette" class="searchable-select">
-                    <option value="">Sélectionner un type (optionnel)</option>
-                    {% for type in types_recettes %}
-                    <option value="{{ type }}">{{ type }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label>Temps de préparation (minutes)</label>
-                <input type="number" name="temps_preparation" placeholder="Ex: 30">
-            </div>
-            
-            <div class="form-group">
-                <label>Image de la recette</label>
+                <label>Image</label>
                 <input type="file" name="image" accept="image/*">
             </div>
             
-            <!-- Ingrédients -->
+            {# Ingrédients #}
             <div class="form-group">
                 <label>Ingrédients</label>
-                <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
-                    Ajoutez les ingrédients nécessaires pour cette recette.
-                </p>
-                
-                <div id="ingredients-container" class="ingredients-container">
+                <div id="ingredients-container">
                     <div class="ingredient-row" data-ingredient-row="0">
                         <div class="form-group" style="flex: 2;">
-                            <select name="ingredient_0" class="ingredient-select searchable-select" required>
+                            <select name="ingredient_0" class="ingredient-select searchable-select">
                                 <option value="">Sélectionner...</option>
                                 {% for ing in ingredients %}
-                                <option value="{{ ing.id }}" 
-                                        data-unite="{{ ing.unite }}">
+                                <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
                                     {{ ing.nom }}
                                 </option>
                                 {% endfor %}
@@ -139,41 +131,26 @@
                             <input type="number" 
                                    step="1" 
                                    name="quantite_0" 
-                                   placeholder="Quantité"
-                                   required>
+                                   placeholder="Quantité" 
+                                   class="quantite-input">
                         </div>
                         
-                        <div class="form-group" style="flex: 0.5;">
-                            <input type="text" 
-                                   class="unite-display" 
-                                   value="g" 
-                                   readonly 
-                                   style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
-                        </div>
-                        
-                        <div class="form-group" style="flex: 0;">
-                            <button type="button" 
-                                    class="btn-remove-ingredient" 
-                                    onclick="removeIngredient(0)"
-                                    style="display: none;">
-                                ✖
-                            </button>
+                        <div class="form-group unite-display" style="flex: 0.5;">
+                            <span class="unite-label">-</span>
                         </div>
                     </div>
                 </div>
-                
-                <button type="button" onclick="ajouterIngredient()" class="btn" style="margin-top: 10px;">
+                <button type="button" class="btn btn-small btn-secondary" onclick="ajouterIngredient()">
                     + Ajouter un ingrédient
                 </button>
             </div>
             
-            <!-- Étapes de préparation -->
+            {# Étapes #}
             <div class="form-group">
                 <label>Étapes de préparation</label>
-                <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
-                    Décrivez les étapes une par une. Vous pouvez ajouter un minuteur optionnel pour chaque étape.
+                <p style="font-size: 0.9em; color: #6c757d; margin-bottom: 10px;">
+                    Vous pouvez ajouter un minuteur optionnel pour chaque étape.
                 </p>
-                
                 <div id="etapes-container">
                     <div class="etape-row" data-etape="0">
                         <div class="etape-number">1</div>
@@ -199,18 +176,19 @@
                         </button>
                     </div>
                 </div>
-                
                 <button type="button" onclick="ajouterEtape()" class="btn" style="margin-top: 10px;">
                     + Ajouter une étape
                 </button>
             </div>
             
-            <button type="submit" class="btn">Créer la recette</button>
+            <button type="submit" class="btn btn-success">✓ Créer la recette</button>
         </form>
     </div>
 </div>
 
-<!-- Liste des recettes -->
+{# ============================================ #}
+{# LISTE DES RECETTES #}
+{# ============================================ #}
 <div class="card">
     <div class="catalogue-header">
         <h3>📖 Mes recettes</h3>
@@ -232,53 +210,56 @@
                 </thead>
                 <tbody>
                     {% for recette in recettes %}
-                    {% set cout = recette.calculer_cout() %}
                     <tr>
                         <td class="item-img-cell">
                             {% if recette.image %}
                             <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
-                                 alt="{{ recette.nom }}" 
-                                 class="item-thumbnail"
-                                 loading="lazy">
+                                alt="{{ recette.nom }}" 
+                                class="item-thumbnail"
+                                loading="lazy">
                             {% else %}
                             <div class="item-thumbnail-placeholder">🍳</div>
                             {% endif %}
                         </td>
                         <td class="item-name-cell">
-                            <a href="{{ url_for('recettes.detail', id=recette.id) }}">
+                            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link-table">
                                 <strong>{{ recette.nom }}</strong>
                             </a>
                         </td>
-                        <td>{{ recette.type_recette or '-' }}</td>
-                        <td>{{ recette.ingredients|length }} ingrédient(s)</td>
+                        <td>
+                            {% if recette.type_recette %}
+                            <span class="badge">{{ recette.type_recette }}</span>
+                            {% else %}
+                            <span style="color: #adb5bd;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ recette.ingredients|length }} ing.</td>
                         <td>
                             {% if recette.temps_preparation %}
-                            ⏱️ {{ recette.temps_preparation }} min
+                            {{ recette.temps_preparation }} min
                             {% else %}
-                            -
+                            <span style="color: #adb5bd;">-</span>
                             {% endif %}
                         </td>
                         <td>
+                            {% set cout = recette.calculer_cout() %}
                             {% if cout > 0 %}
-                            <span class="prix-table">{{ cout }}€</span>
+                            {{ "%.2f"|format(cout) }}€
                             {% else %}
-                            -
+                            <span style="color: #adb5bd;">-</span>
                             {% endif %}
                         </td>
                         <td class="actions-cell">
-                            <form method="POST" 
-                                  action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
-                                  style="display: inline;">
-                                <button type="submit" 
-                                        class="btn btn-small"
-                                        style="background: #28a745; color: white;">
-                                    📅
-                                </button>
+                            <form method="POST" action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" style="display: inline;">
+                                <input type="hidden" name="next" value="{{ request.url }}">
+                                <button type="submit" class="btn-icon" title="Planifier">📅</button>
                             </form>
                             <a href="{{ url_for('recettes.modifier', id=recette.id) }}" 
-                               class="btn btn-small">✏️</a>
+                               class="btn-icon" 
+                               title="Modifier">✏️</a>
                             <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
-                               class="btn btn-danger btn-small"
+                               class="btn-icon btn-icon-danger" 
+                               title="Supprimer"
                                onclick="return confirm('Supprimer cette recette ?')">🗑️</a>
                         </td>
                     </tr>
@@ -287,20 +268,21 @@
             </table>
         </div>
         
-        <!-- Pagination -->
+        {# Pagination #}
         {{ render_pagination(pagination, 'recettes.liste',
                            search=search_query,
                            type=type_filter,
                            ingredient=ingredient_filter,
                            view=view_mode) }}
     {% else %}
-    <p>Aucune recette trouvée. 
-        {% if search_query or type_filter or ingredient_filter %}
-        Essayez de modifier vos critères de recherche.
-        {% else %}
-        Utilisez le formulaire ci-dessus pour en créer une !
-        {% endif %}
-    </p>
+        {# État vide (factorisé) #}
+        {{ render_empty_state(
+            icon='📖',
+            message='Aucune recette trouvée.',
+            has_filters=(search_query or type_filter or ingredient_filter),
+            filter_message='Essayez de modifier vos critères de recherche.',
+            add_message='Utilisez le formulaire ci-dessus pour en créer une !'
+        ) }}
     {% endif %}
 </div>
 {% endblock %}
@@ -338,81 +320,97 @@ function ajouterIngredient() {
             <input type="number" 
                    step="1" 
                    name="quantite_${ingredientCount}" 
-                   placeholder="Quantité"
+                   placeholder="Quantité" 
+                   class="quantite-input"
                    required>
         </div>
         
-        <div class="form-group" style="flex: 0.5;">
-            <input type="text" 
-                   class="unite-display" 
-                   value="g" 
-                   readonly 
-                   style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
+        <div class="form-group unite-display" style="flex: 0.5;">
+            <span class="unite-label">-</span>
         </div>
         
-        <div class="form-group" style="flex: 0;">
-            <button type="button" 
-                    class="btn-remove-ingredient" 
-                    onclick="removeIngredient(${ingredientCount})">
-                ✖
-            </button>
-        </div>
+        <button type="button" class="btn-icon btn-icon-danger" onclick="this.parentElement.remove()">
+            🗑️
+        </button>
     `;
+    
     container.appendChild(div);
-    
-    // Afficher le bouton de suppression du premier ingrédient
-    if (ingredientCount === 1) {
-        const firstRemove = document.querySelector('.ingredient-row[data-ingredient-row="0"] .btn-remove-ingredient');
-        if (firstRemove) firstRemove.style.display = 'inline-block';
-    }
-    
     ingredientCount++;
-    if (typeof initIngredientUnits === 'function') {
-        initIngredientUnits();
+    
+    // Réinitialiser les selects searchable
+    if (typeof initSelectSearch === 'function') {
+        initSelectSearch();
     }
-    const newSelect = div.querySelector('.ingredient-select');
-    newSelect.addEventListener('change', function() {
-        updateUniteDisplay(this);
+}
+
+// Fonction pour ajouter une nouvelle étape
+function ajouterEtape() {
+    const container = document.getElementById('etapes-container');
+    if (!container) return;
+    
+    const etapeNum = container.querySelectorAll('.etape-row').length;
+    
+    const div = document.createElement('div');
+    div.className = 'etape-row';
+    div.dataset.etape = etapeCount;
+    div.innerHTML = `
+        <div class="etape-number">${etapeNum + 1}</div>
+        <div class="etape-inputs">
+            <div class="form-group" style="flex: 3; margin-bottom: 0;">
+                <textarea name="etape_desc_${etapeCount}" 
+                        placeholder="Ex: Préchauffer le four à 180°C"
+                        rows="2"></textarea>
+            </div>
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <input type="number" 
+                    name="etape_duree_${etapeCount}" 
+                    placeholder="⏱️ Minutes (opt.)"
+                    min="0"
+                    title="Durée en minutes pour le minuteur (optionnel)">
+            </div>
+        </div>
+        <button type="button" 
+                class="btn-remove-etape" 
+                onclick="removeEtape(${etapeCount})">
+            ✖
+        </button>
+    `;
+    
+    container.appendChild(div);
+    etapeCount++;
+    
+    // Afficher le bouton supprimer sur la première étape s'il y en a plusieurs
+    updateRemoveButtons();
+}
+
+// Fonction pour supprimer une étape
+function removeEtape(index) {
+    const etapeRow = document.querySelector(`[data-etape="${index}"]`);
+    if (etapeRow) {
+        etapeRow.remove();
+        renumberEtapes();
+        updateRemoveButtons();
+    }
+}
+
+// Renuméroter les étapes après suppression
+function renumberEtapes() {
+    const etapes = document.querySelectorAll('.etape-row');
+    etapes.forEach((etape, index) => {
+        const numberEl = etape.querySelector('.etape-number');
+        if (numberEl) {
+            numberEl.textContent = index + 1;
+        }
     });
-    initSelectSearch();
 }
 
-// Fonction pour supprimer un ingrédient
-function removeIngredient(index) {
-    const row = document.querySelector(`[data-ingredient-row="${index}"]`);
-    if (row) {
-        row.remove();
-        
-        // Renuméroter tous les ingrédients restants
-        const rows = document.querySelectorAll('.ingredient-row');
-        rows.forEach((r, i) => {
-            r.dataset.ingredientRow = i;
-            
-            // Renommer le select
-            const select = r.querySelector('.ingredient-select');
-            if (select) select.name = `ingredient_${i}`;
-            
-            // Renommer l'input quantité
-            const quantite = r.querySelector('input[name^="quantite_"]');
-            if (quantite) quantite.name = `quantite_${i}`;
-            
-            // Mettre à jour le onclick du bouton supprimer
-            const btn = r.querySelector('.btn-remove-ingredient');
-            if (btn) btn.setAttribute('onclick', `removeIngredient(${i})`);
-        });
-        
-        // Mettre à jour le compteur
-        ingredientCount = rows.length;
-    }
-}
-
-// Fonction pour mettre à jour l'affichage des boutons supprimer
+// Afficher/masquer les boutons supprimer
 function updateRemoveButtons() {
-    const rows = document.querySelectorAll('.ingredient-row');
-    rows.forEach((row, idx) => {
-        const btn = row.querySelector('.btn-remove-ingredient');
-        if (btn) {
-            btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+    const etapes = document.querySelectorAll('.etape-row');
+    etapes.forEach((etape, index) => {
+        const removeBtn = etape.querySelector('.btn-remove-etape');
+        if (removeBtn) {
+            removeBtn.style.display = etapes.length > 1 ? 'block' : 'none';
         }
     });
 }

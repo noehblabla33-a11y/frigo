@@ -1,0 +1,210 @@
+{# ============================================ #}
+{# Fichier: templates/macros/search_filters.html #}
+{# Macros pour les formulaires de recherche/filtres #}
+{# ============================================ #}
+
+{# ============================================ #}
+{# MACRO PRINCIPALE : render_search_form #}
+{# ============================================ #}
+{% macro render_search_form(
+    endpoint,
+    search_value='',
+    search_placeholder='Rechercher...',
+    filters=[],
+    active_filters={},
+    view_mode='grid',
+    show_active_filters=true
+) %}
+<div class="card">
+    <h3>🔍 Rechercher et filtrer</h3>
+    <form method="GET" action="{{ url_for(endpoint) }}">
+        <div class="search-filters">
+            {# Champ de recherche texte #}
+            <div class="form-group" style="flex: 2;">
+                <label>Recherche par nom</label>
+                <input type="text" 
+                       name="search" 
+                       placeholder="{{ search_placeholder }}" 
+                       value="{{ search_value }}">
+            </div>
+            
+            {# Filtres dynamiques #}
+            {% for filter in filters %}
+                {{ render_filter_field(filter) }}
+            {% endfor %}
+            
+            {# Bouton Rechercher #}
+            <div class="form-group" style="flex: 0; align-self: flex-end;">
+                <button type="submit" class="btn">🔍 Rechercher</button>
+            </div>
+            
+            {# Bouton Effacer (si filtres actifs) #}
+            {% if search_value or active_filters %}
+            <div class="form-group" style="flex: 0; align-self: flex-end;">
+                <a href="{{ url_for(endpoint) }}" class="btn btn-secondary">✖ Effacer</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        {# Champ caché pour conserver le mode de vue #}
+        <input type="hidden" name="view" value="{{ view_mode }}">
+    </form>
+    
+    {# Affichage des filtres actifs #}
+    {% if show_active_filters and (search_value or active_filters) %}
+        {{ render_active_filters(search_value, active_filters) }}
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# MACRO : render_filter_field #}
+{# Rend un champ de filtre selon son type #}
+{# ============================================ #}
+{% macro render_filter_field(filter) %}
+<div class="form-group" style="flex: {{ filter.flex|default(1) }};">
+    <label>{{ filter.label }}</label>
+    
+    {% if filter.type == 'select' %}
+        {# Select standard #}
+        <select name="{{ filter.name }}" {% if filter.searchable %}class="searchable-select"{% endif %}>
+            <option value="">{{ filter.placeholder|default('Tous') }}</option>
+            {% for option in filter.options %}
+                {% if option is mapping %}
+                    {# Option avec valeur/texte séparés #}
+                    <option value="{{ option.value }}" 
+                            {% if filter.selected == option.value|string %}selected{% endif %}
+                            {% if option.data_attrs %}
+                                {% for key, val in option.data_attrs.items() %}
+                                    data-{{ key }}="{{ val }}"
+                                {% endfor %}
+                            {% endif %}>
+                        {{ option.text }}
+                        {% if option.count is defined %}({{ option.count }}){% endif %}
+                    </option>
+                {% else %}
+                    {# Option simple (valeur = texte) #}
+                    <option value="{{ option }}" 
+                            {% if filter.selected == option|string %}selected{% endif %}>
+                        {{ option }}
+                    </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    
+    {% elif filter.type == 'select_simple' %}
+        {# Select avec options fixes (non dynamiques) #}
+        <select name="{{ filter.name }}">
+            <option value="">{{ filter.placeholder|default('Tous') }}</option>
+            {% for value, text in filter.options %}
+                <option value="{{ value }}" 
+                        {% if filter.selected == value %}selected{% endif %}>
+                    {{ text }}
+                </option>
+            {% endfor %}
+        </select>
+    
+    {% elif filter.type == 'text' %}
+        {# Champ texte additionnel #}
+        <input type="text" 
+               name="{{ filter.name }}" 
+               placeholder="{{ filter.placeholder|default('') }}"
+               value="{{ filter.value|default('') }}">
+    
+    {% elif filter.type == 'number' %}
+        {# Champ numérique #}
+        <input type="number" 
+               name="{{ filter.name }}" 
+               placeholder="{{ filter.placeholder|default('') }}"
+               value="{{ filter.value|default('') }}"
+               min="{{ filter.min|default('') }}"
+               max="{{ filter.max|default('') }}"
+               step="{{ filter.step|default('1') }}">
+    
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# MACRO : render_active_filters #}
+{# Affiche la barre des filtres actifs #}
+{# ============================================ #}
+{% macro render_active_filters(search_value, active_filters, total_results=none) %}
+<div class="active-filters-bar">
+    <strong>Filtres actifs :</strong>
+    
+    {% if search_value %}
+        <span class="filter-badge">Recherche: "{{ search_value }}"</span>
+    {% endif %}
+    
+    {% for filter_name, filter_info in active_filters.items() %}
+        {% if filter_info.value %}
+            <span class="filter-badge">
+                {{ filter_info.label }}: {{ filter_info.display|default(filter_info.value) }}
+            </span>
+        {% endif %}
+    {% endfor %}
+    
+    {% if total_results is not none %}
+        <span class="filter-results-count">({{ total_results }} résultat(s))</span>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# MACRO : render_empty_state #}
+{# Affiche un message quand la liste est vide #}
+{# ============================================ #}
+{% macro render_empty_state(
+    icon='📭',
+    message='Aucun élément trouvé.',
+    submessage='',
+    has_filters=false,
+    filter_message='Essayez de modifier vos critères de recherche.',
+    add_message='Utilisez le formulaire ci-dessus pour en ajouter !',
+    action_url='',
+    action_text=''
+) %}
+<div class="empty-state">
+    <div class="empty-state-icon">{{ icon }}</div>
+    <p class="empty-state-message">{{ message }}</p>
+    
+    {% if submessage %}
+        <p class="empty-state-submessage">{{ submessage }}</p>
+    {% elif has_filters %}
+        <p class="empty-state-submessage">{{ filter_message }}</p>
+    {% else %}
+        <p class="empty-state-submessage">{{ add_message }}</p>
+    {% endif %}
+    
+    {% if action_url and action_text %}
+        <a href="{{ action_url }}" class="btn" style="margin-top: 15px;">
+            {{ action_text }}
+        </a>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# MACRO : render_view_toggle #}
+{# Boutons pour basculer entre vue grille/liste #}
+{# Note: Utilisée uniquement sur les pages qui supportent les deux vues #}
+{# ============================================ #}
+{% macro render_view_toggle(current_view, endpoint, params={}) %}
+<div class="view-toggle">
+    <a href="{{ url_for(endpoint, view='grid', **params) }}" 
+       class="view-toggle-btn {% if current_view == 'grid' %}active{% endif %}"
+       title="Vue grille">
+        <span>▦</span>
+    </a>
+    <a href="{{ url_for(endpoint, view='list', **params) }}" 
+       class="view-toggle-btn {% if current_view == 'list' %}active{% endif %}"
+       title="Vue liste">
+        <span>☰</span>
+    </a>
+</div>
+{% endmacro %}

@@ -1,0 +1,201 @@
+/* ============================================ */
+/* Fichier: static/style/search-filters.css     */
+/* Styles pour les composants de recherche      */
+/* ============================================ */
+
+/* ========== CONTENEUR DE FILTRES ========== */
+.search-filters {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: flex-end;
+}
+
+.search-filters .form-group {
+    flex: 1;
+    min-width: 180px;
+    margin-bottom: 0;
+}
+
+.search-filters .form-group:first-child {
+    flex: 2;
+    min-width: 250px;
+}
+
+/* ========== BARRE DES FILTRES ACTIFS ========== */
+.active-filters-bar {
+    margin-top: 15px;
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #e7f3ff 0%, #f0f7ff 100%);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.active-filters-bar strong {
+    color: var(--text-primary);
+    margin-right: 5px;
+}
+
+/* ========== BADGES DE FILTRE ========== */
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: var(--bg-white);
+    color: var(--text-primary);
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 500;
+    box-shadow: var(--shadow-xs);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.filter-badge:hover {
+    background: var(--primary-light);
+    color: white;
+    border-color: var(--primary-light);
+}
+
+/* Badge avec bouton de suppression */
+.filter-badge-removable {
+    cursor: pointer;
+}
+
+.filter-badge-removable::after {
+    content: '×';
+    margin-left: 5px;
+    font-weight: bold;
+    opacity: 0.7;
+}
+
+.filter-badge-removable:hover::after {
+    opacity: 1;
+}
+
+/* ========== COMPTEUR DE RÉSULTATS ========== */
+.filter-results-count {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin-left: auto;
+}
+
+/* ========== ÉTATS VIDES ========== */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    background: var(--bg-cream);
+    border-radius: var(--border-radius-lg);
+    margin: 20px 0;
+}
+
+.empty-state-icon {
+    font-size: 4em;
+    margin-bottom: 15px;
+    opacity: 0.8;
+}
+
+.empty-state-message {
+    font-size: 1.2em;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.empty-state-submessage {
+    color: var(--text-secondary);
+    font-size: 0.95em;
+    margin-bottom: 0;
+}
+
+/* ========== TOGGLE VUE GRILLE/LISTE ========== */
+.view-toggle {
+    display: inline-flex;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    padding: 4px;
+    gap: 4px;
+}
+
+.view-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: calc(var(--border-radius) - 2px);
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: all var(--transition-fast);
+    font-size: 1.2em;
+}
+
+.view-toggle-btn:hover {
+    background: var(--bg-white);
+    color: var(--primary);
+}
+
+.view-toggle-btn.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ========== HEADER AVEC TOGGLE ========== */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.list-header h3 {
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.list-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .search-filters {
+        flex-direction: column;
+    }
+    
+    .search-filters .form-group {
+        min-width: 100%;
+        flex: 1 1 100% !important;
+    }
+    
+    .active-filters-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .filter-results-count {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+    
+    .view-toggle {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .list-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+}
