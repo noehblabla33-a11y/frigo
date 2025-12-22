@@ -1,0 +1,233 @@
+/* ============================================ */
+/* Fichier: static/style/forms.css              */
+/* STYLES POUR LES FORMULAIRES FACTORISÉS      */
+/* ============================================ */
+
+/* ========== FORM ROW (Ligne de formulaire) ========== */
+.form-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.form-row > .form-group {
+    margin-bottom: 0;
+}
+
+.form-row > .form-group:only-child {
+    flex: 1;
+}
+
+/* ========== FORM SECTION ========== */
+.form-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.form-section h4 {
+    margin: 0 0 15px 0;
+    color: var(--text-primary);
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-section-description {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    margin: 0 0 15px 0;
+    line-height: 1.5;
+}
+
+/* ========== FORM HELP TEXT ========== */
+.form-help {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    line-height: 1.4;
+}
+
+.form-help a {
+    color: var(--primary);
+}
+
+/* ========== NUTRITION DETAILS ========== */
+.nutrition-details {
+    margin-top: 20px;
+    padding: 15px;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+}
+
+.nutrition-details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 5px 0;
+}
+
+.nutrition-details summary:hover {
+    color: var(--primary);
+}
+
+.nutrition-details[open] summary {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.nutrition-fields-grid {
+    margin-top: 10px;
+}
+
+/* ========== DYNAMIC ROWS (Ingrédients, Étapes) ========== */
+.ingredient-row,
+.etape-row {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.ingredient-row:hover,
+.etape-row:hover {
+    background: var(--bg-cream);
+}
+
+/* Numéro d'étape */
+.etape-number {
+    flex-shrink: 0;
+    width: 35px;
+    height: 35px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+/* Conteneur des inputs d'étape */
+.etape-inputs {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+}
+
+/* Affichage de l'unité */
+.unite-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.unite-label {
+    padding: 8px 12px;
+    background: var(--bg-cream);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Bouton de suppression dans les rows */
+.btn-remove {
+    flex-shrink: 0;
+    align-self: center;
+}
+
+/* ========== BOUTONS DE FORMULAIRE ========== */
+.btn-secondary {
+    background: var(--bg-light);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--bg-cream);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* ========== VALIDATION VISUELLE ========== */
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+    border-color: var(--danger);
+}
+
+.form-group.has-error .form-help {
+    color: var(--danger);
+}
+
+.form-group.has-success input,
+.form-group.has-success select,
+.form-group.has-success textarea {
+    border-color: var(--success);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .form-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .form-row > .form-group {
+        flex: none !important;
+        width: 100%;
+    }
+    
+    .ingredient-row,
+    .etape-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .etape-inputs {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .etape-number {
+        align-self: flex-start;
+    }
+    
+    .unite-display {
+        width: 100%;
+    }
+    
+    .btn-remove {
+        align-self: flex-end;
+    }
+}
+
+/* ========== ANIMATION ========== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

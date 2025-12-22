@@ -1,17 +1,46 @@
 // ============================================
-// Fichier: static/select-search.js
+// Fichier: static/javascript/select-search.js
 // Transforme les selects en champs de recherche
+// VERSION CORRIGÉE - Protection double initialisation
 // ============================================
 
 class SelectSearch {
     constructor(selectElement) {
+        // ✅ PROTECTION : Vérifier si déjà initialisé
+        if (!selectElement) {
+            console.warn('SelectSearch: Element null ou undefined');
+            return;
+        }
+        
+        // Vérifier si déjà initialisé via data attribute
+        if (selectElement.dataset.selectSearchInit === 'true') {
+            console.warn('SelectSearch: Element déjà initialisé, ignoré');
+            return;
+        }
+        
+        // Vérifier si déjà dans un wrapper
+        if (selectElement.parentElement && 
+            selectElement.parentElement.classList.contains('select-search-wrapper')) {
+            console.warn('SelectSearch: Element déjà dans un wrapper, ignoré');
+            return;
+        }
+        
         this.select = selectElement;
         this.options = Array.from(selectElement.options);
         this.selectedValue = selectElement.value;
+        this.isInitialized = false;
+        
         this.init();
     }
 
     init() {
+        // ✅ Double vérification
+        if (this.isInitialized) return;
+        
+        // Marquer comme initialisé AVANT de modifier le DOM
+        this.select.dataset.selectSearchInit = 'true';
+        this.isInitialized = true;
+        
         // Créer le wrapper
         this.wrapper = document.createElement('div');
         this.wrapper.className = 'select-search-wrapper';
@@ -21,6 +50,7 @@ class SelectSearch {
         this.input.type = 'text';
         this.input.className = 'select-search-input';
         this.input.placeholder = this.select.getAttribute('placeholder') || 'Rechercher...';
+        this.input.autocomplete = 'off'; // Éviter l'autocomplétion du navigateur
         
         // Afficher la valeur sélectionnée si elle existe
         const selectedOption = this.options.find(opt => opt.value === this.selectedValue);
@@ -32,7 +62,12 @@ class SelectSearch {
         this.dropdown = document.createElement('div');
         this.dropdown.className = 'select-search-dropdown';
         
-        // Remplacer le select par le wrapper
+        // ✅ Cacher le select original (mais le garder fonctionnel)
+        this.select.style.display = 'none';
+        this.select.setAttribute('aria-hidden', 'true');
+        this.select.tabIndex = -1;
+        
+        // Insérer le wrapper
         this.select.parentNode.insertBefore(this.wrapper, this.select);
         this.wrapper.appendChild(this.input);
         this.wrapper.appendChild(this.dropdown);
@@ -55,15 +90,21 @@ class SelectSearch {
         });
 
         // Clic en dehors : fermer le dropdown
-        document.addEventListener('click', (e) => {
+        this._documentClickHandler = (e) => {
             if (!this.wrapper.contains(e.target)) {
                 this.hideDropdown();
             }
-        });
+        };
+        document.addEventListener('click', this._documentClickHandler);
 
         // Navigation au clavier
         this.input.addEventListener('keydown', (e) => {
             this.handleKeyboard(e);
+        });
+        
+        // ✅ Sync si le select change programmatiquement
+        this.select.addEventListener('change', () => {
+            this.syncFromSelect();
         });
     }
 
@@ -79,6 +120,9 @@ class SelectSearch {
     filterOptions(searchTerm) {
         this.dropdown.innerHTML = '';
         const term = searchTerm.toLowerCase().trim();
+        
+        // Recharger les options au cas où elles auraient changé
+        this.options = Array.from(this.select.options);
         
         const filteredOptions = this.options.filter(option => {
             if (!option.value) return false; // Ignorer l'option vide
@@ -132,9 +176,21 @@ class SelectSearch {
         this.dropdown.querySelectorAll('.select-search-option').forEach(opt => {
             opt.classList.remove('selected');
         });
-        optionDiv.classList.add('selected');
+        if (optionDiv) {
+            optionDiv.classList.add('selected');
+        }
         
         this.hideDropdown();
+    }
+    
+    // ✅ Synchroniser l'input depuis le select (si changé programmatiquement)
+    syncFromSelect() {
+        const newValue = this.select.value;
+        if (newValue !== this.selectedValue) {
+            this.selectedValue = newValue;
+            const selectedOption = this.options.find(opt => opt.value === newValue);
+            this.input.value = selectedOption ? selectedOption.text : '';
+        }
     }
 
     handleKeyboard(e) {
@@ -170,6 +226,10 @@ class SelectSearch {
                 this.hideDropdown();
                 this.input.blur();
                 break;
+                
+            case 'Tab':
+                this.hideDropdown();
+                break;
         }
     }
 
@@ -190,29 +250,133 @@ class SelectSearch {
             this.filterOptions(this.input.value);
         }
     }
+    
+    // ✅ Méthode pour réinitialiser (vider la sélection)
+    reset() {
+        this.selectedValue = '';
+        this.select.value = '';
+        this.input.value = '';
+    }
+    
+    // ✅ Méthode pour détruire l'instance (cleanup)
+    destroy() {
+        if (this._documentClickHandler) {
+            document.removeEventListener('click', this._documentClickHandler);
+        }
+        
+        // Remettre le select visible
+        this.select.style.display = '';
+        this.select.removeAttribute('aria-hidden');
+        this.select.tabIndex = 0;
+        this.select.dataset.selectSearchInit = 'false';
+        
+        // Retirer le wrapper
+        if (this.wrapper && this.wrapper.parentNode) {
+            this.wrapper.parentNode.insertBefore(this.select, this.wrapper);
+            this.wrapper.remove();
+        }
+        
+        this.isInitialized = false;
+    }
 }
 
-// Fonction pour initialiser tous les selects avec recherche
+// ============================================
+// FONCTIONS GLOBALES
+// ============================================
+
+/**
+ * Initialise tous les selects avec recherche
+ * @param {string} selector - Sélecteur CSS (défaut: '.searchable-select')
+ * @returns {SelectSearch[]} - Tableau des instances créées
+ */
 function initSelectSearch(selector = '.searchable-select') {
     const selects = document.querySelectorAll(selector);
     const instances = [];
     
     selects.forEach(select => {
-        // Ne pas réinitialiser si déjà fait
-        if (select.parentElement.classList.contains('select-search-wrapper')) {
+        // ✅ Triple vérification pour éviter les doublons
+        if (select.dataset.selectSearchInit === 'true') {
             return;
         }
-        instances.push(new SelectSearch(select));
+        if (select.parentElement && 
+            select.parentElement.classList.contains('select-search-wrapper')) {
+            return;
+        }
+        
+        const instance = new SelectSearch(select);
+        if (instance.isInitialized) {
+            instances.push(instance);
+        }
     });
     
     return instances;
 }
+
+/**
+ * Initialise un select spécifique (pour les éléments ajoutés dynamiquement)
+ * @param {HTMLSelectElement} select - L'élément select à transformer
+ * @returns {SelectSearch|null} - L'instance créée ou null si déjà initialisé
+ */
+function initSingleSelectSearch(select) {
+    if (!select) return null;
+    
+    // Vérifier si déjà initialisé
+    if (select.dataset.selectSearchInit === 'true') {
+        return null;
+    }
+    
+    const instance = new SelectSearch(select);
+    return instance.isInitialized ? instance : null;
+}
+
+// ============================================
+// INITIALISATION AUTOMATIQUE
+// ============================================
 
 // Initialiser automatiquement au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
     initSelectSearch();
 });
 
+// ✅ Observer les nouveaux éléments ajoutés au DOM
+const selectSearchObserver = new MutationObserver((mutations) => {
+    let hasNewSelects = false;
+    
+    mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                // Vérifier si c'est un select searchable
+                if (node.matches && node.matches('.searchable-select')) {
+                    hasNewSelects = true;
+                }
+                // Vérifier les enfants
+                if (node.querySelectorAll) {
+                    const selects = node.querySelectorAll('.searchable-select');
+                    if (selects.length > 0) {
+                        hasNewSelects = true;
+                    }
+                }
+            }
+        });
+    });
+    
+    // Initialiser les nouveaux selects (avec un petit délai pour laisser le DOM se stabiliser)
+    if (hasNewSelects) {
+        setTimeout(() => {
+            initSelectSearch();
+        }, 10);
+    }
+});
+
+// Démarrer l'observation après le chargement du DOM
+document.addEventListener('DOMContentLoaded', () => {
+    selectSearchObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+});
+
 // Exporter pour utilisation dans d'autres scripts
 window.SelectSearch = SelectSearch;
 window.initSelectSearch = initSelectSearch;
+window.initSingleSelectSearch = initSingleSelectSearch;

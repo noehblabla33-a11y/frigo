@@ -1,0 +1,426 @@
+<!-- ============================================ #}
+{# Fichier: templates/macros/forms.html        #}
+{# Macros pour les éléments de formulaire      #}
+{# ============================================ #}
+
+{# ============================================ #}
+{# CHAMPS DE TEXTE                             #}
+{# ============================================ #}
+-->
+
+<!--
+    Champ de texte simple
+    
+    Paramètres:
+    - name: Nom du champ (requis)
+    - label: Libellé du champ
+    - value: Valeur par défaut
+    - placeholder: Texte d'aide
+    - required: Champ obligatoire
+    - type: Type d'input (text, number, email, etc.)
+    - help_text: Texte d'aide sous le champ
+    - min/max/step: Pour les champs numériques
+    - attrs: Attributs HTML supplémentaires (dict)
+-->
+
+{% macro input_field(name, label='', value='', placeholder='', required=false, type='text', help_text='', min=none, max=none, step=none, attrs={}, flex=none) %}
+    <div class="form-group"{% if flex %} style="flex: {{ flex }};"{% endif %}>
+        {% if label %}
+        <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+        {% endif %}
+        <input type="{{ type }}" 
+            name="{{ name }}" 
+            id="{{ name }}"
+            {% if value %}value="{{ value }}"{% endif %}
+            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+            {% if required %}required{% endif %}
+            {% if min is not none %}min="{{ min }}"{% endif %}
+            {% if max is not none %}max="{{ max }}"{% endif %}
+            {% if step is not none %}step="{{ step }}"{% endif %}
+            {% for attr, val in attrs.items() %}{{ attr }}="{{ val }}" {% endfor %}>
+        {% if help_text %}
+        <small class="form-help">{{ help_text }}</small>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+
+{#
+    Champ textarea
+#}
+{% macro textarea_field(name, label='', value='', placeholder='', required=false, rows=3, help_text='', attrs={}, flex=none) %}
+<div class="form-group"{% if flex %} style="flex: {{ flex }};"{% endif %}>
+    {% if label %}
+    <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+    {% endif %}
+    <textarea name="{{ name }}" 
+              id="{{ name }}"
+              {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+              {% if required %}required{% endif %}
+              rows="{{ rows }}"
+              {% for attr, val in attrs.items() %}{{ attr }}="{{ val }}" {% endfor %}>{{ value }}</textarea>
+    {% if help_text %}
+    <small class="form-help">{{ help_text }}</small>
+    {% endif %}
+</div>
+{% endmacro %}
+
+<!--
+{# ============================================ #}
+{# LISTES DÉROULANTES (SELECT)                 #}
+{# ============================================ #}
+
+{#
+    Select simple
+    
+    Paramètres:
+    - name: Nom du champ
+    - label: Libellé
+    - options: Liste de tuples (value, text) ou liste de dicts {value, text, icon?}
+    - selected: Valeur sélectionnée
+    - placeholder: Option vide par défaut
+    - required: Champ obligatoire
+    - searchable: Ajouter la classe searchable-select
+#}
+-->
+
+{% macro select_field(name, label='', options=[], selected='', placeholder='', required=false, searchable=false, help_text='', attrs={}, flex=none) %}
+<div class="form-group"{% if flex %} style="flex: {{ flex }};"{% endif %}>
+    {% if label %}
+    <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+    {% endif %}
+    <select name="{{ name }}" 
+            id="{{ name }}"
+            {% if required %}required{% endif %}
+            {% if searchable %}class="searchable-select"{% endif %}
+            {% for attr, val in attrs.items() %}{{ attr }}="{{ val }}" {% endfor %}>
+        {% if placeholder %}
+        <option value="">{{ placeholder }}</option>
+        {% endif %}
+        {% for opt in options %}
+            {% if opt is mapping %}
+                {# Format dict: {value: ..., text: ..., icon?: ...} #}
+                <option value="{{ opt.value }}" 
+                        {% if opt.value|string == selected|string %}selected{% endif %}
+                        {% if opt.data_attrs %}{% for k, v in opt.data_attrs.items() %}data-{{ k }}="{{ v }}" {% endfor %}{% endif %}>
+                    {% if opt.icon %}{{ opt.icon }} {% endif %}{{ opt.text }}
+                </option>
+            {% else %}
+                {# Format tuple: (value, text) #}
+                <option value="{{ opt[0] }}" 
+                        {% if opt[0]|string == selected|string %}selected{% endif %}>
+                    {{ opt[1] }}
+                </option>
+            {% endif %}
+        {% endfor %}
+    </select>
+    {% if help_text %}
+    <small class="form-help">{{ help_text }}</small>
+    {% endif %}
+</div>
+{% endmacro %}
+
+<!--
+{#
+    Select avec catégories (icônes)
+    Spécifique pour les catégories d'ingrédients
+#}
+-->
+
+{% macro select_categories(name, categories, selected='', label='Catégorie', placeholder='Sélectionner une catégorie', required=false, searchable=true) %}
+{% set options = [] %}
+{% for cat_name, cat_icon in categories %}
+    {% set _ = options.append({'value': cat_name, 'text': cat_name, 'icon': cat_icon}) %}
+{% endfor %}
+{{ select_field(name, label=label, options=options, selected=selected, placeholder=placeholder, required=required, searchable=searchable) }}
+{% endmacro %}
+
+
+<!--
+{#
+    Select des types de recettes
+#}
+-->
+{% macro select_type_recette(name, types, selected='', label='Type de recette', placeholder='Sélectionner un type', required=false) %}
+{% set options = [] %}
+{% for type in types %}
+    {% set _ = options.append({'value': type, 'text': type}) %}
+{% endfor %}
+{{ select_field(name, label=label, options=options, selected=selected, placeholder=placeholder, required=required, searchable=true) }}
+{% endmacro %}
+
+
+<!-- 
+{#
+    Select d'ingrédients avec unité
+#}
+-->
+
+{% macro select_ingredient(name, ingredients, selected='', label='Ingrédient', placeholder='Sélectionner...', required=false, show_unite=true) %}
+<div class="form-group">
+    {% if label %}
+    <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+    {% endif %}
+    <select name="{{ name }}" 
+            id="{{ name }}"
+            class="ingredient-select searchable-select"
+            {% if required %}required{% endif %}>
+        <option value="">{{ placeholder }}</option>
+        {% for ing in ingredients %}
+        <option value="{{ ing.id }}" 
+                data-unite="{{ ing.unite }}"
+                {% if ing.id|string == selected|string %}selected{% endif %}>
+            {{ ing.nom }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# CHAMP FICHIER                               #}
+{# ============================================ #}
+
+{% macro file_field(name, label='', accept='image/*', help_text='', required=false, flex=none) %}
+<div class="form-group"{% if flex %} style="flex: {{ flex }};"{% endif %}>
+    {% if label %}
+    <label for="{{ name }}">{{ label }}{% if required %} *{% endif %}</label>
+    {% endif %}
+    <input type="file" 
+           name="{{ name }}" 
+           id="{{ name }}"
+           accept="{{ accept }}"
+           {% if required %}required{% endif %}>
+    {% if help_text %}
+    <small class="form-help">{{ help_text }}</small>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# BOUTONS                                     #}
+{# ============================================ #}
+
+{% macro submit_button(text='Valider', icon='✓', variant='primary', size='', full_width=false) %}
+<button type="submit" 
+        class="btn{% if variant != 'primary' %} btn-{{ variant }}{% endif %}{% if size %} btn-{{ size }}{% endif %}"
+        {% if full_width %}style="width: 100%;"{% endif %}>
+    {% if icon %}{{ icon }} {% endif %}{{ text }}
+</button>
+{% endmacro %}
+
+{% macro action_button(text, onclick='', icon='', variant='secondary', type='button') %}
+<button type="{{ type }}" 
+        class="btn btn-{{ variant }}"
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    {% if icon %}{{ icon }} {% endif %}{{ text }}
+</button>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# GROUPES ET LAYOUTS                          #}
+{# ============================================ #}
+
+{#
+    Ligne de formulaire (plusieurs champs côte à côte)
+#}
+{% macro form_row() %}
+<div class="form-row">
+    {{ caller() }}
+</div>
+{% endmacro %}
+
+
+{#
+    Section de formulaire avec titre
+#}
+{% macro form_section(title, description='', collapsable=false, id='') %}
+{% if collapsable and id %}
+<div class="form-section">
+    <h4 data-collapsable="{{ id }}" class="collapsable-header">{{ title }}</h4>
+    <div id="{{ id }}" class="collapsable-content">
+        {% if description %}
+        <p class="form-section-description">{{ description }}</p>
+        {% endif %}
+        {{ caller() }}
+    </div>
+</div>
+{% else %}
+<div class="form-section">
+    {% if title %}
+    <h4>{{ title }}</h4>
+    {% endif %}
+    {% if description %}
+    <p class="form-section-description">{{ description }}</p>
+    {% endif %}
+    {{ caller() }}
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{# ============================================ #}
+{# VALEURS NUTRITIONNELLES                     #}
+{# ============================================ #}
+
+{#
+    Groupe de champs pour les valeurs nutritionnelles
+    Utilisé dans le formulaire d'ingrédient
+#}
+{% macro nutrition_fields(values={}, collapsable=true) %}
+{% if collapsable %}
+<details class="nutrition-details">
+    <summary>📊 Valeurs nutritionnelles (optionnel)</summary>
+    <div class="nutrition-fields-grid">
+        {{ _nutrition_inputs(values) }}
+    </div>
+</details>
+{% else %}
+<div class="form-section">
+    <h4>📊 Valeurs nutritionnelles</h4>
+    <div class="nutrition-fields-grid">
+        {{ _nutrition_inputs(values) }}
+    </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro _nutrition_inputs(values={}) %}
+<div class="form-row">
+    {{ input_field('calories', label='Calories (kcal/100g)', type='number', 
+                   value=values.get('calories', ''), step='0.1', min=0, flex=1) }}
+    {{ input_field('proteines', label='Protéines (g/100g)', type='number', 
+                   value=values.get('proteines', ''), step='0.1', min=0, flex=1) }}
+    {{ input_field('glucides', label='Glucides (g/100g)', type='number', 
+                   value=values.get('glucides', ''), step='0.1', min=0, flex=1) }}
+    {{ input_field('lipides', label='Lipides (g/100g)', type='number', 
+                   value=values.get('lipides', ''), step='0.1', min=0, flex=1) }}
+</div>
+<div class="form-row">
+    {{ input_field('fibres', label='Fibres (g/100g)', type='number', 
+                   value=values.get('fibres', ''), step='0.1', min=0, flex=1) }}
+    {{ input_field('sucres', label='Sucres (g/100g)', type='number', 
+                   value=values.get('sucres', ''), step='0.1', min=0, flex=1) }}
+    {{ input_field('sel', label='Sel (g/100g)', type='number', 
+                   value=values.get('sel', ''), step='0.01', min=0, flex=1) }}
+</div>
+{% endmacro %}
+
+
+{# ============================================ #}
+{# LISTES DYNAMIQUES (Ingrédients, Étapes)     #}
+{# ============================================ #}
+
+{#
+    Conteneur pour liste dynamique d'ingrédients
+#}
+{% macro ingredient_list_container(ingredients_data=[], all_ingredients=[], id='ingredients-container') %}
+<div class="form-group">
+    <label>Ingrédients</label>
+    <p class="form-help" style="margin-bottom: 15px;">
+        Ajoutez les ingrédients nécessaires pour cette recette.
+    </p>
+    
+    <div id="{{ id }}">
+        {% if ingredients_data %}
+            {% for ing_data in ingredients_data %}
+            {{ _ingredient_row(loop.index0, all_ingredients, ing_data) }}
+            {% endfor %}
+        {% else %}
+            {{ _ingredient_row(0, all_ingredients) }}
+        {% endif %}
+    </div>
+    
+    <button type="button" onclick="ajouterIngredient()" class="btn btn-secondary" style="margin-top: 10px;">
+        + Ajouter un ingrédient
+    </button>
+</div>
+{% endmacro %}
+
+{% macro _ingredient_row(index, ingredients, data=none) %}
+<div class="ingredient-row dynamic-item" data-index="{{ index }}">
+    <div class="form-group" style="flex: 2;">
+        <select name="ingredient_{{ index }}" class="ingredient-select searchable-select" required>
+            <option value="">Sélectionner...</option>
+            {% for ing in ingredients %}
+            <option value="{{ ing.id }}" 
+                    data-unite="{{ ing.unite }}"
+                    {% if data and data.ingredient_id == ing.id %}selected{% endif %}>
+                {{ ing.nom }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group" style="flex: 1;">
+        <input type="number" 
+               step="1" 
+               name="quantite_{{ index }}" 
+               placeholder="Quantité"
+               value="{{ data.quantite if data else '' }}"
+               required>
+    </div>
+    
+    <div class="form-group unite-display" style="flex: 0.5;">
+        <span class="unite-label">{{ data.unite if data else '-' }}</span>
+    </div>
+    
+    <button type="button" class="btn-icon btn-icon-danger btn-remove" style="display: none;">
+        🗑️
+    </button>
+</div>
+{% endmacro %}
+
+
+{#
+    Conteneur pour liste dynamique d'étapes
+#}
+{% macro etape_list_container(etapes_data=[], id='etapes-container') %}
+<div class="form-group">
+    <label>Étapes de préparation</label>
+    <p class="form-help" style="margin-bottom: 15px;">
+        Décrivez les étapes une par une. Vous pouvez ajouter un minuteur optionnel.
+    </p>
+    
+    <div id="{{ id }}">
+        {% if etapes_data %}
+            {% for etape in etapes_data %}
+            {{ _etape_row(loop.index0, etape) }}
+            {% endfor %}
+        {% else %}
+            {{ _etape_row(0) }}
+        {% endif %}
+    </div>
+    
+    <button type="button" onclick="ajouterEtape()" class="btn btn-secondary" style="margin-top: 10px;">
+        + Ajouter une étape
+    </button>
+</div>
+{% endmacro %}
+
+{% macro _etape_row(index, data=none) %}
+<div class="etape-row dynamic-item" data-index="{{ index }}">
+    <div class="etape-number">{{ index + 1 }}</div>
+    <div class="etape-inputs">
+        <div class="form-group" style="flex: 3; margin-bottom: 0;">
+            <textarea name="etape_desc_{{ index }}" 
+                      placeholder="Décrivez cette étape..."
+                      rows="2">{{ data.description if data else '' }}</textarea>
+        </div>
+        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <input type="number" 
+                   name="etape_duree_{{ index }}" 
+                   placeholder="⏱️ Min"
+                   value="{{ data.duree_minutes if data and data.duree_minutes else '' }}"
+                   min="0"
+                   title="Durée en minutes (optionnel)">
+        </div>
+    </div>
+    <button type="button" class="btn-icon btn-icon-danger btn-remove" style="display: none;">
+        🗑️
+    </button>
+</div>
+{% endmacro %}
