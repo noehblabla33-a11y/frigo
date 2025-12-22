@@ -49,12 +49,9 @@ def liste():
                 
                 # Gérer l'upload de l'image
                 if 'image' in request.files:
-                    file = request.files['image']
-                    if file and file.filename != '' and allowed_file(file.filename):
-                        filename = secure_filename(f"ing_{nom}_{file.filename}")
-                        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                        file.save(os.path.join(current_app.root_path, filepath))
-                        ingredient.image = f'uploads/{filename}'
+                    filepath = save_uploaded_file(request.files['image'], prefix=f'ing_{nom}')
+                    if filepath:
+                        ingredient.image = filepath
                 
                 db.session.add(ingredient)
                 # ✅ Le commit et le flash sont gérés automatiquement par le context manager
@@ -169,10 +166,14 @@ def modifier(id):
                                 pass
                         
                         # Sauvegarder la nouvelle image
-                        filename = secure_filename(f"ing_{ingredient.nom}_{file.filename}")
-                        filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                        file.save(os.path.join(current_app.root_path, filepath))
-                        ingredient.image = filepath
+                        if 'image' in request.files:
+                            file = request.files['image']
+                            if file and file.filename:
+                                if ingredient.image:
+                                    delete_file(ingredient.image)
+                                filepath = save_uploaded_file(file, prefix=f'ing_{ingredient.nom}')
+                                if filepath:
+                                    ingredient.image = filepath
                 
                 # ✅ Le commit est automatique
         
