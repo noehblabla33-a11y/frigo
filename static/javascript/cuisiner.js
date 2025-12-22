@@ -1,117 +1,204 @@
-// ============================================
-// Fichier: static/cuisiner.js
-// Mode cuisson avec minuteurs interactifs
-// ============================================
+/**
+ * cuisiner.js - Gestion du mode cuisine interactif
+ * VERSION CORRIGÉE - Compatible avec préfixe rd-
+ */
 
-// État global des minuteurs
+// État des timers
 const timers = {};
 const completedSteps = new Set();
 
-// Initialiser les minuteurs (à appeler avec les données du template)
-function initTimers(etapesData) {
-    etapesData.forEach(etape => {
-        if (etape.duree_minutes) {
-            timers[etape.id] = {
-                duration: etape.duree_minutes * 60,
-                remaining: etape.duree_minutes * 60,
-                interval: null,
-                isPaused: false
-            };
-        }
-    });
-}
-
+/**
+ * Démarre un timer pour une étape
+ */
 function startTimer(etapeId, minutes) {
-    if (timers[etapeId].interval) return; // Déjà démarré
+    // Arrêter le timer existant s'il y en a un
+    if (timers[etapeId] && timers[etapeId].interval) {
+        clearInterval(timers[etapeId].interval);
+    }
     
+    const totalSeconds = minutes * 60;
+    timers[etapeId] = {
+        remaining: totalSeconds,
+        total: totalSeconds,
+        interval: null,
+        isPaused: false
+    };
+    
+    // Masquer le bouton start, afficher pause
     document.getElementById(`start-${etapeId}`).style.display = 'none';
     document.getElementById(`pause-${etapeId}`).style.display = 'inline-block';
+    document.getElementById(`resume-${etapeId}`).style.display = 'none';
     
-    const statusBadge = document.querySelector(`#status-${etapeId} .status-badge`);
-    statusBadge.className = 'status-badge status-in-progress';
-    statusBadge.textContent = 'En cours';
+    // Mettre à jour le statut
+    updateStepStatus(etapeId, 'progress');
     
+    // Démarrer l'interval
     timers[etapeId].interval = setInterval(() => {
-        if (!timers[etapeId].isPaused) {
+        if (timers[etapeId].remaining > 0) {
             timers[etapeId].remaining--;
-            
-            const mins = Math.floor(timers[etapeId].remaining / 60);
-            const secs = timers[etapeId].remaining % 60;
-            
-            document.getElementById(`timer-time-${etapeId}`).textContent = 
-                `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            
-            // Barre de progression
-            const progress = ((timers[etapeId].duration - timers[etapeId].remaining) / timers[etapeId].duration) * 100;
-            document.getElementById(`progress-${etapeId}`).style.width = progress + '%';
-            
-            // Changement de couleur selon le temps restant
-            const timerDisplay = document.getElementById(`timer-display-${etapeId}`);
-            if (timers[etapeId].remaining <= 10) {
-                timerDisplay.classList.add('timer-critical');
-            } else if (timers[etapeId].remaining <= 60) {
-                timerDisplay.classList.add('timer-warning');
-            }
-            
+            updateTimerDisplay(etapeId);
+        } else {
             // Timer terminé
-            if (timers[etapeId].remaining <= 0) {
-                clearInterval(timers[etapeId].interval);
-                timers[etapeId].interval = null;
-                
-                timerDisplay.classList.add('timer-finished');
-                document.getElementById(`pause-${etapeId}`).style.display = 'none';
-                document.getElementById(`start-${etapeId}`).style.display = 'none';
-                
-                // Jouer le son d'alarme
-                playAlarm();
-                
-                // Notification visuelle
-                showNotification(`⏰ Timer terminé pour l'étape ${getEtapeOrdre(etapeId)} !`);
-                
-                // Animation de la carte
-                const card = document.getElementById(`etape-${etapeId}`);
-                card.classList.add('etape-timer-finished');
-            }
+            clearInterval(timers[etapeId].interval);
+            timers[etapeId].interval = null;
+            timerFinished(etapeId);
         }
     }, 1000);
 }
 
+/**
+ * Met en pause un timer
+ */
 function pauseTimer(etapeId) {
-    timers[etapeId].isPaused = true;
-    document.getElementById(`pause-${etapeId}`).style.display = 'none';
-    document.getElementById(`resume-${etapeId}`).style.display = 'inline-block';
-}
-
-function resumeTimer(etapeId) {
-    timers[etapeId].isPaused = false;
-    document.getElementById(`resume-${etapeId}`).style.display = 'none';
-    document.getElementById(`pause-${etapeId}`).style.display = 'inline-block';
-}
-
-function resetTimer(etapeId, minutes) {
-    if (timers[etapeId].interval) {
+    if (timers[etapeId] && timers[etapeId].interval) {
         clearInterval(timers[etapeId].interval);
         timers[etapeId].interval = null;
+        timers[etapeId].isPaused = true;
+        
+        document.getElementById(`pause-${etapeId}`).style.display = 'none';
+        document.getElementById(`resume-${etapeId}`).style.display = 'inline-block';
+    }
+}
+
+/**
+ * Reprend un timer en pause
+ */
+function resumeTimer(etapeId) {
+    if (timers[etapeId] && timers[etapeId].isPaused) {
+        timers[etapeId].isPaused = false;
+        
+        document.getElementById(`pause-${etapeId}`).style.display = 'inline-block';
+        document.getElementById(`resume-${etapeId}`).style.display = 'none';
+        
+        timers[etapeId].interval = setInterval(() => {
+            if (timers[etapeId].remaining > 0) {
+                timers[etapeId].remaining--;
+                updateTimerDisplay(etapeId);
+            } else {
+                clearInterval(timers[etapeId].interval);
+                timers[etapeId].interval = null;
+                timerFinished(etapeId);
+            }
+        }, 1000);
+    }
+}
+
+/**
+ * Réinitialise un timer
+ */
+function resetTimer(etapeId, minutes) {
+    if (timers[etapeId]) {
+        if (timers[etapeId].interval) {
+            clearInterval(timers[etapeId].interval);
+        }
+        timers[etapeId].interval = null;
+        timers[etapeId].remaining = minutes * 60;
+        timers[etapeId].isPaused = false;
     }
     
-    timers[etapeId].remaining = minutes * 60;
-    timers[etapeId].isPaused = false;
+    // Mettre à jour l'affichage
+    const timeDisplay = document.getElementById(`timer-time-${etapeId}`);
+    if (timeDisplay) {
+        timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:00`;
+    }
     
-    document.getElementById(`timer-time-${etapeId}`).textContent = 
-        `${String(minutes).padStart(2, '0')}:00`;
-    document.getElementById(`progress-${etapeId}`).style.width = '0%';
+    // Réinitialiser la barre de progression
+    const progressFill = document.getElementById(`progress-${etapeId}`);
+    if (progressFill) {
+        progressFill.style.width = '0%';
+    }
     
+    // Réinitialiser les boutons
     document.getElementById(`start-${etapeId}`).style.display = 'inline-block';
     document.getElementById(`pause-${etapeId}`).style.display = 'none';
     document.getElementById(`resume-${etapeId}`).style.display = 'none';
     
+    // Réinitialiser les classes visuelles
     const timerDisplay = document.getElementById(`timer-display-${etapeId}`);
-    timerDisplay.classList.remove('timer-warning', 'timer-critical', 'timer-finished');
+    if (timerDisplay) {
+        timerDisplay.classList.remove('rd-timer-warning', 'rd-timer-critical', 'rd-timer-finished');
+    }
     
     const card = document.getElementById(`etape-${etapeId}`);
-    card.classList.remove('etape-timer-finished');
+    if (card) {
+        card.classList.remove('rd-step-timer-finished');
+    }
 }
 
+/**
+ * Met à jour l'affichage du timer
+ */
+function updateTimerDisplay(etapeId) {
+    const timer = timers[etapeId];
+    if (!timer) return;
+    
+    const minutes = Math.floor(timer.remaining / 60);
+    const seconds = timer.remaining % 60;
+    
+    const timeDisplay = document.getElementById(`timer-time-${etapeId}`);
+    if (timeDisplay) {
+        timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    // Mettre à jour la barre de progression
+    const progressFill = document.getElementById(`progress-${etapeId}`);
+    if (progressFill) {
+        const percentage = ((timer.total - timer.remaining) / timer.total) * 100;
+        progressFill.style.width = `${percentage}%`;
+    }
+    
+    // Changer la couleur selon le temps restant
+    const timerDisplay = document.getElementById(`timer-display-${etapeId}`);
+    if (timerDisplay) {
+        timerDisplay.classList.remove('rd-timer-warning', 'rd-timer-critical');
+        
+        if (timer.remaining <= 30) {
+            timerDisplay.classList.add('rd-timer-critical');
+        } else if (timer.remaining <= 60) {
+            timerDisplay.classList.add('rd-timer-warning');
+        }
+    }
+}
+
+/**
+ * Appelé quand un timer est terminé
+ */
+function timerFinished(etapeId) {
+    const timerDisplay = document.getElementById(`timer-display-${etapeId}`);
+    if (timerDisplay) {
+        timerDisplay.classList.remove('rd-timer-warning', 'rd-timer-critical');
+        timerDisplay.classList.add('rd-timer-finished');
+    }
+    
+    const card = document.getElementById(`etape-${etapeId}`);
+    if (card) {
+        card.classList.add('rd-step-timer-finished');
+    }
+    
+    // Réinitialiser les boutons
+    document.getElementById(`start-${etapeId}`).style.display = 'inline-block';
+    document.getElementById(`pause-${etapeId}`).style.display = 'none';
+    document.getElementById(`resume-${etapeId}`).style.display = 'none';
+    
+    // Notification
+    showNotification('⏱️ Timer terminé !');
+    
+    // Son de notification (si supporté)
+    try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Timer terminé !', {
+                body: 'Une étape de votre recette est prête.',
+                icon: '⏱️'
+            });
+        }
+    } catch (e) {
+        // Ignore si les notifications ne sont pas supportées
+    }
+}
+
+/**
+ * Marque une étape comme terminée
+ */
 function completeStep(etapeId) {
     // Arrêter le timer s'il est actif
     if (timers[etapeId] && timers[etapeId].interval) {
@@ -121,161 +208,115 @@ function completeStep(etapeId) {
     
     completedSteps.add(etapeId);
     
-    const statusBadge = document.querySelector(`#status-${etapeId} .status-badge`);
-    statusBadge.className = 'status-badge status-completed';
-    statusBadge.textContent = '✓ Terminée';
+    // Mettre à jour le statut
+    updateStepStatus(etapeId, 'completed');
     
+    // Ajouter la classe de complétion
     const card = document.getElementById(`etape-${etapeId}`);
-    card.classList.add('etape-completed');
+    if (card) {
+        card.classList.add('rd-step-completed');
+    }
     
+    // Mettre à jour la progression globale
     updateGlobalProgress();
     
     // Faire défiler jusqu'à la prochaine étape
     scrollToNextStep(etapeId);
 }
 
+/**
+ * Met à jour le statut d'une étape
+ */
+function updateStepStatus(etapeId, status) {
+    const statusBadge = document.querySelector(`#status-${etapeId} .rd-status-badge`);
+    if (!statusBadge) return;
+    
+    // Retirer toutes les classes de statut
+    statusBadge.classList.remove('rd-status-pending', 'rd-status-progress', 'rd-status-completed');
+    
+    switch (status) {
+        case 'progress':
+            statusBadge.classList.add('rd-status-progress');
+            statusBadge.textContent = '⏳ En cours';
+            break;
+        case 'completed':
+            statusBadge.classList.add('rd-status-completed');
+            statusBadge.textContent = '✓ Terminée';
+            break;
+        default:
+            statusBadge.classList.add('rd-status-pending');
+            statusBadge.textContent = 'En attente';
+    }
+}
+
+/**
+ * Met à jour la barre de progression globale
+ */
 function updateGlobalProgress() {
-    const totalEtapes = document.querySelectorAll('.etape-card').length;
+    const totalSteps = document.querySelectorAll('.rd-step').length;
     const completed = completedSteps.size;
-    const percentage = (completed / totalEtapes) * 100;
+    const percentage = totalSteps > 0 ? (completed / totalSteps) * 100 : 0;
     
-    document.getElementById('progress-text').textContent = `${completed} / ${totalEtapes}`;
-    document.getElementById('global-progress').style.width = percentage + '%';
+    const progressText = document.getElementById('progress-text');
+    if (progressText) {
+        progressText.textContent = `${completed} / ${totalSteps}`;
+    }
     
-    if (completed === totalEtapes) {
+    const progressBar = document.getElementById('global-progress');
+    if (progressBar) {
+        progressBar.style.width = `${percentage}%`;
+    }
+    
+    // Vérifier si toutes les étapes sont terminées
+    if (completed === totalSteps && totalSteps > 0) {
         showNotification('🎉 Félicitations ! Toutes les étapes sont terminées !');
     }
 }
 
+/**
+ * Fait défiler jusqu'à la prochaine étape non terminée
+ */
 function scrollToNextStep(currentEtapeId) {
-    const allEtapes = document.querySelectorAll('.etape-card');
+    const allSteps = document.querySelectorAll('.rd-step');
     let foundCurrent = false;
     
-    for (let etape of allEtapes) {
-        if (foundCurrent && !completedSteps.has(parseInt(etape.dataset.etapeId))) {
-            etape.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            break;
+    for (const step of allSteps) {
+        const stepId = parseInt(step.dataset.etapeId);
+        
+        if (foundCurrent && !completedSteps.has(stepId)) {
+            // Trouver la prochaine étape non terminée
+            step.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
         }
-        if (parseInt(etape.dataset.etapeId) === currentEtapeId) {
+        
+        if (stepId === currentEtapeId) {
             foundCurrent = true;
         }
     }
 }
 
-function getEtapeOrdre(etapeId) {
-    const card = document.getElementById(`etape-${etapeId}`);
-    return card.querySelector('.etape-numero').textContent;
-}
-
-function playAlarm() {
-    const alarm = document.getElementById('timer-alarm');
-    if (alarm) {
-        alarm.currentTime = 0;
-        alarm.play().catch(err => {
-            console.log('Impossible de jouer le son:', err);
-            // Fallback : utiliser l'API Web Notification si disponible
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('Timer terminé !', {
-                    body: 'Une étape de votre recette est terminée.',
-                    icon: '/static/icon.png'
-                });
-            }
-        });
-    }
-}
-
+/**
+ * Affiche une notification temporaire
+ */
 function showNotification(message) {
-    // Créer une notification en haut de l'écran
-    const notification = document.createElement('div');
-    notification.className = 'cooking-notification';
-    notification.textContent = message;
-    document.body.appendChild(notification);
+    const notification = document.getElementById('cooking-notification');
+    if (!notification) return;
     
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
+    notification.textContent = message;
+    notification.classList.add('show');
     
     setTimeout(() => {
         notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 5000);
+    }, 4000);
 }
 
-function reinitialiser() {
-    if (!confirm('Voulez-vous vraiment réinitialiser toutes les étapes ?')) {
-        return;
-    }
-    
-    // Arrêter tous les timers
-    for (let etapeId in timers) {
-        if (timers[etapeId].interval) {
-            clearInterval(timers[etapeId].interval);
-        }
-        resetTimer(parseInt(etapeId), timers[etapeId].duration / 60);
-    }
-    
-    // Réinitialiser les étapes complétées
-    completedSteps.clear();
-    
-    document.querySelectorAll('.etape-card').forEach(card => {
-        card.classList.remove('etape-completed', 'etape-timer-finished');
-        const statusBadge = card.querySelector('.status-badge');
-        statusBadge.className = 'status-badge status-pending';
-        statusBadge.textContent = 'En attente';
-    });
-    
-    // Réinitialiser les checkboxes
-    document.querySelectorAll('.ingredient-checkbox').forEach(cb => cb.checked = false);
-    
-    updateGlobalProgress();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function toggleSection(sectionId) {
-    const content = document.getElementById(`content-${sectionId}`);
-    const icon = document.getElementById(`toggle-${sectionId}`);
-    
-    if (!content || !icon) return;
-    
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-        icon.textContent = '▼';
-    } else {
-        content.style.display = 'none';
-        icon.textContent = '▶';
-    }
-}
-
-// Demander la permission pour les notifications
-function requestNotificationPermission() {
+// Initialisation au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    // Demander la permission pour les notifications
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
-}
-
-// Empêcher la fermeture accidentelle de la page pendant la cuisson
-function preventAccidentalClose() {
-    window.addEventListener('beforeunload', (e) => {
-        const totalEtapes = document.querySelectorAll('.etape-card').length;
-        if (completedSteps.size > 0 && completedSteps.size < totalEtapes) {
-            e.preventDefault();
-            e.returnValue = 'Vous avez des étapes en cours. Voulez-vous vraiment quitter ?';
-        }
-    });
-}
-
-// Exposition des fonctions globales
-window.initTimers = initTimers;
-window.startTimer = startTimer;
-window.pauseTimer = pauseTimer;
-window.resumeTimer = resumeTimer;
-window.resetTimer = resetTimer;
-window.completeStep = completeStep;
-window.reinitialiser = reinitialiser;
-window.toggleSection = toggleSection;
-
-// Initialisation au chargement du DOM
-document.addEventListener('DOMContentLoaded', () => {
-    requestNotificationPermission();
-    preventAccidentalClose();
+    
+    // Initialiser la progression
+    updateGlobalProgress();
 });

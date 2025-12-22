@@ -2,70 +2,72 @@
 {% block title %}{{ recette.nom }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/cuisiner.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/recette-detail.css') }}">
 {% endblock %}
 
 {% block content %}
-<div class="recette-detail-header">
-    <div class="recette-detail-image">
+<!-- En-tête de la recette -->
+<div class="rd-header">
+    <div class="rd-image">
         {% if recette.image %}
         <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" alt="{{ recette.nom }}">
         {% else %}
-        <div class="no-image-large">🍳</div>
+        <div class="rd-no-image">🍳</div>
         {% endif %}
     </div>
-    <div class="recette-detail-info">
+    <div class="rd-info">
         <h2>{{ recette.nom }}</h2>
         {% if recette.type_recette %}
-        <p class="recette-detail-type">
-            <span class="type-badge-large">{{ recette.type_recette }}</span>
+        <p class="rd-type">
+            <span class="rd-type-badge">{{ recette.type_recette }}</span>
         </p>
         {% endif %}
         {% if recette.temps_preparation %}
-        <p class="recette-detail-temps">⏱️ Temps de préparation : <strong>{{ recette.temps_preparation }} minutes</strong></p>
+        <p class="rd-meta">⏱️ Temps de préparation : <strong>{{ recette.temps_preparation }} minutes</strong></p>
         {% endif %}
         {% if cout_estime > 0 %}
-        <p class="recette-detail-cout">💰 Coût estimé : <strong>{{ cout_estime }}€</strong></p>
+        <p class="rd-meta rd-cost">💰 Coût estimé : <strong>{{ cout_estime }}€</strong></p>
         {% endif %}
-        <p class="recette-detail-count">{{ recette.ingredients|length }} ingrédient(s) nécessaire(s)</p>
+        <p class="rd-meta">📦 {{ recette.ingredients|length }} ingrédient(s) nécessaire(s)</p>
         {% if recette.etapes %}
-        <p class="recette-detail-count">{{ recette.etapes|length }} étape(s) de préparation</p>
+        <p class="rd-meta">📝 {{ recette.etapes|length }} étape(s) de préparation</p>
         {% endif %}
-        <div class="recette-detail-actions">
-            <a href="{{ url_for('recettes.liste') }}" class="btn">← Retour aux recettes</a>
+        <div class="rd-actions">
+            <a href="{{ url_for('recettes.liste') }}" class="btn">← Retour</a>
             <a href="{{ url_for('recettes.modifier', id=recette.id) }}" class="btn">✏️ Modifier</a>
             <a href="{{ url_for('recettes.supprimer', id=recette.id) }}" 
                class="btn btn-danger"
-               onclick="return confirm('Supprimer cette recette ?')">
-                Supprimer
+               data-confirm="Supprimer la recette « {{ recette.nom }} » ?">
+                🗑️ Supprimer
             </a>
         </div>
     </div>
 </div>
 
+<!-- Ingrédients -->
 <div class="card">
     <h3>🥗 Ingrédients nécessaires</h3>
-    <div class="ingredients-grid-detail">
+    <div class="rd-ingredients-grid">
         {% for ing_rec in recette.ingredients %}
-        <div class="ingredient-detail-card">
-            <div class="ingredient-detail-image">
+        <div class="rd-ingredient-card">
+            <div class="rd-ingredient-image">
                 {% if ing_rec.ingredient.image %}
                 <img src="{{ url_for('static', filename=ing_rec.ingredient.image.replace('static/', '')) }}" 
-                     alt="{{ ing_rec.ingredient.nom }}">
+                     alt="{{ ing_rec.ingredient.nom }}"
+                     loading="lazy">
                 {% else %}
-                <div class="no-image-small">📦</div>
+                <span class="rd-ingredient-placeholder">📦</span>
                 {% endif %}
             </div>
-            <div class="ingredient-detail-info">
+            <div class="rd-ingredient-info">
                 <h4>{{ ing_rec.ingredient.nom }}</h4>
-                <p class="ingredient-detail-quantite">{{ ing_rec.quantite|quantite_lisible(ing_rec.ingredient) }}</p>
+                <p class="rd-ingredient-qty">{{ ing_rec.quantite|quantite_lisible(ing_rec.ingredient) }}</p>
                 {% set stock = ing_rec.ingredient.stock %}
                 {% set quantite_dispo = stock.quantite if stock else 0 %}
                 {% if quantite_dispo >= ing_rec.quantite %}
-                <span class="badge-disponible">✓ Disponible</span>
+                <span class="rd-badge rd-badge-success">✓ Disponible</span>
                 {% else %}
-                <span class="badge-manquant">✗ Manquant</span>
+                <span class="rd-badge rd-badge-danger">✗ Manquant</span>
                 {% endif %}
             </div>
         </div>
@@ -73,184 +75,166 @@
     </div>
 </div>
 
+<!-- Informations nutritionnelles -->
 {% set nutrition = recette.calculer_nutrition() %}
 {% if nutrition.calories > 0 %}
-<div class="nutrition-card">
-    <div class="nutrition-header">
-        <span class="nutrition-icon">🥗</span>
+<div class="rd-nutrition-card">
+    <div class="rd-nutrition-header">
+        <span class="rd-nutrition-icon">🥗</span>
         <h3>Informations nutritionnelles</h3>
     </div>
     
     <!-- Calories en évidence -->
-    <div class="nutrition-item nutrition-highlight" style="max-width: 300px; margin: 0 auto;">
-        <span class="nutrition-value">{{ nutrition.calories|int }}</span>
-        <span class="nutrition-label">Calories <span class="nutrition-unit">(kcal)</span></span>
+    <div class="rd-nutrition-highlight">
+        <span class="rd-nutrition-value-lg">{{ nutrition.calories|int }}</span>
+        <span class="rd-nutrition-label">Calories (kcal)</span>
     </div>
     
-    <!-- Macronutriments principaux -->
-    <div class="nutrition-macros">
-        <div class="macro-item proteines">
-            <div class="macro-label">🥩 Protéines</div>
-            <div class="macro-value">{{ nutrition.proteines|round(1) }}<span style="font-size: 0.5em;">g</span></div>
-            <div class="macro-percentage">
-                {% set total_macros = nutrition.proteines + nutrition.glucides + nutrition.lipides %}
-                {% if total_macros > 0 %}
-                ({{ ((nutrition.proteines / total_macros) * 100)|round(0)|int }}%)
-                {% endif %}
-            </div>
+    <!-- Macronutriments -->
+    {% set total_macros = nutrition.proteines + nutrition.glucides + nutrition.lipides %}
+    <div class="rd-macros-grid">
+        <div class="rd-macro rd-macro-proteines">
+            <div class="rd-macro-label">🥩 Protéines</div>
+            <div class="rd-macro-value">{{ nutrition.proteines|round(1) }}<small>g</small></div>
+            {% if total_macros > 0 %}
+            <div class="rd-macro-pct">({{ ((nutrition.proteines / total_macros) * 100)|round(0)|int }}%)</div>
+            {% endif %}
         </div>
         
-        <div class="macro-item glucides">
-            <div class="macro-label">🌾 Glucides</div>
-            <div class="macro-value">{{ nutrition.glucides|round(1) }}<span style="font-size: 0.5em;">g</span></div>
-            <div class="macro-percentage">
-                {% if total_macros > 0 %}
-                ({{ ((nutrition.glucides / total_macros) * 100)|round(0)|int }}%)
-                {% endif %}
-            </div>
+        <div class="rd-macro rd-macro-glucides">
+            <div class="rd-macro-label">🌾 Glucides</div>
+            <div class="rd-macro-value">{{ nutrition.glucides|round(1) }}<small>g</small></div>
+            {% if total_macros > 0 %}
+            <div class="rd-macro-pct">({{ ((nutrition.glucides / total_macros) * 100)|round(0)|int }}%)</div>
+            {% endif %}
         </div>
         
-        <div class="macro-item lipides">
-            <div class="macro-label">🥑 Lipides</div>
-            <div class="macro-value">{{ nutrition.lipides|round(1) }}<span style="font-size: 0.5em;">g</span></div>
-            <div class="macro-percentage">
-                {% if total_macros > 0 %}
-                ({{ ((nutrition.lipides / total_macros) * 100)|round(0)|int }}%)
-                {% endif %}
-            </div>
+        <div class="rd-macro rd-macro-lipides">
+            <div class="rd-macro-label">🥑 Lipides</div>
+            <div class="rd-macro-value">{{ nutrition.lipides|round(1) }}<small>g</small></div>
+            {% if total_macros > 0 %}
+            <div class="rd-macro-pct">({{ ((nutrition.lipides / total_macros) * 100)|round(0)|int }}%)</div>
+            {% endif %}
         </div>
     </div>
     
-    <!-- Autres valeurs nutritionnelles -->
-    <div class="nutrition-grid">
-        <div class="nutrition-item">
-            <span class="nutrition-value">{{ nutrition.fibres|round(1) }}</span>
-            <span class="nutrition-label">Fibres <span class="nutrition-unit">(g)</span></span>
+    <!-- Autres valeurs -->
+    <div class="rd-nutrition-grid">
+        <div class="rd-nutrition-item">
+            <span class="rd-nutrition-value">{{ nutrition.fibres|round(1) }}</span>
+            <span class="rd-nutrition-label">Fibres (g)</span>
         </div>
-        
-        <div class="nutrition-item">
-            <span class="nutrition-value">{{ nutrition.sucres|round(1) }}</span>
-            <span class="nutrition-label">Sucres <span class="nutrition-unit">(g)</span></span>
+        <div class="rd-nutrition-item">
+            <span class="rd-nutrition-value">{{ nutrition.sucres|round(1) }}</span>
+            <span class="rd-nutrition-label">Sucres (g)</span>
         </div>
-        
-        <div class="nutrition-item">
-            <span class="nutrition-value">{{ nutrition.sel|round(2) }}</span>
-            <span class="nutrition-label">Sel <span class="nutrition-unit">(g)</span></span>
+        <div class="rd-nutrition-item">
+            <span class="rd-nutrition-value">{{ nutrition.sel|round(2) }}</span>
+            <span class="rd-nutrition-label">Sel (g)</span>
         </div>
     </div>
     
-    <div class="nutrition-footer">
+    <div class="rd-nutrition-footer">
         ℹ️ Valeurs calculées pour la recette complète ({{ recette.ingredients|length }} ingrédients)
     </div>
 </div>
 {% else %}
 <div class="card">
     <h3>📊 Informations nutritionnelles</h3>
-    <p style="color: #6c757d;">
+    <p class="text-muted">
         Les informations nutritionnelles ne sont pas disponibles pour cette recette. 
-        <a href="{{ url_for('ingredients.liste') }}" style="color: #667eea;">
-            Ajoutez les valeurs nutritionnelles aux ingrédients
-        </a> pour les voir apparaître ici.
+        <a href="{{ url_for('ingredients.liste') }}">Ajoutez les valeurs nutritionnelles aux ingrédients</a> 
+        pour les voir apparaître ici.
     </p>
 </div>
 {% endif %}
 
-<!-- Progression globale -->
-<div class="card cooking-card">
-    <div class="progress-container">
-        <div class="progress-info">
+<!-- Étapes de préparation -->
+{% if recette.etapes %}
+<div class="card">
+    <h3>📝 Étapes de préparation</h3>
+    
+    <!-- Barre de progression -->
+    <div class="rd-progress">
+        <div class="rd-progress-info">
             <span>Progression</span>
             <span id="progress-text">0 / {{ recette.etapes|length }}</span>
         </div>
-        <div class="progress-bar-container">
-            <div class="progress-bar" id="global-progress" style="width: 0%;"></div>
+        <div class="rd-progress-bar">
+            <div class="rd-progress-fill" id="global-progress" style="width: 0%;"></div>
         </div>
     </div>
-</div>
-
-<!-- Étapes de la recette -->
-<div class="etapes-container">
-    {% for etape in recette.etapes %}
-    <div class="etape-card" id="etape-{{ etape.id }}" data-etape-id="{{ etape.id }}">
-        <div class="etape-header">
-            <div class="etape-numero">Étape {{ etape.ordre }}</div>
-            <div class="etape-status" id="status-{{ etape.id }}">
-                <span class="status-badge status-pending">En attente</span>
+    
+    <!-- Liste des étapes -->
+    <div class="rd-steps">
+        {% for etape in recette.etapes %}
+        <div class="rd-step" id="etape-{{ etape.id }}" data-etape-id="{{ etape.id }}">
+            <div class="rd-step-header">
+                <div class="rd-step-number">{{ etape.ordre }}</div>
+                <div class="rd-step-status" id="status-{{ etape.id }}">
+                    <span class="rd-status-badge rd-status-pending">En attente</span>
+                </div>
             </div>
-        </div>
-        
-        <div class="etape-content">
-            <p class="etape-description">{{ etape.description }}</p>
             
-            {% if etape.duree_minutes %}
-            <div class="timer-section" id="timer-section-{{ etape.id }}">
-                <div class="timer-display" id="timer-display-{{ etape.id }}">
-                    <span class="timer-icon">⏱️</span>
-                    <span class="timer-time" id="timer-time-{{ etape.id }}">
-                        {{ '%02d'|format(etape.duree_minutes) }}:00
-                    </span>
+            <div class="rd-step-content">
+                <p class="rd-step-description">{{ etape.description }}</p>
+                
+                {% if etape.duree_minutes %}
+                <div class="rd-timer" id="timer-section-{{ etape.id }}">
+                    <div class="rd-timer-display" id="timer-display-{{ etape.id }}">
+                        <span class="rd-timer-icon">⏱️</span>
+                        <span class="rd-timer-time" id="timer-time-{{ etape.id }}">
+                            {{ '%02d'|format(etape.duree_minutes) }}:00
+                        </span>
+                    </div>
+                    <div class="rd-timer-controls">
+                        <button class="rd-timer-btn rd-timer-start" 
+                                onclick="startTimer({{ etape.id }}, {{ etape.duree_minutes }})"
+                                id="start-{{ etape.id }}">
+                            ▶️ Démarrer
+                        </button>
+                        <button class="rd-timer-btn rd-timer-pause" 
+                                onclick="pauseTimer({{ etape.id }})"
+                                id="pause-{{ etape.id }}"
+                                style="display: none;">
+                            ⏸️ Pause
+                        </button>
+                        <button class="rd-timer-btn rd-timer-resume" 
+                                onclick="resumeTimer({{ etape.id }})"
+                                id="resume-{{ etape.id }}"
+                                style="display: none;">
+                            ▶️ Reprendre
+                        </button>
+                        <button class="rd-timer-btn rd-timer-reset" 
+                                onclick="resetTimer({{ etape.id }}, {{ etape.duree_minutes }})"
+                                id="reset-{{ etape.id }}">
+                            🔄 Reset
+                        </button>
+                    </div>
+                    <div class="rd-timer-progress">
+                        <div class="rd-timer-progress-fill" id="progress-{{ etape.id }}"></div>
+                    </div>
                 </div>
-                <div class="timer-controls">
-                    <button class="timer-btn timer-start" 
-                            onclick="startTimer({{ etape.id }}, {{ etape.duree_minutes }})"
-                            id="start-{{ etape.id }}">
-                        ▶️ Démarrer
-                    </button>
-                    <button class="timer-btn timer-pause" 
-                            onclick="pauseTimer({{ etape.id }})"
-                            id="pause-{{ etape.id }}"
-                            style="display: none;">
-                        ⏸️ Pause
-                    </button>
-                    <button class="timer-btn timer-resume" 
-                            onclick="resumeTimer({{ etape.id }})"
-                            id="resume-{{ etape.id }}"
-                            style="display: none;">
-                        ▶️ Reprendre
-                    </button>
-                    <button class="timer-btn timer-reset" 
-                            onclick="resetTimer({{ etape.id }}, {{ etape.duree_minutes }})"
-                            id="reset-{{ etape.id }}">
-                        🔄 Reset
-                    </button>
-                </div>
-                <div class="timer-progress-bar">
-                    <div class="timer-progress-fill" id="progress-{{ etape.id }}"></div>
-                </div>
+                {% endif %}
             </div>
-            {% endif %}
+            
+            <div class="rd-step-actions">
+                <button class="btn btn-success btn-sm" 
+                        onclick="completeStep({{ etape.id }})"
+                        id="complete-{{ etape.id }}">
+                    ✓ Terminer cette étape
+                </button>
+            </div>
         </div>
-        
-        <div class="etape-actions">
-            <button class="btn btn-success" onclick="completeStep({{ etape.id }})">
-                ✓ Étape terminée
-            </button>
-        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
+{% endif %}
 
-<!-- Audio pour l'alarme -->
-<audio id="timer-alarm" preload="auto">
-    <source src="{{ url_for('static', filename='sounds/timer-alert.mp3') }}" type="audio/mpeg">
-    <source src="{{ url_for('static', filename='sounds/timer-alert.ogg') }}" type="audio/ogg">
-    <source src="{{ url_for('static', filename='sounds/timer-alert.wav') }}" type="audio/wav">
-</audio>
+<!-- Notification -->
+<div class="rd-notification" id="cooking-notification"></div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='javascript/cuisiner.js') }}"></script>
-<script>
-    // Initialiser les minuteurs avec les données des étapes
-    const etapesData = [
-        {% for etape in recette.etapes %}
-        {
-            id: {{ etape.id }},
-            duree_minutes: {{ etape.duree_minutes if etape.duree_minutes else 'null' }}
-        }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ];
-    
-    initTimers(etapesData);
-</script>
 {% endblock %}
