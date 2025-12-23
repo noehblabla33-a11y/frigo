@@ -1,15 +1,20 @@
 """
-routes/courses.py
+routes/courses.py (VERSION REFACTORISÉE)
 Gestion de la liste de courses
 
-✅ REFACTORISÉ : Utilise utils/calculs.py pour le calcul du budget
+CHANGEMENTS:
+- Utilise utils/stock.py pour les opérations sur le stock
+- Utilise utils/queries.py pour les requêtes optimisées
+- Code plus concis et maintenable
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
-from models.models import db, ListeCourses, StockFrigo
+from models.models import db, ListeCourses
 from utils.database import db_transaction_with_flash
-from utils.calculs import calculer_budget_courses  # ✅ NOUVEAU
-from sqlalchemy.orm import joinedload
-from utils.forms import parse_float, parse_positive_float, parse_checkbox
+from utils.calculs import calculer_budget_courses
+from utils.forms import parse_positive_float, parse_checkbox
+# ✅ NOUVEAUX IMPORTS
+from utils.stock import ajouter_au_stock
+from utils.queries import get_courses_non_achetees, get_historique_courses
 
 courses_bp = Blueprint('courses', __name__)
 
@@ -21,10 +26,8 @@ def liste():
     """
     if request.method == 'POST':
         try:
-            # ✅ OPTIMISATION : Charger les ingrédients en une seule requête
-            items = ListeCourses.query.options(
-                joinedload(ListeCourses.ingredient)
-            ).filter_by(achete=False).all()
+            # ✅ REFACTORISÉ: Requête centralisée
+            items = get_courses_non_achetees()
             
             if not items:
                 flash('Aucun article à valider dans la liste de courses.', 'info')
@@ -47,19 +50,9 @@ def liste():
                             request.form.get(quantite_name, item.quantite)
                         )
                         
-                        # Mettre à jour le stock du frigo
-                        stock = StockFrigo.query.filter_by(
-                            ingredient_id=item.ingredient_id
-                        ).first()
-                        
-                        if stock:
-                            stock.quantite += quantite_achetee
-                        else:
-                            stock = StockFrigo(
-                                ingredient_id=item.ingredient_id,
-                                quantite=quantite_achetee
-                            )
-                            db.session.add(stock)
+                        # ✅ REFACTORISÉ: Utilisation de utils/stock.py
+                        # Une seule ligne au lieu de 10 !
+                        ajouter_au_stock(item.ingredient_id, quantite_achetee)
                         
                         # Marquer comme acheté
                         item.achete = True
@@ -78,7 +71,7 @@ def liste():
                 )
             
             if erreurs:
-                for erreur in erreurs[:5]:  # Limiter à 5 messages d'erreur
+                for erreur in erreurs[:5]:
                     flash(f'⚠️ {erreur}', 'warning')
                 
                 if len(erreurs) > 5:
@@ -88,7 +81,8 @@ def liste():
                 flash('Aucun article sélectionné.', 'info')
         
         except Exception as e:
-            current_app.logger.error(f'Erreur générale dans courses.liste (POST): {str(e)}')
+            db.session.rollback()
+            current_app.logger.error(f'Erreur dans courses.liste (POST): {str(e)}')
             flash('Une erreur est survenue lors de la validation des courses.', 'danger')
         
         return redirect(url_for('courses.liste'))
@@ -98,20 +92,11 @@ def liste():
     # ============================================
     
     try:
-        # ✅ OPTIMISATION : Charger les ingrédients en une seule requête
-        items = ListeCourses.query.options(
-            joinedload(ListeCourses.ingredient)
-        ).filter_by(achete=False).all()
+        # ✅ REFACTORISÉ: Requêtes centralisées
+        items = get_courses_non_achetees()
+        historique = get_historique_courses(limit=10)
         
-        # Historique des 10 derniers achats
-        historique = ListeCourses.query.options(
-            joinedload(ListeCourses.ingredient)
-        ).filter_by(achete=True)\
-         .order_by(ListeCourses.id.desc())\
-         .limit(10)\
-         .all()
-        
-        # ✅ REFACTORISÉ : Utilisation de la fonction centralisée
+        # Calcul du budget (déjà centralisé)
         budget = calculer_budget_courses(items)
         
         return render_template(
@@ -126,7 +111,14 @@ def liste():
     except Exception as e:
         current_app.logger.error(f'Erreur dans courses.liste (GET): {str(e)}')
         flash('Erreur lors du chargement de la liste de courses.', 'danger')
-        return render_template('courses.html', items=[], historique=[])
+        return render_template(
+            'courses.html', 
+            items=[], 
+            historique=[],
+            total_estime=0,
+            items_avec_prix=0,
+            items_sans_prix=0
+        )
 
 
 @courses_bp.route('/retirer/<int:id>')
@@ -138,7 +130,6 @@ def retirer(id):
         item = ListeCourses.query.get_or_404(id)
         nom = item.ingredient.nom
         
-        # ✅ TRANSACTION SÉCURISÉE
         with db_transaction_with_flash(
             success_message=f'✓ {nom} retiré de la liste de courses.',
             error_message=f'Erreur lors de la suppression de {nom}'
@@ -168,7 +159,6 @@ def vider_historique():
             flash('L\'historique est déjà vide.', 'info')
             return redirect(url_for('courses.liste'))
         
-        # ✅ TRANSACTION SÉCURISÉE
         with db_transaction_with_flash(
             success_message=f'✓ {nb_items} article(s) supprimé(s) de l\'historique.',
             error_message='Erreur lors du vidage de l\'historique'
@@ -181,5 +171,52 @@ def vider_historique():
     except Exception as e:
         current_app.logger.error(f'Erreur dans courses.vider_historique: {str(e)}')
         flash('Erreur lors du vidage de l\'historique.', 'danger')
+    
+    return redirect(url_for('courses.liste'))
+
+
+@courses_bp.route('/ajouter', methods=['POST'])
+def ajouter():
+    """
+    Ajouter manuellement un article à la liste de courses
+    """
+    from models.models import Ingredient
+    from utils.queries import get_course_by_ingredient
+    
+    try:
+        ingredient_id = request.form.get('ingredient_id')
+        quantite = parse_positive_float(request.form.get('quantite', 1))
+        
+        if not ingredient_id:
+            flash('Veuillez sélectionner un ingrédient.', 'danger')
+            return redirect(url_for('courses.liste'))
+        
+        ingredient = Ingredient.query.get_or_404(ingredient_id)
+        
+        # Vérifier si l'ingrédient est déjà dans la liste
+        existing = get_course_by_ingredient(int(ingredient_id), achete=False)
+        
+        if existing:
+            # Augmenter la quantité
+            existing.quantite += quantite
+            flash(
+                f'✓ Quantité de {ingredient.nom} augmentée à {existing.quantite} {ingredient.unite}',
+                'success'
+            )
+        else:
+            # Ajouter nouveau
+            item = ListeCourses(
+                ingredient_id=int(ingredient_id),
+                quantite=quantite
+            )
+            db.session.add(item)
+            flash(f'✓ {ingredient.nom} ajouté à la liste de courses.', 'success')
+        
+        db.session.commit()
+    
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Erreur dans courses.ajouter: {str(e)}')
+        flash('Erreur lors de l\'ajout de l\'article.', 'danger')
     
     return redirect(url_for('courses.liste'))

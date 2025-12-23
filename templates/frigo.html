@@ -3,9 +3,9 @@
 {% block title %}Mon Frigo{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='style/frigo.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/frigo-grid.css') }}">
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/frigo.css') }}">
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/pagination.css') }}">
+{# ✅ SUPPRIMÉ: frigo-grid.css - On utilise tables.css chargé via style.css #}
 {% endblock %}
 
 {% block content %}
@@ -24,34 +24,36 @@
     </p>
     
     {% if stocks %}
-        <div class="frigo-list">
+        {# ✅ REFACTORISÉ: Utilisation de table-container de tables.css #}
+        <div class="table-container">
             <table class="data-table data-table--header-gradient">
                 <thead>
                     <tr>
-                        <th style="width: 60px;"></th>
+                        <th class="cell-img"></th>
                         <th>Ingrédient</th>
                         <th>Quantité</th>
                         <th>Unité</th>
-                        <th>Prix unitaire</th>
+                        <th class="hide-mobile">Prix unitaire</th>
                         <th>Valeur stock</th>
-                        <th>Dernière modif.</th>
-                        <th style="text-align: right;">Actions</th>
+                        <th class="hide-mobile">Dernière modif.</th>
+                        <th class="cell-actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for stock in stocks %}
-                    <tr class="frigo-row">
-                        <td class="frigo-img-cell">
+                    <tr>
+                        {# ✅ REFACTORISÉ: Classes standard de tables.css #}
+                        <td class="cell-img">
                             {% if stock.ingredient.image %}
                             <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" 
                                  alt="{{ stock.ingredient.nom }}" 
-                                 class="frigo-thumbnail"
+                                 class="data-table-thumb"
                                  loading="lazy">
                             {% else %}
-                            <div class="frigo-thumbnail-placeholder">📦</div>
+                            <div class="data-table-thumb-placeholder">📦</div>
                             {% endif %}
                         </td>
-                        <td class="frigo-name-cell">
+                        <td class="cell-name">
                             <strong>{{ stock.ingredient.nom }}</strong>
                         </td>
                         <td>
@@ -70,8 +72,8 @@
                         <td>
                             <span class="unite-badge">{{ stock.ingredient.unite }}</span>
                         </td>
-                        <td>
-                            {# MODIFICATION : Conversion en €/kg si unité est en g #}
+                        <td class="hide-mobile">
+                            {# Conversion en €/kg si unité est en g #}
                             {% if stock.ingredient.prix_unitaire > 0 %}
                                 {% if stock.ingredient.unite == 'g' %}
                                     <span class="prix-table">{{ "%.3f"|format(stock.ingredient.prix_unitaire * 1000) }}€/kg</span>
@@ -90,10 +92,10 @@
                                 <span style="color: #adb5bd;">-</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="hide-mobile">
                             <span class="date-modif">{{ stock.date_modification.strftime('%d/%m/%y %H:%M') }}</span>
                         </td>
-                        <td class="actions-cell">
+                        <td class="cell-actions">
                             <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
                                class="btn-icon btn-icon-danger" 
                                title="Vider du frigo"
@@ -135,7 +137,11 @@
         {{ render_pagination(pagination, 'frigo.liste', view=view_mode) }}
         
     {% else %}
-        <p>Votre frigo est vide ! Ajoutez des ingrédients ci-dessous.</p>
+        <div class="empty-frigo">
+            <div class="empty-frigo-icon">❄️</div>
+            <p class="empty-frigo-text">Votre frigo est vide !</p>
+            <p>Ajoutez des ingrédients ci-dessous.</p>
+        </div>
     {% endif %}
 </div>
 
@@ -154,29 +160,112 @@
                 {% endfor %}
             </select>
             <small style="color: #6c757d;">
-                Vous ne trouvez pas votre ingrédient ?
-                <a href="{{ url_for('ingredients.liste') }}" style="color: #667eea;">Ajoutez-le au catalogue !</a>
+                Vous ne trouvez pas votre ingrédient ? 
+                <a href="{{ url_for('ingredients.liste') }}">Ajoutez-le au catalogue</a>
             </small>
         </div>
         
         <div class="form-group">
-            <label>Action</label>
-            <select name="action" required id="action-select">
-                <option value="add">Ajouter au stock</option>
-                <option value="remove">Retirer du stock</option>
-                <option value="set">Définir la quantité exacte</option>
-            </select>
+            <label>Quantité</label>
+            <input type="number" name="quantite" step="0.01" min="0" value="1" required>
+            <span id="unite-display" style="margin-left: 10px; color: #6c757d;"></span>
         </div>
         
         <div class="form-group">
-            <label>Quantité <span id="unite-label"></span></label>
-            <input type="number" step="0.01" name="quantite" required min="0">
-            <small id="action-help" style="color: #6c757d;"></small>
+            <label>Action</label>
+            <div class="action-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="submit" name="action" value="add" class="btn btn-success">
+                    ➕ Ajouter au stock
+                </button>
+                <button type="submit" name="action" value="remove" class="btn btn-warning">
+                    ➖ Retirer du stock
+                </button>
+                <button type="submit" name="action" value="set" class="btn btn-primary">
+                    ✏️ Définir la quantité
+                </button>
+            </div>
         </div>
-        
-        <button type="submit" class="btn">Valider</button>
     </form>
 </div>
+{% endblock %}
 
-<script src="{{ url_for('static', filename='javascript/frigo.js') }}"></script>
+{% block extra_js %}
+<script src="{{ versioned_url_for('static', filename='javascript/select-search.js') }}"></script>
+<script>
+// Afficher l'unité sélectionnée
+document.getElementById('ingredient-select').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const unite = selected.dataset.unite || '';
+    document.getElementById('unite-display').textContent = unite;
+});
+
+// Fonction pour sauvegarder la quantité en édition inline
+async function saveQuantite(stockId) {
+    const input = document.getElementById(`quantite-input-${stockId}`);
+    const status = document.getElementById(`status-${stockId}`);
+    const newQuantite = parseFloat(input.value);
+    const originalQuantite = parseFloat(input.dataset.original);
+    
+    // Pas de changement
+    if (newQuantite === originalQuantite) {
+        status.innerHTML = '<span style="color: #6c757d;">Pas de changement</span>';
+        setTimeout(() => status.innerHTML = '', 2000);
+        return;
+    }
+    
+    // Validation
+    if (isNaN(newQuantite) || newQuantite < 0) {
+        status.innerHTML = '<span style="color: #dc3545;">❌ Invalide</span>';
+        input.value = originalQuantite;
+        return;
+    }
+    
+    status.innerHTML = '<span style="color: #667eea;">⏳</span>';
+    
+    try {
+        const response = await fetch('/frigo/api/stock/update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                stock_id: stockId,
+                quantite: newQuantite
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            input.dataset.original = newQuantite;
+            status.innerHTML = '<span style="color: #28a745;">✓</span>';
+            
+            // Si supprimé, recharger la page
+            if (data.deleted) {
+                setTimeout(() => location.reload(), 500);
+            } else {
+                setTimeout(() => status.innerHTML = '', 2000);
+            }
+        } else {
+            status.innerHTML = '<span style="color: #dc3545;">❌</span>';
+            input.value = originalQuantite;
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        status.innerHTML = '<span style="color: #dc3545;">❌ Erreur</span>';
+        input.value = originalQuantite;
+    }
+}
+
+// Sauvegarder sur Enter
+document.querySelectorAll('.quantite-input-table').forEach(input => {
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const stockId = this.dataset.stockId;
+            saveQuantite(stockId);
+        }
+    });
+});
+</script>
 {% endblock %}

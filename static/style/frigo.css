@@ -141,3 +141,118 @@
         justify-content: center;
     }
 }
+
+.quantite-edit-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quantite-input-table {
+    width: 80px;
+    padding: 6px 10px;
+    border: 2px solid var(--border-light);
+    border-radius: var(--border-radius);
+    font-size: 0.95em;
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.quantite-input-table:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.quantite-input-table:hover {
+    border-color: var(--primary-light, #8b9ef0);
+}
+
+/* Bouton de sauvegarde inline */
+.btn-save-mini {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--border-radius);
+    background: linear-gradient(135deg, var(--success) 0%, #20c997 100%);
+    color: white;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.btn-save-mini:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+}
+
+.btn-save-mini:active {
+    transform: scale(0.95);
+}
+
+/* Status de l'édition */
+.edit-status-mini {
+    font-size: 0.9em;
+    min-width: 20px;
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.edit-status-mini.success {
+    color: var(--success);
+}
+
+.edit-status-mini.error {
+    color: var(--danger);
+}
+
+.edit-status-mini.loading {
+    color: var(--primary);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ========== VARIANTE COMPACTE (pour tableaux denses) ========== */
+.quantite-edit-inline--compact {
+    gap: 4px;
+}
+
+.quantite-edit-inline--compact .quantite-input-table {
+    width: 65px;
+    padding: 4px 8px;
+    font-size: 0.9em;
+}
+
+.quantite-edit-inline--compact .btn-save-mini {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9em;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .quantite-edit-inline {
+        flex-wrap: nowrap;
+    }
+    
+    .quantite-input-table {
+        width: 70px;
+        padding: 5px 8px;
+        font-size: 0.9em;
+    }
+    
+    .btn-save-mini {
+        width: 28px;
+        height: 28px;
+    }
+}
