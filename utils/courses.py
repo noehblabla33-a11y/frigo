@@ -10,7 +10,7 @@ Logique métier pour la gestion de la liste de courses
 """
 from models.models import db, ListeCourses, StockFrigo, Ingredient, Recette, IngredientRecette
 from flask import current_app
-
+from utils.stock import retirer_du_stock
 
 def ajouter_ingredients_manquants_courses(recette_id, force=False):
     """
@@ -220,7 +220,7 @@ def deduire_ingredients_frigo(recette_id):
         nb_deduits = 0
         
         for ing_rec in recette.ingredients:
-            stock, nouvelle_quantite = retirer_du_stock(ing_rec.ingredient_id, ing_rec.quantite)
+            retirer_du_stock(ing_rec.ingredient_id, ing_rec.quantite)
             
             if stock:
                 nb_deduits += 1
