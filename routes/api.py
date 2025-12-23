@@ -14,6 +14,7 @@ from models.models import db, ListeCourses, StockFrigo, Ingredient
 from functools import wraps
 from sqlalchemy.orm import joinedload
 from utils.calculs import calculer_budget_courses, calculer_prix_item  # ✅ NOUVEAU
+from utils.stock import ajouter_au_stock 
 
 api_bp = Blueprint('api', __name__)
 
@@ -142,6 +143,8 @@ def sync_courses():
     """
     Synchroniser les achats effectués depuis l'app Android
     Marque les items comme achetés et met à jour le frigo
+    
+    ✅ VERSION REFACTORISÉE - Utilise utils/stock.py
     """
     try:
         data = request.get_json()
@@ -170,19 +173,8 @@ def sync_courses():
             if not item or item.achete:
                 continue
             
-            # Mettre à jour le stock du frigo
-            stock = StockFrigo.query.filter_by(
-                ingredient_id=item.ingredient_id
-            ).first()
-            
-            if stock:
-                stock.quantite += quantite_achetee
-            else:
-                stock = StockFrigo(
-                    ingredient_id=item.ingredient_id,
-                    quantite=quantite_achetee
-                )
-                db.session.add(stock)
+            # ✅ REFACTORISÉ: Une seule ligne au lieu de 10 !
+            ajouter_au_stock(item.ingredient_id, quantite_achetee)
             
             # Marquer comme acheté
             item.achete = True

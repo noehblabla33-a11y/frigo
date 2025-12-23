@@ -105,52 +105,41 @@ def paginate_query(query, page, per_page=None):
     }
 
 
-def paginate_list(items_list, page, per_page=None):
+def paginate_list(items, page, per_page):
     """
-    Paginer une liste Python (quand on ne peut pas paginer au niveau SQL)
+    Pagine une liste Python (pas une query SQLAlchemy).
     
-    Utile quand on a déjà récupéré tous les items et qu'on doit les filtrer en Python
-    (par exemple, filtrage complexe par stock)
+    Utile quand on doit filtrer en Python après la requête DB,
+    par exemple pour le filtre "en_stock" qui nécessite une vérification
+    sur la relation stock de chaque ingrédient.
     
     Args:
-        items_list: Liste d'items à paginer
-        page (int): Numéro de page (commence à 1)
-        per_page (int, optional): Nombre d'items par page
+        items: Liste d'éléments à paginer
+        page: Numéro de page (1-indexed)
+        per_page: Nombre d'éléments par page
     
     Returns:
-        dict: Même format que paginate_query()
+        dict: Dictionnaire de pagination compatible avec les templates
     
     Exemple:
-        >>> # Cas où on doit filtrer en Python
-        >>> all_ingredients = Ingredient.query.all()
-        >>> filtered = [ing for ing in all_ingredients if ing.stock and ing.stock.quantite > 0]
-        >>> pagination = paginate_list(filtered, page=1, per_page=24)
+        >>> stocks = get_stocks_avec_ingredients()
+        >>> pagination = paginate_list(stocks, page=2, per_page=24)
+        >>> return render_template('frigo.html', 
+        ...                        stocks=pagination['items'],
+        ...                        pagination=pagination)
     """
-    # Si per_page n'est pas spécifié, utiliser la config Flask
-    if per_page is None:
-        per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
+    total = len(items)
+    pages = (total + per_page - 1) // per_page if total > 0 else 1
     
-    # Validation
-    per_page = max(1, per_page)
-    page = max(1, page)
+    # Assurer que la page est dans les limites
+    page = min(max(1, page), pages)
     
-    # Calculs
-    total = len(items_list)
-    
-    if total > 0:
-        pages = (total + per_page - 1) // per_page
-    else:
-        pages = 1
-    
-    page = min(page, pages)
-    
-    # Découpage de la liste
+    # Calculer les indices de slice
     start = (page - 1) * per_page
     end = start + per_page
-    items = items_list[start:end]
     
     return {
-        'items': items,
+        'items': items[start:end],
         'total': total,
         'page': page,
         'pages': pages,

@@ -213,56 +213,20 @@ def deduire_ingredients_frigo(recette_id):
         ...     print(f"⚠️ {resultat['manquants']} ingrédients manquaient")
     """
     try:
-        recette = Recette.query.get_or_404(recette_id)
-        deduits = 0
-        manquants = 0
-        details = []
+        recette = Recette.query.get(recette_id)
+        if not recette:
+            return 0
+        
+        nb_deduits = 0
         
         for ing_rec in recette.ingredients:
-            stock = StockFrigo.query.filter_by(ingredient_id=ing_rec.ingredient_id).first()
+            stock, nouvelle_quantite = retirer_du_stock(ing_rec.ingredient_id, ing_rec.quantite)
             
-            if stock and stock.quantite > 0:
-                # Déduire la quantité (minimum 0)
-                quantite_avant = stock.quantite
-                stock.quantite = max(0, stock.quantite - ing_rec.quantite)
-                deduits += 1
-                
-                details.append({
-                    'ingredient': ing_rec.ingredient.nom,
-                    'action': 'deduit',
-                    'quantite_deduite': min(ing_rec.quantite, quantite_avant),
-                    'quantite_restante': stock.quantite
-                })
-                
-                # Logger si on a déduit plus que disponible
-                if quantite_avant < ing_rec.quantite:
-                    current_app.logger.warning(
-                        f'Stock insuffisant pour {ing_rec.ingredient.nom}: '
-                        f'nécessaire={ing_rec.quantite}, disponible={quantite_avant}'
-                    )
-            else:
-                # Ingrédient manquant
-                manquants += 1
-                details.append({
-                    'ingredient': ing_rec.ingredient.nom,
-                    'action': 'manquant',
-                    'quantite_necessaire': ing_rec.quantite
-                })
+            if stock:
+                nb_deduits += 1
         
-        # Commit des changements
-        db.session.commit()
-        
-        current_app.logger.info(
-            f'Ingrédients déduits du frigo pour "{recette.nom}": '
-            f'{deduits} déduits, {manquants} manquants'
-        )
-        
-        return {
-            'deduits': deduits,
-            'manquants': manquants,
-            'details': details
-        }
-    
+        return nb_deduits
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Erreur dans deduire_ingredients_frigo: {str(e)}')

@@ -60,7 +60,7 @@ def create_app(config_name=None):
     app.register_blueprint(courses_bp, url_prefix='/courses')
     app.register_blueprint(historique_bp, url_prefix='/historique')
     app.register_blueprint(ingredients_bp, url_prefix='/ingredients')
-    app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
 
     # ============================================
     # CONTEXT PROCESSORS (UTILITAIRES POUR TEMPLATES)

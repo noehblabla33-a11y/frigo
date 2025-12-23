@@ -12,7 +12,6 @@ from models.models import db, ListeCourses
 from utils.database import db_transaction_with_flash
 from utils.calculs import calculer_budget_courses
 from utils.forms import parse_positive_float, parse_checkbox
-# ✅ NOUVEAUX IMPORTS
 from utils.stock import ajouter_au_stock
 from utils.queries import get_courses_non_achetees, get_historique_courses
 

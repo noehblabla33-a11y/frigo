@@ -6,6 +6,7 @@ from utils.pagination import paginate_query
 from utils.files import save_uploaded_file, delete_file
 from utils.courses import ajouter_ingredients_manquants_courses
 from utils.forms import parse_float, parse_int_or_none, clean_string_or_none,parse_ingredients_list, parse_etapes_list
+from utils.validators import validate_unique_recette, validate_type_recette
 import os
 
 recettes_bp = Blueprint('recettes', __name__)
@@ -20,8 +21,10 @@ def liste():
         temps_preparation = parse_int_or_none(request.form.get('temps_preparation'))
         
         # Validation du type de recette avec fonction depuis constants.py
-        if type_recette and not valider_type_recette(type_recette):
-            flash(f'Type de recette invalide : {type_recette}', 'danger')
+        if not validate_type_recette(type_recette, TYPES_RECETTES):
+            return redirect(url_for('recettes.liste'))
+
+        if not validate_unique_recette(nom):
             return redirect(url_for('recettes.liste'))
         
         recette = Recette(
