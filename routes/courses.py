@@ -6,14 +6,15 @@ CHANGEMENTS:
 - Utilise utils/stock.py pour les opérations sur le stock
 - Utilise utils/queries.py pour les requêtes optimisées
 - Code plus concis et maintenable
+- Ajout de la liste des ingrédients pour le formulaire d'ajout manuel
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
-from models.models import db, ListeCourses
+from models.models import db, ListeCourses, Ingredient
 from utils.database import db_transaction_with_flash
 from utils.calculs import calculer_budget_courses
 from utils.forms import parse_positive_float, parse_checkbox
 from utils.stock import ajouter_au_stock
-from utils.queries import get_courses_non_achetees, get_historique_courses
+from utils.queries import get_courses_non_achetees, get_course_by_ingredient
 
 courses_bp = Blueprint('courses', __name__)
 
@@ -50,7 +51,6 @@ def liste():
                         )
                         
                         # ✅ REFACTORISÉ: Utilisation de utils/stock.py
-                        # Une seule ligne au lieu de 10 !
                         ajouter_au_stock(item.ingredient_id, quantite_achetee)
                         
                         # Marquer comme acheté
@@ -93,18 +93,20 @@ def liste():
     try:
         # ✅ REFACTORISÉ: Requêtes centralisées
         items = get_courses_non_achetees()
-        historique = get_historique_courses(limit=10)
         
         # Calcul du budget (déjà centralisé)
         budget = calculer_budget_courses(items)
         
+        # Liste des ingrédients pour le formulaire d'ajout manuel
+        all_ingredients = Ingredient.query.order_by(Ingredient.nom).all()
+        
         return render_template(
             'courses.html',
             items=items,
-            historique=historique,
             total_estime=budget.total_estime,
             items_avec_prix=budget.items_avec_prix,
-            items_sans_prix=budget.items_sans_prix
+            items_sans_prix=budget.items_sans_prix,
+            all_ingredients=all_ingredients
         )
     
     except Exception as e:
@@ -113,10 +115,10 @@ def liste():
         return render_template(
             'courses.html', 
             items=[], 
-            historique=[],
             total_estime=0,
             items_avec_prix=0,
-            items_sans_prix=0
+            items_sans_prix=0,
+            all_ingredients=[]
         )
 
 
@@ -179,9 +181,6 @@ def ajouter():
     """
     Ajouter manuellement un article à la liste de courses
     """
-    from models.models import Ingredient
-    from utils.queries import get_course_by_ingredient
-    
     try:
         ingredient_id = request.form.get('ingredient_id')
         quantite = parse_positive_float(request.form.get('quantite', 1))

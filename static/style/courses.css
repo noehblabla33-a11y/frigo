@@ -163,6 +163,57 @@
     margin: 10px 0;
 }
 
+/* ============================================ */
+/* FORMULAIRE D'AJOUT MANUEL                   */
+/* ============================================ */
+.form-ajout-manuel {
+    background: var(--bg-light);
+    padding: 20px;
+    border-radius: var(--border-radius-lg);
+    border: 1px dashed var(--border-color);
+}
+
+.form-row--align-end {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.form-row--align-end .form-group {
+    margin-bottom: 0;
+}
+
+/* Groupe d'affichage de l'unité */
+.unite-display-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.unite-display-value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+    background: var(--bg-white);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-height: 47px;
+    min-width: 60px;
+}
+
+/* Bouton d'ajout */
+.btn-ajout-manuel {
+    white-space: nowrap;
+    padding: 12px 20px;
+}
+
+.btn-ajout-manuel:hover {
+    transform: translateY(-2px);
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
     .budget-header {
@@ -195,6 +246,31 @@
         padding: 12px 20px;
         font-size: 1em;
     }
+    
+    /* Formulaire d'ajout manuel responsive */
+    .form-row--align-end {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .form-row--align-end .form-group {
+        flex: none !important;
+        width: 100%;
+    }
+    
+    .form-ajout-manuel {
+        padding: 15px;
+    }
+    
+    .unite-display-value {
+        justify-content: flex-start;
+        padding-left: 16px;
+    }
+    
+    .btn-ajout-manuel {
+        width: 100%;
+        margin-top: 10px;
+    }
 }
 
 /* ========== PRINT ========== */
@@ -205,7 +281,8 @@
         border: 2px solid #28a745;
     }
     
-    .btn-valider-achats {
+    .btn-valider-achats,
+    .form-ajout-manuel {
         display: none;
     }
 }

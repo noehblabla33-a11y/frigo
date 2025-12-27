@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% from "macros/forms.html" import select_ingredient %}
 {% block title %}Liste de courses{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/courses.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/forms.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -130,43 +132,79 @@
     {% endif %}
 </div>
 
-<!-- Historique des achats -->
+<!-- ============================================ -->
+<!-- FORMULAIRE D'AJOUT MANUEL                   -->
+<!-- ============================================ -->
 <div class="card">
-    <h3>📜 Historique des achats</h3>
-    {% if historique %}
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Ingrédient</th>
-                <th>Quantité</th>
-                <th>Prix estimé</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in historique %}
-            <tr>
-                <td>{{ item.ingredient.nom }}</td>
-                <td>{{ item.quantite|quantite_lisible(item.ingredient) }}</td>
-                <td>
-                    {% if item.ingredient.prix_unitaire > 0 %}
-                    {{ "%.2f"|format(item.quantite * item.ingredient.prix_unitaire) }} €
-                    {% else %}
-                    <span class="prix-inconnu">-</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <div class="empty-courses">
-        <div class="empty-courses-icon">📝</div>
-        <p>Aucun achat enregistré pour le moment.</p>
-    </div>
-    {% endif %}
+    <h3>➕ Ajouter un article manuellement</h3>
+    <p class="form-help" style="margin-bottom: 20px;">
+        Ajoutez un ingrédient à votre liste de courses, indépendamment des recettes planifiées.
+    </p>
+    
+    <form method="POST" action="{{ url_for('courses.ajouter') }}" class="form-ajout-manuel">
+        <div class="form-row form-row--align-end">
+            <!-- Sélection de l'ingrédient -->
+            <div class="form-group" style="flex: 3;">
+                <label for="ingredient_id">Ingrédient</label>
+                <select name="ingredient_id" 
+                        id="ingredient_id" 
+                        class="searchable-select"
+                        required>
+                    <option value="">Sélectionner un ingrédient...</option>
+                    {% for ing in all_ingredients %}
+                    <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
+                        {{ ing.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Quantité -->
+            <div class="form-group" style="flex: 1;">
+                <label for="quantite">Quantité</label>
+                <input type="number" 
+                       name="quantite" 
+                       id="quantite-ajout"
+                       step="0.01" 
+                       min="0.01"
+                       value="1"
+                       class="quantite-input"
+                       required>
+            </div>
+            
+            <!-- Affichage de l'unité (dynamique) -->
+            <div class="form-group unite-display-group" style="flex: 0.5;">
+                <label>Unité</label>
+                <span class="unite-display-value" id="unite-display">-</span>
+            </div>
+            
+            <!-- Bouton d'ajout -->
+            <div class="form-group" style="flex: 0;">
+                <button type="submit" class="btn btn-success btn-ajout-manuel">
+                    ➕ Ajouter
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='javascript/courses.js') }}"></script>
+<script>
+// Mise à jour dynamique de l'unité lors de la sélection d'un ingrédient
+document.addEventListener('DOMContentLoaded', function() {
+    const selectIngredient = document.getElementById('ingredient_id');
+    const uniteDisplay = document.getElementById('unite-display');
+    
+    if (selectIngredient && uniteDisplay) {
+        selectIngredient.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const unite = selectedOption.dataset.unite || '-';
+            uniteDisplay.textContent = unite;
+        });
+    }
+});
+</script>
 {% endblock %}
