@@ -203,26 +203,25 @@ def verifier_disponibilite(ingredient_id: int, quantite_requise: float) -> Tuple
 
 def get_stocks_avec_ingredients(order_by='nom'):
     """
-    Récupère tous les stocks avec les ingrédients préchargés.
-    Optimisé pour éviter les requêtes N+1.
+    Récupère tous les stocks avec leurs ingrédients préchargés.
+    Filtre les stocks avec quantité > 0.
     
     Args:
-        order_by: Champ de tri ('nom', 'quantite', 'date_modification')
+        order_by: 'nom' ou 'date' pour le tri
     
     Returns:
         Liste de StockFrigo avec ingrédients préchargés
     """
+    from models.models import StockFrigo, Ingredient
     from sqlalchemy.orm import joinedload
     
     query = StockFrigo.query.options(
         joinedload(StockFrigo.ingredient)
-    ).join(StockFrigo.ingredient)
+    ).filter(StockFrigo.quantite > 0)  # ✅ Filtre les quantités à 0
     
     if order_by == 'nom':
-        query = query.order_by(Ingredient.nom)
-    elif order_by == 'quantite':
-        query = query.order_by(StockFrigo.quantite.desc())
-    elif order_by == 'date_modification':
+        query = query.join(Ingredient).order_by(Ingredient.nom)
+    else:
         query = query.order_by(StockFrigo.date_modification.desc())
     
     return query.all()
