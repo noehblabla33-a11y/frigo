@@ -1,0 +1,124 @@
+{# 
+   templates/macros/saisons.html
+   Macros pour l'affichage des saisons
+#}
+
+{# Badge de saison simple #}
+{% macro saison_badge(saison, size='normal') %}
+{% set emojis = {'printemps': '🌸', 'ete': '☀️', 'automne': '🍂', 'hiver': '❄️'} %}
+{% set noms = {'printemps': 'Printemps', 'ete': 'Été', 'automne': 'Automne', 'hiver': 'Hiver'} %}
+<span class="saison-badge saison-{{ saison }} size-{{ size }}" title="{{ noms.get(saison, saison) }}">
+    {{ emojis.get(saison, '🗓️') }}
+    {% if size != 'mini' %}{{ noms.get(saison, saison) }}{% endif %}
+</span>
+{% endmacro %}
+
+
+{# Liste de badges de saisons #}
+{% macro saisons_badges(saisons, size='mini') %}
+{% if saisons %}
+<span class="saisons-badges">
+    {% for saison in saisons %}
+    {{ saison_badge(saison, size) }}
+    {% endfor %}
+</span>
+{% else %}
+<span class="saison-badge saison-toute-annee size-{{ size }}" title="Disponible toute l'année">
+    🗓️{% if size != 'mini' %} Toute l'année{% endif %}
+</span>
+{% endif %}
+{% endmacro %}
+
+
+{# Indicateur "de saison" ou "hors saison" #}
+{% macro indicateur_saison(est_de_saison, show_label=true) %}
+{% if est_de_saison %}
+<span class="saison-indicateur de-saison" title="De saison">
+    ✓{% if show_label %} De saison{% endif %}
+</span>
+{% else %}
+<span class="saison-indicateur hors-saison" title="Hors saison">
+    ✗{% if show_label %} Hors saison{% endif %}
+</span>
+{% endif %}
+{% endmacro %}
+
+
+{# Sélecteur de saisons pour formulaire #}
+{% macro saisons_checkboxes(name_prefix='saison', selected=[], label='Saisons de disponibilité', help_text='') %}
+<div class="form-group saisons-form-group">
+    {% if label %}
+    <label>{{ label }}</label>
+    {% endif %}
+    
+    <div class="saisons-checkboxes-grid">
+        {% set saisons_data = [
+            ('printemps', '🌸', 'Printemps'),
+            ('ete', '☀️', 'Été'),
+            ('automne', '🍂', 'Automne'),
+            ('hiver', '❄️', 'Hiver')
+        ] %}
+        
+        {% for code, emoji, nom in saisons_data %}
+        <label class="saison-checkbox-label {% if code in selected %}selected{% endif %}">
+            <input type="checkbox" 
+                   name="{{ name_prefix }}_{{ code }}" 
+                   value="1"
+                   {% if code in selected %}checked{% endif %}
+                   onchange="this.parentElement.classList.toggle('selected', this.checked)">
+            <span class="emoji">{{ emoji }}</span>
+            <span class="nom">{{ nom }}</span>
+        </label>
+        {% endfor %}
+    </div>
+    
+    {% if help_text %}
+    <small class="form-help">{{ help_text }}</small>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# Score saisonnier pour une recette #}
+{% macro score_saisonnier(score, show_details=false, saison_info=none) %}
+<div class="score-saisonnier">
+    <div class="score-value {% if score >= 80 %}excellent{% elif score >= 50 %}bon{% else %}faible{% endif %}">
+        {{ score|round|int }}%
+    </div>
+    <div class="score-label">de saison</div>
+    
+    {% if show_details and saison_info %}
+    <div class="score-details">
+        {% if saison_info.ingredients_saison %}
+        <div class="detail-row de-saison">
+            ✓ {{ saison_info.ingredients_saison|length }} ingrédient(s) de saison
+        </div>
+        {% endif %}
+        {% if saison_info.ingredients_toute_annee %}
+        <div class="detail-row toute-annee">
+            🗓️ {{ saison_info.ingredients_toute_annee|length }} disponible(s) toute l'année
+        </div>
+        {% endif %}
+        {% if saison_info.ingredients_hors_saison %}
+        <div class="detail-row hors-saison">
+            ✗ {{ saison_info.ingredients_hors_saison|length }} hors saison
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# Widget saison actuelle #}
+{% macro saison_actuelle_widget(saison) %}
+{% set emojis = {'printemps': '🌸', 'ete': '☀️', 'automne': '🍂', 'hiver': '❄️'} %}
+{% set noms = {'printemps': 'Printemps', 'ete': 'Été', 'automne': 'Automne', 'hiver': 'Hiver'} %}
+<div class="saison-actuelle-widget">
+    <span class="emoji">{{ emojis.get(saison, '🗓️') }}</span>
+    <span class="text">
+        <span class="label">Saison actuelle</span>
+        <span class="nom">{{ noms.get(saison, saison) }}</span>
+    </span>
+</div>
+{% endmacro %}

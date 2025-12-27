@@ -1,0 +1,327 @@
+{#
+   templates/ingredients_saison.html
+   Page dédiée aux ingrédients de saison
+   
+   ✅ NOUVEAU: Page pour explorer les ingrédients par saison
+#}
+
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/empty_state.html" import render_empty_state %}
+
+{% block title %}Ingrédients de saison{% endblock %}
+
+{% block extra_css %}
+<style>
+    .saison-selector {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    
+    .saison-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 20px;
+        border: 2px solid #e9ecef;
+        border-radius: 25px;
+        background: #fff;
+        text-decoration: none;
+        color: #495057;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .saison-btn:hover {
+        border-color: #4CAF50;
+        background: #f8fff8;
+        transform: translateY(-2px);
+    }
+    
+    .saison-btn.active {
+        border-color: #4CAF50;
+        background: #4CAF50;
+        color: white;
+    }
+    
+    .saison-btn .emoji {
+        font-size: 1.3em;
+        margin-right: 8px;
+    }
+    
+    .saison-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .saison-header .emoji {
+        font-size: 3em;
+    }
+    
+    .saison-header h2 {
+        margin: 0;
+    }
+    
+    .saison-header .subtitle {
+        color: #6c757d;
+        font-size: 0.95em;
+    }
+    
+    .current-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background: #4CAF50;
+        color: white;
+        border-radius: 15px;
+        font-size: 0.8em;
+        font-weight: 600;
+        margin-left: 10px;
+    }
+    
+    .ingredients-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .ingredient-card {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .ingredient-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    }
+    
+    .ingredient-card img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 50%;
+        margin-bottom: 10px;
+    }
+    
+    .ingredient-card .placeholder-img {
+        width: 80px;
+        height: 80px;
+        background: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2em;
+        margin-bottom: 10px;
+    }
+    
+    .ingredient-card .name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .ingredient-card .categorie {
+        font-size: 0.85em;
+        color: #6c757d;
+    }
+    
+    .ingredient-card .saisons-badges {
+        display: flex;
+        gap: 5px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .saison-mini-badge {
+        font-size: 1.1em;
+        padding: 2px;
+    }
+    
+    .categorie-filter {
+        margin-bottom: 20px;
+    }
+    
+    .stats-bar {
+        display: flex;
+        gap: 20px;
+        padding: 15px 20px;
+        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .stat-item .number {
+        font-size: 1.5em;
+        font-weight: 700;
+        color: #2e7d32;
+    }
+    
+    .stat-item .label {
+        color: #558b2f;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    {# En-tête avec la saison sélectionnée #}
+    <div class="saison-header">
+        <span class="emoji">
+            {% if saison == 'printemps' %}🌸
+            {% elif saison == 'ete' %}☀️
+            {% elif saison == 'automne' %}🍂
+            {% elif saison == 'hiver' %}❄️
+            {% endif %}
+        </span>
+        <div>
+            <h2>
+                Ingrédients de 
+                {% if saison == 'printemps' %}Printemps
+                {% elif saison == 'ete' %}Été
+                {% elif saison == 'automne' %}Automne
+                {% elif saison == 'hiver' %}Hiver
+                {% endif %}
+                {% if saison == saison_actuelle %}
+                <span class="current-badge">Saison actuelle</span>
+                {% endif %}
+            </h2>
+            <p class="subtitle">
+                Découvrez les ingrédients frais et locaux disponibles cette saison
+            </p>
+        </div>
+    </div>
+    
+    {# Sélecteur de saisons #}
+    <div class="saison-selector">
+        {% for saison_code, saison_emoji in saisons %}
+        <a href="{{ url_for('ingredients.de_saison', saison=saison_code, categorie=categorie_filter) }}" 
+           class="saison-btn {% if saison == saison_code %}active{% endif %}">
+            <span class="emoji">{{ saison_emoji }}</span>
+            {% if saison_code == 'printemps' %}Printemps
+            {% elif saison_code == 'ete' %}Été
+            {% elif saison_code == 'automne' %}Automne
+            {% elif saison_code == 'hiver' %}Hiver
+            {% endif %}
+            {% if saison_code == saison_actuelle and saison != saison_code %}
+            <small style="margin-left: 5px; opacity: 0.7;">(actuelle)</small>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    
+    {# Statistiques #}
+    <div class="stats-bar">
+        <div class="stat-item">
+            <span class="number">{{ ingredients|length }}</span>
+            <span class="label">ingrédients de saison</span>
+        </div>
+    </div>
+    
+    {# Filtre par catégorie #}
+    <div class="categorie-filter">
+        <form method="GET" action="{{ url_for('ingredients.de_saison') }}">
+            <input type="hidden" name="saison" value="{{ saison }}">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <label for="categorie" style="white-space: nowrap;">Filtrer par catégorie :</label>
+                <select name="categorie" id="categorie" class="searchable-select" onchange="this.form.submit()">
+                    <option value="">Toutes les catégories</option>
+                    {% for cat_nom, cat_emoji in categories %}
+                    <option value="{{ cat_nom }}" {% if categorie_filter == cat_nom %}selected{% endif %}>
+                        {{ cat_emoji }} {{ cat_nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+    
+    {# Grille d'ingrédients #}
+    {% if ingredients %}
+    <div class="ingredients-grid">
+        {% for ingredient in ingredients %}
+        <div class="ingredient-card">
+            {% if ingredient.image %}
+            <img src="{{ url_for('static', filename=ingredient.image.replace('static/', '')) }}" 
+                 alt="{{ ingredient.nom }}">
+            {% else %}
+            <div class="placeholder-img">
+                {% if ingredient.categorie %}
+                    {% for cat_nom, cat_emoji in categories %}
+                        {% if cat_nom == ingredient.categorie %}{{ cat_emoji }}{% endif %}
+                    {% endfor %}
+                {% else %}
+                🥗
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="name">{{ ingredient.nom }}</div>
+            
+            {% if ingredient.categorie %}
+            <div class="categorie">{{ ingredient.categorie }}</div>
+            {% endif %}
+            
+            {# Badges des saisons #}
+            {% set ing_saisons = ingredient.get_saisons() %}
+            {% if ing_saisons %}
+            <div class="saisons-badges">
+                {% for s in ing_saisons %}
+                <span class="saison-mini-badge" title="
+                    {%- if s == 'printemps' %}Printemps
+                    {%- elif s == 'ete' %}Été
+                    {%- elif s == 'automne' %}Automne
+                    {%- elif s == 'hiver' %}Hiver
+                    {%- endif -%}">
+                    {% if s == 'printemps' %}🌸
+                    {% elif s == 'ete' %}☀️
+                    {% elif s == 'automne' %}🍂
+                    {% elif s == 'hiver' %}❄️
+                    {% endif %}
+                </span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="saisons-badges">
+                <span class="saison-mini-badge" title="Toute l'année">🗓️</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    {{ render_empty_state(
+        icon='🌱',
+        message='Aucun ingrédient trouvé pour cette saison.',
+        has_filters=categorie_filter,
+        filter_message='Essayez de retirer le filtre de catégorie.',
+        add_message='Ajoutez des saisons à vos ingrédients pour les voir apparaître ici !'
+    ) }}
+    {% endif %}
+</div>
+
+{# Lien retour #}
+<div style="margin-top: 20px;">
+    <a href="{{ url_for('ingredients.liste') }}" class="btn btn-secondary">
+        ← Retour au catalogue
+    </a>
+</div>
+{% endblock %}

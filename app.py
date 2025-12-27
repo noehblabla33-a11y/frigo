@@ -5,8 +5,10 @@ Point d'entrée de l'application Flask
 SYSTÈME D'UNITÉS REFACTORÉ :
 Les quantités sont stockées dans l'unité native de l'ingrédient.
 Les filtres Jinja2 utilisent directement l'unité sans conversion.
+
+✅ NOUVEAU : Contexte des saisons pour tous les templates
 """
-from flask import Flask
+from flask import Flask, url_for
 from flask_migrate import Migrate
 from flask_compress import Compress
 from models.models import db
@@ -16,6 +18,8 @@ from routes import (
 )
 from config import get_config
 from utils.units import formater_quantite, formater_prix_unitaire
+from utils.saisons import get_saison_actuelle, get_contexte_saison
+from constants import formater_saison, formater_liste_saisons, SAISONS_EMOJIS, SAISONS_NOMS
 import os
 
 
@@ -74,8 +78,6 @@ def create_app(config_name=None):
             """
             Génère une URL avec un paramètre de version basé sur le timestamp du fichier
             """
-            from flask import url_for
-            
             if endpoint == 'static':
                 filename = values.get('filename', None)
                 if filename:
@@ -86,28 +88,36 @@ def create_app(config_name=None):
             
             return url_for(endpoint, **values)
         
-        return dict(versioned_url_for=versioned_url_for)
+        return {
+            'versioned_url_for': versioned_url_for,
+            # Formatage des quantités et prix
+            'formater_quantite': formater_quantite,
+            'formater_prix_unitaire': formater_prix_unitaire,
+            
+            # ✅ NOUVEAU : Fonctions pour les saisons
+            'get_saison_actuelle': get_saison_actuelle,
+            'formater_saison': formater_saison,
+            'formater_liste_saisons': formater_liste_saisons,
+            'saisons_emojis': SAISONS_EMOJIS,
+            'saisons_noms': SAISONS_NOMS,
+        }
     
+    @app.context_processor
+    def inject_saison_context():
+        """
+        ✅ NOUVEAU : Injecte le contexte de saison dans tous les templates.
+        Cela permet d'afficher la saison actuelle partout si nécessaire.
+        """
+        return get_contexte_saison()
+
     # ============================================
-    # FILTRES JINJA2 PERSONNALISÉS - SIMPLIFIÉS
+    # FILTRES JINJA2 PERSONNALISÉS
     # ============================================
     
     @app.template_filter('quantite_lisible')
     def quantite_lisible_filter(quantite, ingredient):
         """
         Affiche la quantité de manière lisible.
-        
-        NOUVEAU SYSTÈME : La quantité est déjà dans l'unité native de l'ingrédient.
-        - 2 œufs → "2 œufs"
-        - 500g de farine → "500g"
-        - 250ml de lait → "250ml"
-        
-        Args:
-            quantite: Quantité dans l'unité native
-            ingredient: Objet Ingredient
-        
-        Returns:
-            String formatée pour l'affichage
         """
         return formater_quantite(quantite, ingredient)
     
@@ -115,21 +125,10 @@ def create_app(config_name=None):
     def prix_lisible_filter(prix, unite, ingredient=None):
         """
         Affiche le prix de manière lisible.
-        
-        Le prix_unitaire est stocké par unité native :
-        - €/pièce pour les pièces
-        - €/g pour les grammes (affiché en €/kg)
-        - €/ml pour les millilitres (affiché en €/L)
-        
-        Args:
-            prix: Le prix unitaire
-            unite: L'unité (peut être ignoré si ingredient est fourni)
-            ingredient: L'objet Ingredient (optionnel)
         """
         if ingredient:
             return formater_prix_unitaire(ingredient)
         
-        # Fallback si pas d'ingrédient
         if not prix or prix == 0:
             return "Prix non renseigné"
         
@@ -148,44 +147,15 @@ def create_app(config_name=None):
     def format_unite_filter(unite, quantite=1):
         """
         Formate l'unité pour l'affichage.
-        
-        Args:
-            unite: L'unité de base
-            quantite: Quantité pour gérer le pluriel
         """
         if unite == 'pièce':
-            return 'pièce(s)' if quantite > 1 else 'pièce'
+            return 'pièce' if quantite <= 1 else 'pièces'
         return unite
 
-    # ============================================
-    # LOGGING
-    # ============================================
-    if not app.debug and not app.testing:
-        import logging
-        from logging.handlers import RotatingFileHandler
-        
-        file_handler = RotatingFileHandler(
-            os.path.join(logs_path, 'frigo.log'),
-            maxBytes=10240000,
-            backupCount=10
-        )
-        
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-        ))
-        
-        file_handler.setLevel(logging.INFO)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
-        
-        app.logger.info('🚀 Application Frigo démarrée')
-    
     return app
 
 
-# ============================================
-# POINT D'ENTRÉE POUR LE DÉVELOPPEMENT
-# ============================================
+# Point d'entrée pour le développement
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)

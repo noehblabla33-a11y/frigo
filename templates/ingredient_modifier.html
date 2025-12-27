@@ -1,10 +1,10 @@
 {# 
-   templates/ingredient_modifier.html (VERSION REFACTORISÉE)
+   templates/ingredient_modifier.html (VERSION AVEC SAISONS)
    
    CHANGEMENTS:
    - Utilise les macros de forms.html pour les champs
    - Utilise nutrition_fields au lieu de code dupliqué
-   - Plus maintenable et cohérent avec le reste de l'application
+   - ✅ NOUVEAU: Section pour les saisons de disponibilité
 #}
 
 {% extends "base.html" %}
@@ -14,6 +14,65 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style/forms.css') }}">
+<style>
+    .saisons-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    @media (min-width: 768px) {
+        .saisons-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    
+    .saison-checkbox {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: #fff;
+    }
+    
+    .saison-checkbox:hover {
+        border-color: #4CAF50;
+        background: #f8fff8;
+    }
+    
+    .saison-checkbox.selected {
+        border-color: #4CAF50;
+        background: #e8f5e9;
+    }
+    
+    .saison-checkbox input {
+        margin-right: 10px;
+        width: 18px;
+        height: 18px;
+    }
+    
+    .saison-checkbox .saison-emoji {
+        font-size: 1.3em;
+        margin-right: 8px;
+    }
+    
+    .saison-checkbox .saison-nom {
+        font-weight: 500;
+    }
+    
+    .saison-info {
+        color: #6c757d;
+        font-size: 0.9em;
+        margin-top: 8px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -30,7 +89,7 @@
             placeholder='Ex: Tomate, Farine, Lait...'
         ) }}
         
-        {# Catégorie - Utilise la macro select_categories #}
+        {# Catégorie #}
         {{ select_categories(
             name='categorie',
             categories=categories,
@@ -50,7 +109,7 @@
             </select>
         </div>
         
-        {# Prix unitaire avec helper dynamique #}
+        {# Prix unitaire #}
         <div class="form-group">
             <label for="prix_unitaire">
                 Prix unitaire 
@@ -65,7 +124,43 @@
             <div id="prix-helper"></div>
         </div>
 
-        {# ✅ REFACTORISÉ: Utilisation de la macro nutrition_fields #}
+        {# ============================================ #}
+        {# ✅ NOUVEAU: Section Saisons                  #}
+        {# ============================================ #}
+        <div class="form-section">
+            <h4>🗓️ Saisons de disponibilité (optionnel)</h4>
+            <p class="form-help">
+                Sélectionnez les saisons où cet ingrédient est généralement disponible frais.
+                Laissez vide si disponible toute l'année.
+            </p>
+            
+            <div class="saisons-grid">
+                {% for saison_code, saison_emoji in saisons %}
+                <label class="saison-checkbox {% if saison_code in saisons_ingredient %}selected{% endif %}">
+                    <input type="checkbox" 
+                           name="saison_{{ saison_code }}" 
+                           value="1"
+                           {% if saison_code in saisons_ingredient %}checked{% endif %}
+                           onchange="this.parentElement.classList.toggle('selected', this.checked)">
+                    <span class="saison-emoji">{{ saison_emoji }}</span>
+                    <span class="saison-nom">
+                        {% if saison_code == 'printemps' %}Printemps
+                        {% elif saison_code == 'ete' %}Été
+                        {% elif saison_code == 'automne' %}Automne
+                        {% elif saison_code == 'hiver' %}Hiver
+                        {% endif %}
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+            
+            <div class="saison-info">
+                💡 <strong>Astuce :</strong> Les ingrédients de saison permettent de proposer 
+                des recettes adaptées et d'encourager une alimentation plus locale et écologique.
+            </div>
+        </div>
+
+        {# Valeurs nutritionnelles #}
         {{ nutrition_fields(values={
             'calories': ingredient.calories,
             'proteines': ingredient.proteines,
@@ -76,9 +171,9 @@
             'sel': ingredient.sel
         }, collapsable=false) }}
 
-        {# Poids par pièce (optionnel) #}
+        {# Poids par pièce #}
         <div class="form-section">
-            <h4>🔢 Affichage en pièces (optionnel)</h4>
+            <h4>🔢 Poids par pièce (optionnel)</h4>
             <p class="form-help">
                 Si cet ingrédient se compte en pièces, renseignez le poids moyen d'une pièce.
             </p>

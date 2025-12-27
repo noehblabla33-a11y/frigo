@@ -8,8 +8,9 @@ SYSTÈME D'UNITÉS REFACTORÉ :
 - Pour de la farine (unite='g'), on stocke 500
 - Pour du lait (unite='ml'), on stocke 250
 
-Les calculs de nutrition et de coût utilisent utils.units pour convertir
-vers grammes quand nécessaire.
+✅ NOUVEAU : Système de saisons pour les ingrédients
+- Un ingrédient peut être associé à plusieurs saisons
+- Les ingrédients sans saison sont disponibles toute l'année
 """
 
 from flask_sqlalchemy import SQLAlchemy
@@ -18,15 +19,51 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
+# ============================================
+# SAISONS DES INGRÉDIENTS
+# ============================================
+
+class IngredientSaison(db.Model):
+    """
+    Table d'association pour les saisons des ingrédients.
+    Un ingrédient peut être disponible sur plusieurs saisons.
+    
+    Saisons possibles : 'printemps', 'ete', 'automne', 'hiver'
+    
+    Exemples:
+        - Tomate -> ['ete'] (uniquement en été)
+        - Carotte -> ['automne', 'hiver', 'printemps'] (sauf été)
+        - Pomme de terre -> [] (toute l'année, pas de restriction)
+    """
+    __tablename__ = 'ingredient_saison'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id', ondelete='CASCADE'), 
+                             nullable=False, index=True)
+    saison = db.Column(db.String(20), nullable=False, index=True)
+    
+    __table_args__ = (
+        db.UniqueConstraint('ingredient_id', 'saison', name='uq_ingredient_saison'),
+        db.Index('idx_ingredient_saison_composite', 'ingredient_id', 'saison'),
+    )
+    
+    def __repr__(self):
+        return f'<IngredientSaison {self.ingredient_id}:{self.saison}>'
+
+
+# ============================================
+# INGRÉDIENTS
+# ============================================
+
 class Ingredient(db.Model):
     """Catalogue des ingrédients (référentiel permanent)"""
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False, unique=True, index=True)
-    unite = db.Column(db.String(20), default='g')  # 'g', 'ml', ou 'pièce'
-    prix_unitaire = db.Column(db.Float, default=0)  # Prix par unité native (€/g, €/ml, €/pièce)
+    unite = db.Column(db.String(20), default='g')
+    prix_unitaire = db.Column(db.Float, default=0)
     image = db.Column(db.String(200), nullable=True)
     categorie = db.Column(db.String(50), nullable=True, index=True)
-    poids_piece = db.Column(db.Float, nullable=True)  # Poids en grammes (requis si unite='pièce')
+    poids_piece = db.Column(db.Float, nullable=True)
     
     # Valeurs nutritionnelles pour 100g ou 100ml
     calories = db.Column(db.Float, default=0)
@@ -42,54 +79,36 @@ class Ingredient(db.Model):
                             uselist=False, 
                             cascade='all, delete-orphan',
                             lazy='select')
+    
+    # ✅ NOUVEAU : Relation vers les saisons
+    saisons = db.relationship('IngredientSaison', 
+                             backref='ingredient_ref',
+                             cascade='all, delete-orphan',
+                             lazy='select')
+
+    # ============================================
+    # MÉTHODES DE CONVERSION
+    # ============================================
 
     def get_quantite_en_grammes(self, quantite_native: float) -> float:
-        """
-        Convertit une quantité en unité native vers grammes.
-        Utilisé pour les calculs nutritionnels.
-        
-        Args:
-            quantite_native: Quantité dans l'unité native (ex: 2 pour 2 œufs)
-        
-        Returns:
-            Quantité en grammes
-        """
+        """Convertit une quantité en unité native vers grammes."""
         if quantite_native <= 0:
             return 0
         
         if self.unite == 'pièce' and self.poids_piece and self.poids_piece > 0:
             return quantite_native * self.poids_piece
         
-        # Pour g et ml, c'est déjà l'unité de base
         return quantite_native
 
     def get_nutrition_for_quantity(self, quantite_native: float) -> dict:
-        """
-        Calcule les valeurs nutritionnelles pour une quantité donnée.
-        La quantité est en unité NATIVE de l'ingrédient.
-        Les valeurs nutritionnelles sont stockées pour 100g/100ml.
-        
-        Args:
-            quantite_native: Quantité dans l'unité native (ex: 2 pour 2 œufs)
-        
-        Returns:
-            Dict avec les valeurs nutritionnelles
-        """
+        """Calcule les valeurs nutritionnelles pour une quantité donnée."""
         if quantite_native <= 0:
             return {
-                'calories': 0,
-                'proteines': 0,
-                'glucides': 0,
-                'lipides': 0,
-                'fibres': 0,
-                'sucres': 0,
-                'sel': 0
+                'calories': 0, 'proteines': 0, 'glucides': 0,
+                'lipides': 0, 'fibres': 0, 'sucres': 0, 'sel': 0
             }
         
-        # Convertir en grammes pour le calcul
         quantite_grammes = self.get_quantite_en_grammes(quantite_native)
-        
-        # Factor pour 100g
         factor = quantite_grammes / 100.0
         
         return {
@@ -103,29 +122,77 @@ class Ingredient(db.Model):
         }
 
     def calculer_prix(self, quantite_native: float) -> float:
-        """
-        Calcule le prix pour une quantité donnée.
-        
-        Le prix_unitaire est stocké :
-        - en €/pièce pour les ingrédients en pièces
-        - en €/g pour les ingrédients en grammes
-        - en €/ml pour les ingrédients en millilitres
-        
-        Args:
-            quantite_native: Quantité dans l'unité native
-        
-        Returns:
-            Prix en euros
-        """
+        """Calcule le prix pour une quantité donnée."""
         if quantite_native <= 0 or not self.prix_unitaire or self.prix_unitaire <= 0:
             return 0
-        
         return round(quantite_native * self.prix_unitaire, 2)
 
-    def to_dict(self, include_stock=False, include_nutrition=False):
+    # ============================================
+    # ✅ MÉTHODES POUR LES SAISONS
+    # ============================================
+
+    def get_saisons(self) -> list:
         """
-        Convertit l'ingrédient en dictionnaire pour JSON
+        Retourne la liste des saisons où l'ingrédient est disponible.
+        
+        Returns:
+            Liste de saisons ['printemps', 'ete', 'automne', 'hiver'] ou []
+            Une liste vide signifie "disponible toute l'année"
         """
+        return [s.saison for s in self.saisons]
+
+    def set_saisons(self, saisons: list):
+        """
+        Définit les saisons de disponibilité de l'ingrédient.
+        
+        Args:
+            saisons: Liste de saisons valides ['printemps', 'ete', 'automne', 'hiver']
+                     Une liste vide signifie "disponible toute l'année"
+        """
+        from constants import SAISONS_VALIDES
+        
+        # Valider les saisons
+        for saison in saisons:
+            if saison not in SAISONS_VALIDES:
+                raise ValueError(f"Saison invalide: {saison}. Valides: {SAISONS_VALIDES}")
+        
+        # Supprimer les anciennes saisons
+        IngredientSaison.query.filter_by(ingredient_id=self.id).delete()
+        
+        # Ajouter les nouvelles (sans doublons)
+        for saison in set(saisons):
+            ing_saison = IngredientSaison(ingredient_id=self.id, saison=saison)
+            db.session.add(ing_saison)
+
+    def est_de_saison(self, saison: str = None) -> bool:
+        """
+        Vérifie si l'ingrédient est de saison.
+        
+        Args:
+            saison: Saison à vérifier. Si None, utilise la saison actuelle.
+        
+        Returns:
+            True si de saison ou disponible toute l'année, False sinon
+        """
+        from utils.saisons import get_saison_actuelle
+        
+        saisons_ingredient = self.get_saisons()
+        
+        # Si pas de saisons définies, disponible toute l'année
+        if not saisons_ingredient:
+            return True
+        
+        if saison is None:
+            saison = get_saison_actuelle()
+        
+        return saison in saisons_ingredient
+
+    # ============================================
+    # SÉRIALISATION
+    # ============================================
+
+    def to_dict(self, include_stock=False, include_nutrition=False, include_saisons=False):
+        """Convertit l'ingrédient en dictionnaire pour JSON"""
         data = {
             'id': self.id,
             'nom': self.nom,
@@ -154,26 +221,33 @@ class Ingredient(db.Model):
                 'sel': self.sel
             }
         
+        # ✅ NOUVEAU : Inclure les saisons
+        if include_saisons:
+            data['saisons'] = self.get_saisons()
+            data['est_de_saison'] = self.est_de_saison()
+        
         return data
     
     def __repr__(self):
         return f'<Ingredient {self.nom}>'
 
 
+# ============================================
+# STOCK FRIGO
+# ============================================
+
 class StockFrigo(db.Model):
     """Stock actuel dans le frigo - quantités en unités natives"""
     id = db.Column(db.Integer, primary_key=True)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), 
                              nullable=False, unique=True, index=True)
-    quantite = db.Column(db.Float, default=0)  # En unité native de l'ingrédient
+    quantite = db.Column(db.Float, default=0)
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
     date_modification = db.Column(db.DateTime, default=datetime.utcnow, 
                                  onupdate=datetime.utcnow)
 
     def to_dict(self, include_ingredient=False):
-        """
-        Convertit le stock en dictionnaire pour JSON
-        """
+        """Convertit le stock en dictionnaire pour JSON"""
         data = {
             'id': self.id,
             'ingredient_id': self.ingredient_id,
@@ -185,13 +259,17 @@ class StockFrigo(db.Model):
         }
         
         if include_ingredient:
-            data['ingredient'] = self.ingredient.to_dict()
+            data['ingredient'] = self.ingredient.to_dict(include_saisons=True)
         
         return data
     
     def __repr__(self):
         return f'<StockFrigo {self.ingredient.nom}: {self.quantite}>'
 
+
+# ============================================
+# RECETTES
+# ============================================
 
 class Recette(db.Model):
     """Modèle pour les recettes"""
@@ -212,28 +290,17 @@ class Recette(db.Model):
                                     cascade='all, delete-orphan')
     
     def calculer_cout(self) -> float:
-        """
-        Calcule le coût estimé de la recette.
-        Les quantités sont en unités natives, les prix aussi.
-        """
+        """Calcule le coût estimé de la recette."""
         cout_total = 0
         for ing_rec in self.ingredients:
             cout_total += ing_rec.ingredient.calculer_prix(ing_rec.quantite)
         return round(cout_total, 2)
 
     def calculer_nutrition(self) -> dict:
-        """
-        Calcule les valeurs nutritionnelles totales de la recette.
-        Les quantités sont en unités natives, converties pour le calcul.
-        """
+        """Calcule les valeurs nutritionnelles totales de la recette."""
         nutrition = {
-            'calories': 0,
-            'proteines': 0,
-            'glucides': 0,
-            'lipides': 0,
-            'fibres': 0,
-            'sucres': 0,
-            'sel': 0
+            'calories': 0, 'proteines': 0, 'glucides': 0,
+            'lipides': 0, 'fibres': 0, 'sucres': 0, 'sel': 0
         }
         
         for ing_rec in self.ingredients:
@@ -244,10 +311,7 @@ class Recette(db.Model):
         return {k: round(v, 1) for k, v in nutrition.items()}
 
     def calculer_disponibilite_ingredients(self) -> dict:
-        """
-        Calcule le pourcentage d'ingrédients disponibles dans le frigo.
-        Les comparaisons se font en unités natives.
-        """
+        """Calcule le pourcentage d'ingrédients disponibles dans le frigo."""
         if not self.ingredients:
             return {
                 'pourcentage': 0,
@@ -289,11 +353,63 @@ class Recette(db.Model):
             'score': len(disponibles)
         }
 
+    # ============================================
+    # ✅ NOUVELLE MÉTHODE : Score saisonnier
+    # ============================================
+
+    def calculer_score_saisonnier(self, saison: str = None) -> dict:
+        """
+        Calcule le score saisonnier de la recette.
+        
+        Args:
+            saison: Saison de référence (défaut: saison actuelle)
+        
+        Returns:
+            Dict avec score et détails des ingrédients
+        """
+        from utils.saisons import get_saison_actuelle
+        
+        if saison is None:
+            saison = get_saison_actuelle()
+        
+        if not self.ingredients:
+            return {
+                'score': 0,
+                'ingredients_saison': [],
+                'ingredients_hors_saison': [],
+                'ingredients_toute_annee': []
+            }
+        
+        ingredients_saison = []
+        ingredients_hors_saison = []
+        ingredients_toute_annee = []
+        
+        for ing_rec in self.ingredients:
+            ingredient = ing_rec.ingredient
+            saisons_ing = ingredient.get_saisons()
+            
+            if not saisons_ing:
+                ingredients_toute_annee.append(ingredient)
+            elif saison in saisons_ing:
+                ingredients_saison.append(ingredient)
+            else:
+                ingredients_hors_saison.append(ingredient)
+        
+        total = len(self.ingredients)
+        positifs = len(ingredients_saison) + len(ingredients_toute_annee)
+        score = round((positifs / total) * 100, 1) if total > 0 else 0
+        
+        return {
+            'score': score,
+            'ingredients_saison': ingredients_saison,
+            'ingredients_hors_saison': ingredients_hors_saison,
+            'ingredients_toute_annee': ingredients_toute_annee
+        }
+
     def to_dict(self, include_ingredients=False, include_etapes=False, 
-                include_nutrition=False, include_cout=False, include_disponibilite=False):
-        """
-        Convertit la recette en dictionnaire pour JSON
-        """
+                include_nutrition=False, include_cout=False, 
+                include_disponibilite=False, include_saison=False):
+        """Convertit la recette en dictionnaire pour JSON"""
         data = {
             'id': self.id,
             'nom': self.nom,
@@ -311,7 +427,8 @@ class Recette(db.Model):
                     'quantite': ing_rec.quantite,
                     'unite': ing_rec.ingredient.unite,
                     'prix_unitaire': ing_rec.ingredient.prix_unitaire,
-                    'poids_piece': ing_rec.ingredient.poids_piece
+                    'poids_piece': ing_rec.ingredient.poids_piece,
+                    'est_de_saison': ing_rec.ingredient.est_de_saison()
                 }
                 for ing_rec in self.ingredients
             ]
@@ -337,11 +454,19 @@ class Recette(db.Model):
         if include_disponibilite:
             data['disponibilite'] = self.calculer_disponibilite_ingredients()
         
+        # ✅ NOUVEAU : Score saisonnier
+        if include_saison:
+            data['saison'] = self.calculer_score_saisonnier()
+        
         return data
 
     def __repr__(self):
         return f'<Recette {self.nom}>'
 
+
+# ============================================
+# ÉTAPES DE RECETTE
+# ============================================
 
 class EtapeRecette(db.Model):
     """Étapes de préparation d'une recette avec minuteurs optionnels"""
@@ -355,21 +480,20 @@ class EtapeRecette(db.Model):
         return f'<EtapeRecette {self.recette_id} - Étape {self.ordre}>'
 
 
+# ============================================
+# LIAISON INGRÉDIENTS-RECETTES
+# ============================================
+
 class IngredientRecette(db.Model):
     """
     Table de liaison entre recettes et ingrédients.
-    
-    La quantité est stockée en UNITÉ NATIVE de l'ingrédient :
-    - Pour un œuf (unite='pièce') : quantite=2 signifie 2 œufs
-    - Pour de la farine (unite='g') : quantite=500 signifie 500g
-    - Pour du lait (unite='ml') : quantite=250 signifie 250ml
+    La quantité est stockée en UNITÉ NATIVE de l'ingrédient.
     """
     id = db.Column(db.Integer, primary_key=True)
     recette_id = db.Column(db.Integer, db.ForeignKey('recette.id'), nullable=False, index=True)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False, index=True)
-    quantite = db.Column(db.Float, nullable=False)  # En unité native de l'ingrédient
+    quantite = db.Column(db.Float, nullable=False)
     
-    # Relations
     ingredient = db.relationship('Ingredient', backref='recettes')
 
     __table_args__ = (
@@ -379,6 +503,10 @@ class IngredientRecette(db.Model):
     def __repr__(self):
         return f'<IngredientRecette R:{self.recette_id} I:{self.ingredient_id}>'
 
+
+# ============================================
+# PLANIFICATION
+# ============================================
 
 class RecettePlanifiee(db.Model):
     """Modèle pour les recettes planifiées"""
@@ -395,9 +523,7 @@ class RecettePlanifiee(db.Model):
     )
 
     def to_dict(self, include_recette=False):
-        """
-        Convertit la recette planifiée en dictionnaire pour JSON
-        """
+        """Convertit la recette planifiée en dictionnaire pour JSON"""
         data = {
             'id': self.id,
             'recette_id': self.recette_id,
@@ -410,7 +536,8 @@ class RecettePlanifiee(db.Model):
         if include_recette:
             data['recette'] = self.recette_ref.to_dict(
                 include_ingredients=True,
-                include_cout=True
+                include_cout=True,
+                include_saison=True
             )
         
         return data
@@ -419,14 +546,17 @@ class RecettePlanifiee(db.Model):
         return f'<RecettePlanifiee {self.recette_id} - {self.date_planification}>'
 
 
+# ============================================
+# LISTE DE COURSES
+# ============================================
+
 class ListeCourses(db.Model):
     """Modèle pour la liste de courses - quantités en unités natives"""
     id = db.Column(db.Integer, primary_key=True)
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), nullable=False, index=True)
-    quantite = db.Column(db.Float, nullable=False)  # En unité native de l'ingrédient
+    quantite = db.Column(db.Float, nullable=False)
     achete = db.Column(db.Boolean, default=False, index=True)
     
-    # Relations
     ingredient = db.relationship('Ingredient', backref='courses')
 
     __table_args__ = (
@@ -434,20 +564,19 @@ class ListeCourses(db.Model):
     )
 
     def to_dict(self, include_ingredient=False):
-        """
-        Convertit l'item de course en dictionnaire pour JSON
-        """
+        """Convertit l'item de course en dictionnaire pour JSON"""
         data = {
             'id': self.id,
             'ingredient_id': self.ingredient_id,
             'ingredient_nom': self.ingredient.nom,
             'ingredient_unite': self.ingredient.unite,
             'quantite': self.quantite,
-            'achete': self.achete
+            'achete': self.achete,
+            'est_de_saison': self.ingredient.est_de_saison()
         }
         
         if include_ingredient:
-            data['ingredient'] = self.ingredient.to_dict()
+            data['ingredient'] = self.ingredient.to_dict(include_saisons=True)
         
         return data
     
