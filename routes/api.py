@@ -8,25 +8,69 @@ API REST pour l'application Android
 - Gestion d'erreurs améliorée
 
 ✅ REFACTORISÉ : Utilise utils/calculs.py pour le calcul du budget
+
+✅ CORS AJOUTÉ : Support des requêtes cross-origin pour Android
 """
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, current_app, make_response
 from models.models import db, ListeCourses, StockFrigo, Ingredient
 from functools import wraps
 from sqlalchemy.orm import joinedload
-from utils.calculs import calculer_budget_courses, calculer_prix_item  # ✅ NOUVEAU
-from utils.stock import ajouter_au_stock 
+from datetime import datetime
+from utils.calculs import calculer_budget_courses, calculer_prix_item
+from utils.stock import ajouter_au_stock
 
 api_bp = Blueprint('api', __name__)
 
 
+# ============================================
+# CORS SUPPORT - Pour applications Android/Mobile
+# ============================================
+
+def add_cors_headers(response):
+    """
+    Ajoute les headers CORS à une réponse.
+    Permet aux applications Android de communiquer avec l'API.
+    """
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-API-Key, Authorization'
+    response.headers['Access-Control-Max-Age'] = '86400'  # Cache preflight 24h
+    return response
+
+
+@api_bp.after_request
+def after_request(response):
+    """Applique les headers CORS à toutes les réponses de l'API."""
+    return add_cors_headers(response)
+
+
+@api_bp.route('/<path:path>', methods=['OPTIONS'])
+@api_bp.route('/', methods=['OPTIONS'])
+def handle_options(path=''):
+    """
+    Gère les requêtes preflight OPTIONS.
+    Nécessaire pour que les navigateurs/apps autorisent les requêtes cross-origin.
+    """
+    response = make_response()
+    return add_cors_headers(response)
+
+
+# ============================================
+# AUTHENTIFICATION
+# ============================================
+
 def require_api_key(f):
     """
-    Décorateur pour vérifier la clé API
+    Décorateur pour vérifier la clé API.
     ✅ La clé est maintenant chargée depuis config.py
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # ✅ Récupérer la clé depuis la config de l'app
+        # Les requêtes OPTIONS ne nécessitent pas d'authentification
+        if request.method == 'OPTIONS':
+            return f(*args, **kwargs)
+        
+        # Récupérer la clé depuis la config de l'app
         expected_api_key = current_app.config.get('API_KEY')
         
         # Récupérer la clé depuis les headers de la requête
@@ -40,31 +84,40 @@ def require_api_key(f):
     return decorated_function
 
 
+# ============================================
+# ENDPOINTS PUBLICS
+# ============================================
+
 @api_bp.route('/health', methods=['GET'])
 def health():
-    """Vérifier que l'API est accessible (endpoint public)"""
+    """Vérifier que l'API est accessible (endpoint public)."""
     return jsonify({
         'status': 'ok',
         'message': 'API opérationnelle',
-        'version': '1.0'
+        'version': '1.0',
+        'cors': 'enabled'
     })
 
+
+# ============================================
+# ENDPOINTS COURSES
+# ============================================
 
 @api_bp.route('/courses', methods=['GET'])
 @require_api_key
 def get_courses():
     """
-    Récupérer la liste des courses à faire
+    Récupérer la liste des courses à faire.
     ✅ OPTIMISÉ : Utilise joinedload pour éviter les requêtes N+1
     ✅ REFACTORISÉ : Utilise calculer_budget_courses pour le total
     """
     try:
-        # ✅ Charge les ingrédients en une seule requête
+        # Charge les ingrédients en une seule requête
         items = ListeCourses.query.options(
             joinedload(ListeCourses.ingredient)
         ).filter_by(achete=False).all()
         
-        # ✅ REFACTORISÉ : Utilisation de la fonction centralisée avec détails
+        # Utilisation de la fonction centralisée avec détails
         budget = calculer_budget_courses(items, include_details=True)
         
         # Enrichir les détails avec les infos supplémentaires pour l'API
@@ -95,12 +148,12 @@ def get_courses():
 @require_api_key
 def get_historique():
     """
-    Récupérer l'historique des achats
+    Récupérer l'historique des achats.
     ✅ OPTIMISÉ : Utilise joinedload
     ✅ REFACTORISÉ : Utilise calculer_prix_item
     """
     try:
-        # ✅ Charge les ingrédients en une seule requête
+        # Charge les ingrédients en une seule requête
         items = ListeCourses.query.options(
             joinedload(ListeCourses.ingredient)
         ).filter_by(achete=True)\
@@ -111,7 +164,7 @@ def get_historique():
         historique_list = []
         
         for item in items:
-            # ✅ REFACTORISÉ : Utilisation de la fonction centralisée
+            # Utilisation de la fonction centralisée
             prix_total = calculer_prix_item(item)
             
             historique_list.append({
@@ -141,8 +194,8 @@ def get_historique():
 @require_api_key
 def sync_courses():
     """
-    Synchroniser les achats effectués depuis l'app Android
-    Marque les items comme achetés et met à jour le frigo
+    Synchroniser les achats effectués depuis l'app Android.
+    Marque les items comme achetés et met à jour le frigo.
     
     ✅ VERSION REFACTORISÉE - Utilise utils/stock.py
     """
@@ -173,19 +226,19 @@ def sync_courses():
             if not item or item.achete:
                 continue
             
-            # ✅ REFACTORISÉ: Une seule ligne au lieu de 10 !
+            # Utilise utils/stock.py pour ajouter au frigo
             ajouter_au_stock(item.ingredient_id, quantite_achetee)
             
             # Marquer comme acheté
             item.achete = True
+            item.date_achat = datetime.utcnow()
             items_modifies += 1
         
         db.session.commit()
         
         return jsonify({
             'success': True,
-            'items_modifies': items_modifies,
-            'message': f'{items_modifies} article(s) synchronisé(s)'
+            'items_modifies': items_modifies
         })
     
     except Exception as e:
@@ -194,12 +247,15 @@ def sync_courses():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ============================================
+# ENDPOINTS STOCK/FRIGO
+# ============================================
+
 @api_bp.route('/frigo', methods=['GET'])
 @require_api_key
 def get_frigo():
     """
-    Récupérer le contenu du frigo
-    ✅ OPTIMISÉ : Utilise joinedload
+    Récupérer le contenu du frigo.
     """
     try:
         stocks = StockFrigo.query.options(
@@ -207,7 +263,6 @@ def get_frigo():
         ).filter(StockFrigo.quantite > 0).all()
         
         frigo_list = []
-        
         for stock in stocks:
             frigo_list.append({
                 'id': stock.id,
@@ -215,10 +270,8 @@ def get_frigo():
                 'ingredient_nom': stock.ingredient.nom,
                 'quantite': stock.quantite,
                 'unite': stock.ingredient.unite,
-                'prix_unitaire': stock.ingredient.prix_unitaire,
                 'image': stock.ingredient.image,
-                'categorie': stock.ingredient.categorie,
-                'date_modification': stock.date_modification.isoformat() if stock.date_modification else None
+                'categorie': stock.ingredient.categorie
             })
         
         return jsonify({
@@ -232,25 +285,28 @@ def get_frigo():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+# ============================================
+# ENDPOINTS INGRÉDIENTS
+# ============================================
+
 @api_bp.route('/ingredients', methods=['GET'])
 @require_api_key
 def get_ingredients():
     """
-    Récupérer le catalogue des ingrédients
+    Récupérer la liste de tous les ingrédients.
     """
     try:
         ingredients = Ingredient.query.order_by(Ingredient.nom).all()
         
         ingredients_list = []
-        
         for ing in ingredients:
             ingredients_list.append({
                 'id': ing.id,
                 'nom': ing.nom,
                 'unite': ing.unite,
                 'prix_unitaire': ing.prix_unitaire,
-                'categorie': ing.categorie,
-                'image': ing.image
+                'image': ing.image,
+                'categorie': ing.categorie
             })
         
         return jsonify({

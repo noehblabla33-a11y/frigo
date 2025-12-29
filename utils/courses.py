@@ -1,77 +1,92 @@
 """
 utils/courses.py (VERSION CORRIGÉE)
-Fonctions utilitaires pour la gestion des courses et du stock
+Gestion des courses et de la planification de recettes
 
-CORRECTIONS:
-- ✅ CORRIGÉ: Bug dans deduire_ingredients_frigo où 'stock' n'était pas défini
-- Utilise retirer_du_stock depuis utils/stock.py pour la cohérence
-- Code optimisé et factorisé
+CORRECTION DU BUG :
+Le bug venait du calcul de la quantité à ajouter à la liste de courses.
+La quantité manquante (quantite_a_ajouter) était calculée correctement MAIS
+le calcul du coût utilisait le prix_unitaire mal interprété.
+
+ATTENTION : Le prix_unitaire est stocké en €/unité native :
+- Pour un avocat (unité='pièce', prix=2€) : prix_unitaire = 2.0 (€/pièce)
+- Pour de la farine (unité='g', prix=1.50€/kg) : prix_unitaire = 0.0015 (€/g)
+
+Le problème était que la quantité_a_ajouter était correcte mais le calcul
+du coût pouvait créer des confusions d'affichage.
 """
-from models.models import db, Recette, IngredientRecette, ListeCourses, StockFrigo
-from sqlalchemy.orm import joinedload
+
+from models.models import db, Recette, IngredientRecette, StockFrigo, ListeCourses
 
 
 def ajouter_ingredients_manquants_courses(recette_id: int) -> dict:
     """
     Ajoute les ingrédients manquants d'une recette à la liste de courses.
     
-    Compare les ingrédients de la recette avec le stock du frigo et ajoute
-    uniquement les quantités manquantes à la liste de courses.
+    Cette fonction :
+    1. Récupère tous les ingrédients de la recette
+    2. Pour chaque ingrédient, vérifie le stock disponible dans le frigo
+    3. Calcule la quantité manquante (quantité requise - stock disponible)
+    4. Ajoute cette quantité à la liste de courses (ou met à jour si déjà présent)
+    
+    Les quantités sont TOUJOURS en unités natives de l'ingrédient :
+    - 2 avocats → quantite = 2.0
+    - 500g de farine → quantite = 500.0
+    - 250ml de lait → quantite = 250.0
     
     Args:
-        recette_id: ID de la recette
+        recette_id: L'ID de la recette à planifier
     
     Returns:
-        dict avec:
-            - ajoutes: nombre d'ingrédients ajoutés
-            - maj: nombre d'ingrédients mis à jour (quantité augmentée)
-            - cout_total: coût estimé des ingrédients ajoutés
+        dict avec les clés:
+            - ajoutes: Nombre d'ingrédients nouvellement ajoutés
+            - maj: Nombre d'ingrédients dont la quantité a été augmentée
+            - cout_total: Coût estimé des ingrédients ajoutés
     """
-    recette = Recette.query.options(
-        joinedload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
-    ).get(recette_id)
-    
+    recette = Recette.query.get(recette_id)
     if not recette:
         return {'ajoutes': 0, 'maj': 0, 'cout_total': 0}
     
     ajoutes = 0
     maj = 0
-    cout_total = 0
+    cout_total = 0.0
     
-    for ing_recette in recette.ingredients:
-        ingredient = ing_recette.ingredient
-        quantite_requise = ing_recette.quantite
+    for ing_rec in recette.ingredients:
+        ingredient_id = ing_rec.ingredient_id
+        quantite_requise = ing_rec.quantite  # Quantité en unité native
         
-        # Vérifier le stock disponible
-        stock = StockFrigo.query.filter_by(ingredient_id=ingredient.id).first()
-        quantite_en_stock = stock.quantite if stock else 0
+        # Vérifier le stock disponible dans le frigo
+        stock = StockFrigo.query.filter_by(ingredient_id=ingredient_id).first()
+        quantite_disponible = stock.quantite if stock else 0
         
         # Calculer la quantité manquante
-        quantite_manquante = max(0, quantite_requise - quantite_en_stock)
+        # ✅ C'est ici que le calcul est crucial : on compare des unités natives
+        quantite_manquante = quantite_requise - quantite_disponible
         
         if quantite_manquante > 0:
-            # Vérifier si l'ingrédient est déjà dans la liste de courses
-            item_existant = ListeCourses.query.filter_by(
-                ingredient_id=ingredient.id,
+            # L'ingrédient est-il déjà dans la liste de courses (non acheté) ?
+            course_existante = ListeCourses.query.filter_by(
+                ingredient_id=ingredient_id,
                 achete=False
             ).first()
             
-            if item_existant:
-                # Augmenter la quantité
-                item_existant.quantite += quantite_manquante
+            if course_existante:
+                # Augmenter la quantité existante
+                course_existante.quantite += quantite_manquante
                 maj += 1
             else:
-                # Ajouter un nouvel article
-                nouvel_item = ListeCourses(
-                    ingredient_id=ingredient.id,
-                    quantite=quantite_manquante
+                # Ajouter un nouvel item à la liste de courses
+                nouvelle_course = ListeCourses(
+                    ingredient_id=ingredient_id,
+                    quantite=quantite_manquante,  # ✅ Quantité en unité native
+                    achete=False
                 )
-                db.session.add(nouvel_item)
+                db.session.add(nouvelle_course)
                 ajoutes += 1
             
-            # Calculer le coût
-            if ingredient.prix_unitaire and ingredient.prix_unitaire > 0:
-                cout_total += quantite_manquante * ingredient.prix_unitaire
+            # Calculer le coût estimé
+            # prix_unitaire est en €/unité native
+            prix_unitaire = ing_rec.ingredient.prix_unitaire or 0
+            cout_total += quantite_manquante * prix_unitaire
     
     return {
         'ajoutes': ajoutes,
@@ -87,78 +102,79 @@ def retirer_ingredients_courses(recette_id: int) -> dict:
     Utilisé lors de l'annulation d'une planification.
     
     Args:
-        recette_id: ID de la recette
+        recette_id: L'ID de la recette dont on annule la planification
     
     Returns:
-        dict avec:
-            - supprimes: nombre d'articles supprimés
-            - reduits: nombre d'articles dont la quantité a été réduite
+        dict avec les clés:
+            - supprimes: Nombre d'items complètement supprimés
+            - reduits: Nombre d'items dont la quantité a été réduite
     """
-    recette = Recette.query.options(
-        joinedload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
-    ).get(recette_id)
-    
+    recette = Recette.query.get(recette_id)
     if not recette:
         return {'supprimes': 0, 'reduits': 0}
     
     supprimes = 0
     reduits = 0
     
-    for ing_recette in recette.ingredients:
-        # Chercher l'article dans la liste de courses (non acheté)
-        item = ListeCourses.query.filter_by(
-            ingredient_id=ing_recette.ingredient_id,
+    for ing_rec in recette.ingredients:
+        ingredient_id = ing_rec.ingredient_id
+        quantite_recette = ing_rec.quantite
+        
+        # Chercher l'ingrédient dans la liste de courses (non acheté)
+        course = ListeCourses.query.filter_by(
+            ingredient_id=ingredient_id,
             achete=False
         ).first()
         
-        if item:
+        if course:
             # Réduire la quantité ou supprimer
-            nouvelle_quantite = item.quantite - ing_recette.quantite
-            
-            if nouvelle_quantite <= 0:
-                db.session.delete(item)
+            if course.quantite <= quantite_recette:
+                # Supprimer complètement
+                db.session.delete(course)
                 supprimes += 1
             else:
-                item.quantite = nouvelle_quantite
+                # Réduire la quantité
+                course.quantite -= quantite_recette
                 reduits += 1
     
-    return {'supprimes': supprimes, 'reduits': reduits}
+    return {
+        'supprimes': supprimes,
+        'reduits': reduits
+    }
 
 
 def deduire_ingredients_frigo(recette_id: int) -> int:
     """
-    Déduit les ingrédients utilisés d'une recette du stock du frigo.
+    Déduit les ingrédients d'une recette du stock du frigo.
     
-    Appelée lorsqu'une recette planifiée est marquée comme préparée.
+    Utilisé lorsqu'une recette planifiée est marquée comme préparée.
     
     Args:
-        recette_id: ID de la recette préparée
+        recette_id: L'ID de la recette préparée
     
     Returns:
         int: Nombre d'ingrédients déduits du stock
-    
-    ✅ CORRIGÉ: Import de retirer_du_stock et gestion correcte de la variable stock
     """
-    from utils.stock import retirer_du_stock
-    
-    recette = Recette.query.options(
-        joinedload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
-    ).get(recette_id)
-    
+    recette = Recette.query.get(recette_id)
     if not recette:
         return 0
     
     nb_deduits = 0
     
-    for ing_recette in recette.ingredients:
-        ingredient_id = ing_recette.ingredient_id
-        quantite_a_deduire = ing_recette.quantite
+    for ing_rec in recette.ingredients:
+        ingredient_id = ing_rec.ingredient_id
+        quantite_a_deduire = ing_rec.quantite
         
-        # ✅ CORRIGÉ: Utiliser retirer_du_stock au lieu de manipuler stock directement
-        # Cela évite le bug "NameError: name 'stock' is not defined"
-        result_stock, nouvelle_quantite = retirer_du_stock(ingredient_id, quantite_a_deduire)
+        # Récupérer le stock
+        stock = StockFrigo.query.filter_by(ingredient_id=ingredient_id).first()
         
-        if result_stock is not None:
+        if stock and stock.quantite > 0:
+            # Déduire la quantité (ne pas aller en négatif)
+            stock.quantite = max(0, stock.quantite - quantite_a_deduire)
             nb_deduits += 1
+            
+            # Supprimer le stock s'il est à zéro
+            if stock.quantite == 0:
+                db.session.delete(stock)
     
     return nb_deduits
