@@ -7,6 +7,9 @@ from utils.files import save_uploaded_file, delete_file
 from utils.courses import ajouter_ingredients_manquants_courses
 from utils.forms import parse_float, parse_int_or_none, clean_string_or_none,parse_ingredients_list, parse_etapes_list
 from utils.validators import validate_unique_recette, validate_type_recette
+from utils.recommandation import (MoteurRecommandation, get_historique_recettes_ids, get_cout_max_recettes, get_temps_max_recettes)
+from utils.saisons import get_saison_actuelle
+from constants import SAISONS
 import os
 
 recettes_bp = Blueprint('recettes', __name__)
@@ -249,36 +252,80 @@ def supprimer(id):
 @recettes_bp.route('/cuisiner-avec-frigo')
 def cuisiner_avec_frigo():
     """
-    Affiche les recettes triées par pourcentage d'ingrédients disponibles
+    Affiche les recommandations de recettes basées sur le frigo
     ET les recettes planifiées (non préparées)
+    
+    ✅ REFACTORISÉ : Utilise le système de recommandation
     """
-    # Récupérer toutes les recettes
-    recettes = Recette.query.all()
+    # ============================================
+    # PARAMÈTRES DE LA REQUÊTE
+    # ============================================
+    saison = request.args.get('saison', get_saison_actuelle())
+    type_filter = request.args.get('type', '')
+    realisable_only = request.args.get('realisable') == '1'
+    limit = request.args.get('limit', 20, type=int)
     
-    # Calculer la disponibilité pour chaque recette
-    recettes_avec_score = []
-    for recette in recettes:
-        disponibilite = recette.calculer_disponibilite_ingredients()
-        recettes_avec_score.append({
-            'recette': recette,
-            'disponibilite': disponibilite
-        })
+    # Poids des critères (depuis query string ou défauts orientés "frigo")
+    poids_config = {
+        'disponibilite': float(request.args.get('poids_disponibilite', 1.0)),
+        'saison': float(request.args.get('poids_saison', 0.7)),
+        'variete': float(request.args.get('poids_variete', 0.6)),
+        'cout': float(request.args.get('poids_cout', 0.4)),
+        'temps': float(request.args.get('poids_temps', 0.3)),
+        'nutrition': float(request.args.get('poids_nutrition', 0.2))
+    }
     
-    # Trier par pourcentage décroissant, puis par nombre d'ingrédients disponibles
-    recettes_avec_score.sort(
-        key=lambda x: (x['disponibilite']['pourcentage'], x['disponibilite']['score']),
-        reverse=True
+    # ============================================
+    # CONFIGURATION DU MOTEUR DE RECOMMANDATION
+    # ============================================
+    moteur = MoteurRecommandation()
+    
+    # Contexte
+    moteur.set_contexte(
+        saison=saison,
+        cout_max=get_cout_max_recettes(),
+        temps_max=get_temps_max_recettes(),
+        historique_recettes=get_historique_recettes_ids(14)
     )
     
-    # Séparer les recettes réalisables immédiatement
-    recettes_realisables = [r for r in recettes_avec_score if r['disponibilite']['realisable']]
-    recettes_partielles = [r for r in recettes_avec_score if not r['disponibilite']['realisable']]
+    # Appliquer les poids
+    moteur.configurer_criteres(poids_config)
     
-    # Récupérer les recettes planifiées (non préparées)
+    # ============================================
+    # GÉNÉRATION DES RECOMMANDATIONS
+    # ============================================
+    recettes = Recette.query.options(
+        joinedload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
+    ).all()
+    
+    recommandations = moteur.recommander(
+        recettes,
+        limit=limit,
+        filtre_realisable=realisable_only,
+        filtre_type=type_filter if type_filter else None
+    )
+    
+    # Séparer les recettes réalisables pour les statistiques
+    nb_realisables = sum(
+        1 for r in recommandations 
+        if r.meta.get('disponibilite', {}).get('realisable', False)
+    )
+    
     planifiees = RecettePlanifiee.query.filter_by(preparee=False).all()
     
-    return render_template('cuisiner_avec_frigo.html',
-                         recettes_realisables=recettes_realisables,
-                         recettes_partielles=recettes_partielles,
-                         nb_realisables=len(recettes_realisables),
-                         planifiees=planifiees)
+    return render_template(
+        'cuisiner_avec_frigo.html',
+        recommandations=recommandations,
+        criteres_config=moteur.get_config(),
+        nb_realisables=nb_realisables,
+        nb_total=len(recommandations),
+        planifiees=planifiees,
+        # Filtres
+        saison=saison,
+        saison_actuelle=get_saison_actuelle(),
+        saisons=SAISONS,
+        types_recettes=TYPES_RECETTES,
+        type_filter=type_filter,
+        realisable_only=realisable_only,
+        limit=limit
+    )

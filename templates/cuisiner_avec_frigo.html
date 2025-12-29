@@ -1,29 +1,38 @@
 {% extends "base.html" %}
+{% from "macros/saisons.html" import saison_badge, indicateur_saison %}
 {% block title %}Que puis-je cuisiner ?{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/cuisiner-frigo.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h2>🥘 Que puis-je cuisiner avec mon frigo ?</h2>
-    <p>Découvrez les recettes que vous pouvez réaliser avec vos ingrédients en stock</p>
+    <p>Recettes recommandées selon votre stock, la saison et vos préférences</p>
 </div>
 
-<!-- Statistiques rapides -->
+{# ============================================ #}
+{# STATISTIQUES RAPIDES #}
+{# ============================================ #}
 <div class="stats-grid" style="margin-bottom: 30px;">
-    <div class="stat-card">
+    <div class="stat-card stat-realisable">
         <div class="stat-number">{{ nb_realisables }}</div>
-        <div class="stat-label">Recette(s) réalisable(s) maintenant</div>
+        <div class="stat-label">Réalisable(s) maintenant</div>
     </div>
     <div class="stat-card">
-        <div class="stat-number">{{ recettes_partielles|length }}</div>
-        <div class="stat-label">Recette(s) partiellement possible(s)</div>
+        <div class="stat-number">{{ nb_total }}</div>
+        <div class="stat-label">Recette(s) suggérée(s)</div>
     </div>
-    <div class="stat-card">
+    <div class="stat-card stat-planifiee">
         <div class="stat-number">{{ planifiees|length }}</div>
-        <div class="stat-label">Recette(s) planifiée(s)</div>
+        <div class="stat-label">Planifiée(s)</div>
     </div>
 </div>
 
-<!-- Section des recettes planifiées -->
+{# ============================================ #}
+{# SECTION DES RECETTES PLANIFIÉES #}
+{# ============================================ #}
 {% if planifiees %}
 <div class="card">
     <h3>📅 Mes recettes planifiées</h3>
@@ -61,7 +70,7 @@
                     {% endif %}
                 </div>
                 
-                <!-- Statut des ingrédients -->
+                {# Statut des ingrédients #}
                 <div class="ingredients-status">
                     {% set disponibilite = plan.recette_ref.calculer_disponibilite_ingredients() %}
                     {% if disponibilite.realisable %}
@@ -99,338 +108,250 @@
 </div>
 {% endif %}
 
-<!-- Recettes réalisables immédiatement -->
-{% if recettes_realisables %}
-<div class="card">
-    <h3>✅ Recettes réalisables immédiatement</h3>
-    <p style="color: #28a745; margin-bottom: 20px;">
-        Vous avez tous les ingrédients nécessaires pour ces recettes !
-    </p>
-    
-    <div class="recettes-grid">
-        {% for item in recettes_realisables %}
-        {% set recette = item.recette %}
-        <div class="recette-card">
-            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link">
-                <div class="recette-image">
-                    {% if recette.image %}
-                    <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
-                         alt="{{ recette.nom }}"
-                         loading="lazy">
-                    {% else %}
-                    <div class="no-image">🍳</div>
-                    {% endif %}
-                    
-                    <!-- Badge type à GAUCHE -->
-                    {% if recette.type_recette %}
-                    <span class="recette-type-badge">{{ recette.type_recette }}</span>
-                    {% endif %}
-                    
-                    <!-- Badge "Réalisable" à DROITE -->
-                    <span class="badge-realisable">✓ Réalisable</span>
-                </div>
-                <div class="recette-info">
-                    <h4>{{ recette.nom }}</h4>
-                    <div class="recette-meta">
-                        <span class="recette-ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
-                        {% if recette.temps_preparation %}
-                        <span class="recette-temps">⏱️ {{ recette.temps_preparation }} min</span>
-                        {% endif %}
+{# ============================================ #}
+{# PANNEAU DE CONFIGURATION DES RECOMMANDATIONS #}
+{# ============================================ #}
+<div class="card config-card">
+    <h3 data-collapsable="reco-config" class="collapsable-header">
+        ⚙️ Personnaliser les recommandations
+    </h3>
+    <div id="reco-config" class="collapsable-content" style="display: none;">
+        <form method="GET" id="reco-form">
+            {# Filtres de base #}
+            <div class="config-section">
+                <h4>🔍 Filtres</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Saison</label>
+                        <select name="saison" class="form-control">
+                            {% for saison_code, saison_emoji in saisons %}
+                            <option value="{{ saison_code }}" {% if saison == saison_code %}selected{% endif %}>
+                                {{ saison_emoji }} 
+                                {% if saison_code == 'printemps' %}Printemps
+                                {% elif saison_code == 'ete' %}Été
+                                {% elif saison_code == 'automne' %}Automne
+                                {% elif saison_code == 'hiver' %}Hiver
+                                {% endif %}
+                                {% if saison_code == saison_actuelle %}(actuelle){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
                     
-                    <!-- Barre de progression à 100% -->
-                    <div class="disponibilite-bar">
-                        <div class="disponibilite-progress" style="width: 100%; background: #28a745;"></div>
+                    <div class="form-group">
+                        <label>Type de recette</label>
+                        <select name="type" class="form-control">
+                            <option value="">Tous les types</option>
+                            {% for type in types_recettes %}
+                            <option value="{{ type }}" {% if type_filter == type %}selected{% endif %}>
+                                {{ type }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <p class="disponibilite-text" style="color: #28a745;">
-                        100% des ingrédients disponibles
-                    </p>
                     
-                    {% set cout = recette.calculer_cout() %}
-                    {% if cout > 0 %}
-                    <p class="recette-cout">≈ {{ cout }}€</p>
-                    {% endif %}
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="realisable" value="1" 
+                                   {% if realisable_only %}checked{% endif %}>
+                            Uniquement réalisables
+                        </label>
+                    </div>
                 </div>
-            </a>
-            <div class="recette-actions">
-                <form method="POST" 
-                      action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
-                      style="display: inline;">
-                    <button type="submit" 
-                            class="btn btn-small"
-                            style="background: #28a745; color: white;">
-                        📅 Planifier
-                    </button>
-                </form>
             </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-<!-- Recettes partiellement réalisables -->
-{% if recettes_partielles %}
-<div class="card">
-    <h3>📊 Recettes partiellement réalisables</h3>
-    <p style="color: #6c757d; margin-bottom: 20px;">
-        Triées par pourcentage d'ingrédients disponibles
-    </p>
-    
-    <div class="recettes-grid">
-        {% for item in recettes_partielles[:12] %}
-        {% set recette = item.recette %}
-        {% set dispo = item.disponibilite %}
-        <div class="recette-card">
-            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-link">
-                <div class="recette-image">
-                    {% if recette.image %}
-                    <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
-                         alt="{{ recette.nom }}"
-                         loading="lazy">
-                    {% else %}
-                    <div class="no-image">🍳</div>
-                    {% endif %}
-                    
-                    {% if recette.type_recette %}
-                    <span class="recette-type-badge">{{ recette.type_recette }}</span>
-                    {% endif %}
-                </div>
-                <div class="recette-info">
-                    <h4>{{ recette.nom }}</h4>
-                    <div class="recette-meta">
-                        <span class="recette-ingredients-count">{{ recette.ingredients|length }} ingrédient(s)</span>
-                        {% if recette.temps_preparation %}
-                        <span class="recette-temps">⏱️ {{ recette.temps_preparation }} min</span>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Barre de progression -->
-                    <div class="disponibilite-bar">
-                        <div class="disponibilite-progress" 
-                             style="width: {{ dispo.pourcentage }}%; 
-                                    background: {% if dispo.pourcentage >= 75 %}#ffc107{% elif dispo.pourcentage >= 50 %}#ff9800{% else %}#f44336{% endif %};">
+            
+            {# Pondération des critères #}
+            <div class="config-section">
+                <h4>⚖️ Importance des critères</h4>
+                <p class="config-help">
+                    Ajustez l'importance de chaque critère (0 = ignoré, 100% = prioritaire)
+                </p>
+                
+                <div class="criteres-grid">
+                    {% for nom, config in criteres_config.items() %}
+                    <div class="critere-slider">
+                        <label>
+                            <span class="critere-emoji">{{ config.emoji }}</span>
+                            {{ config.description }}
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" 
+                                   name="poids_{{ nom }}" 
+                                   min="0" max="1" step="0.1"
+                                   value="{{ config.poids }}"
+                                   class="slider"
+                                   oninput="this.nextElementSibling.textContent = Math.round(this.value * 100) + '%'">
+                            <span class="slider-value">{{ (config.poids * 100)|round|int }}%</span>
                         </div>
                     </div>
-                    <p class="disponibilite-text" 
-                       style="color: {% if dispo.pourcentage >= 75 %}#ffc107{% elif dispo.pourcentage >= 50 %}#ff9800{% else %}#f44336{% endif %};">
-                        {{ dispo.pourcentage }}% des ingrédients disponibles
-                        <br>
-                        <small>{{ dispo.ingredients_manquants|length }} ingrédient(s) manquant(s)</small>
-                    </p>
-                    
-                    {% set cout = recette.calculer_cout() %}
-                    {% if cout > 0 %}
-                    <p class="recette-cout">≈ {{ cout }}€</p>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    🔄 Appliquer
+                </button>
+                <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" class="btn btn-secondary">
+                    ↺ Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ============================================ #}
+{# LISTE DES RECOMMANDATIONS #}
+{# ============================================ #}
+<div class="card">
+    <div class="reco-header-bar">
+        <h3>🎯 Recettes recommandées</h3>
+        <div class="reco-info">
+            {{ saison_badge(saison) }}
+            {% if realisable_only %}
+            <span class="filter-badge">Réalisables uniquement</span>
+            {% endif %}
+            {% if type_filter %}
+            <span class="filter-badge">{{ type_filter }}</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if recommandations %}
+    <div class="recettes-reco-grid">
+        {% for reco in recommandations %}
+        {% set recette = reco.recette %}
+        {% set dispo = reco.meta.get('disponibilite', {}) %}
+        {% set is_realisable = dispo.get('realisable', False) %}
+        
+        <div class="recette-reco-card {% if is_realisable %}realisable{% endif %}">
+            {# Image #}
+            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="recette-image-link">
+                <div class="recette-image">
+                    {% if recette.image %}
+                    <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
+                         alt="{{ recette.nom }}"
+                         loading="lazy">
+                    {% else %}
+                    <div class="no-image">🍳</div>
                     {% endif %}
+                    
+                    {# Badge type #}
+                    {% if recette.type_recette %}
+                    <span class="recette-type-badge">{{ recette.type_recette }}</span>
+                    {% endif %}
+                    
+                    {# Badge réalisable #}
+                    {% if is_realisable %}
+                    <span class="badge-realisable">✓ Réalisable</span>
+                    {% endif %}
+                    
+                    {# Score badge #}
+                    <div class="score-badge-overlay 
+                        {% if reco.score_total >= 80 %}excellent
+                        {% elif reco.score_total >= 60 %}bon
+                        {% elif reco.score_total >= 40 %}moyen
+                        {% else %}faible{% endif %}">
+                        {{ reco.score_total|round|int }}
+                    </div>
                 </div>
             </a>
+            
+            {# Contenu #}
+            <div class="recette-content">
+                <h4>
+                    <a href="{{ url_for('recettes.detail', id=recette.id) }}">
+                        {{ recette.nom }}
+                    </a>
+                </h4>
+                
+                <div class="recette-meta">
+                    <span>{{ recette.ingredients|length }} ing.</span>
+                    {% if recette.temps_preparation %}
+                    <span>⏱️ {{ recette.temps_preparation }} min</span>
+                    {% endif %}
+                    {% set cout = recette.calculer_cout() %}
+                    {% if cout > 0 %}
+                    <span>💰 {{ "%.2f"|format(cout) }}€</span>
+                    {% endif %}
+                </div>
+                
+                {# Barre de disponibilité #}
+                <div class="disponibilite-bar">
+                    <div class="disponibilite-progress" 
+                         style="width: {{ reco.scores_details.disponibilite|default(0) }}%; 
+                                background: {% if is_realisable %}#28a745{% elif reco.scores_details.disponibilite|default(0) >= 75 %}#ffc107{% elif reco.scores_details.disponibilite|default(0) >= 50 %}#ff9800{% else %}#f44336{% endif %};">
+                    </div>
+                </div>
+                
+                {# Scores détaillés (compact) #}
+                <div class="scores-mini">
+                    {% if reco.scores_details.saison is defined %}
+                    <span class="score-mini saison" title="Score saisonnier">
+                        🌿 {{ reco.scores_details.saison|round|int }}%
+                    </span>
+                    {% endif %}
+                    <span class="score-mini dispo" title="Stock disponible">
+                        ❄️ {{ reco.scores_details.disponibilite|default(0)|round|int }}%
+                        {% if not is_realisable and dispo.nb_manquants %}
+                        <small>({{ dispo.nb_manquants }} manquant{% if dispo.nb_manquants > 1 %}s{% endif %})</small>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            {# Actions #}
             <div class="recette-actions">
                 <form method="POST" 
                       action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" 
                       style="display: inline;">
+                    <input type="hidden" name="next" value="{{ request.url }}">
                     <button type="submit" 
-                            class="btn btn-small"
-                            style="background: #667eea; color: white;">
+                            class="btn btn-small {% if is_realisable %}btn-success{% else %}btn-primary{% endif %}">
                         📅 Planifier
                     </button>
                 </form>
-                <a href="{{ url_for('recettes.detail', id=recette.id) }}" 
-                   class="btn btn-small"
-                   style="background: #6c757d; color: white;">
-                    Voir détails
-                </a>
             </div>
         </div>
         {% endfor %}
     </div>
     
-    {% if recettes_partielles|length > 12 %}
+    {% if recommandations|length >= limit %}
     <p style="margin-top: 20px; text-align: center; color: #6c757d;">
-        Et {{ recettes_partielles|length - 12 }} autre(s) recette(s)...
+        <a href="{{ url_for('recettes.cuisiner_avec_frigo', limit=limit+20, saison=saison, type=type_filter, realisable='1' if realisable_only else '') }}" class="btn btn-secondary">
+            Voir plus de recettes
+        </a>
     </p>
     {% endif %}
+    
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <p>Aucune recette ne correspond à vos critères.</p>
+        <p class="empty-hint">
+            {% if realisable_only %}
+            Essayez de désactiver le filtre "Uniquement réalisables" ou 
+            <a href="{{ url_for('courses.liste') }}">faites vos courses</a>.
+            {% else %}
+            <a href="{{ url_for('recettes.liste') }}">Ajoutez des recettes</a> ou 
+            <a href="{{ url_for('frigo.liste') }}">remplissez votre frigo</a>.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
 
-<!-- Message si aucune recette -->
-{% if not recettes_realisables and not recettes_partielles %}
-<div class="card">
-    <p style="text-align: center; color: #6c757d; padding: 40px;">
-        Aucune recette trouvée. Ajoutez des ingrédients à votre frigo et créez des recettes !
-    </p>
+{# Lien vers la page complète de recommandations #}
+<div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <a href="{{ url_for('recommandations.index') }}" class="btn">
+        🎯 Page complète des recommandations
+    </a>
+    <a href="{{ url_for('recettes.liste') }}" class="btn btn-secondary">
+        ← Toutes les recettes
+    </a>
 </div>
-{% endif %}
+{% endblock %}
 
-<!-- Styles spécifiques -->
-<style>
-/* Badge "Réalisable" */
-.badge-realisable {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #28a745;
-    color: white;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 0.85em;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-    z-index: 10;
-}
-
-/* Barres de disponibilité */
-.disponibilite-bar {
-    width: 100%;
-    height: 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    overflow: hidden;
-    margin: 10px 0 5px 0;
-}
-
-.disponibilite-progress {
-    height: 100%;
-    transition: width 0.3s ease;
-    border-radius: 4px;
-}
-
-.disponibilite-text {
-    font-size: 0.9em;
-    font-weight: 500;
-    margin: 5px 0;
-}
-
-.disponibilite-text small {
-    font-size: 0.85em;
-    opacity: 0.8;
-}
-
-/* Section des recettes planifiées */
-.planifiees-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.recette-planifiee-card {
-    display: flex;
-    gap: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border-left: 4px solid #667eea;
-    align-items: center;
-}
-
-.planifiee-image {
-    flex-shrink: 0;
-    width: 120px;
-    height: 120px;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.planifiee-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.no-image-small {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    font-size: 3em;
-}
-
-.planifiee-info {
-    flex: 1;
-}
-
-.planifiee-info h4 {
-    margin: 0 0 10px 0;
-}
-
-.planifiee-info h4 a {
-    color: #333;
-    text-decoration: none;
-}
-
-.planifiee-info h4 a:hover {
-    color: #667eea;
-}
-
-.planifiee-meta {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    color: #6c757d;
-}
-
-.meta-badge {
-    background: #667eea;
-    color: white;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 0.85em;
-}
-
-.ingredients-status {
-    margin-top: 10px;
-}
-
-.status-ready {
-    color: #28a745;
-    font-weight: 600;
-}
-
-.status-partial {
-    color: #ff9800;
-    font-weight: 600;
-}
-
-.ingredients-manquants {
-    margin: 8px 0 0 20px;
-    font-size: 0.85em;
-    color: #6c757d;
-}
-
-.ingredients-manquants li {
-    margin: 3px 0;
-}
-
-.planifiee-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .recette-planifiee-card {
-        flex-direction: column;
-    }
-    
-    .planifiee-image {
-        width: 100%;
-        height: 200px;
-    }
-    
-    .planifiee-actions {
-        width: 100%;
-        flex-direction: row;
-    }
-    
-    .planifiee-actions .btn {
-        flex: 1;
-    }
-}
-</style>
+{% block extra_js %}
+<script src="{{ versioned_url_for('static', filename='javascript/collapsable.js') }}"></script>
 {% endblock %}
