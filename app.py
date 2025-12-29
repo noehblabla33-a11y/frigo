@@ -14,7 +14,7 @@ from flask_compress import Compress
 from models.models import db
 from routes import (
     frigo_bp, recettes_bp, planification_bp, courses_bp, 
-    main_bp, historique_bp, ingredients_bp, api_bp
+    main_bp, historique_bp, ingredients_bp, api_bp, recommandations_bp
 )
 from config import get_config
 from utils.units import formater_quantite, formater_prix_unitaire
@@ -65,7 +65,8 @@ def create_app(config_name=None):
     app.register_blueprint(historique_bp, url_prefix='/historique')
     app.register_blueprint(ingredients_bp, url_prefix='/ingredients')
     app.register_blueprint(api_bp, url_prefix='/api/v1')
-
+    app.register_blueprint(recommandations_bp, url_prefix='/recommandations')
+    
     # ============================================
     # CONTEXT PROCESSORS (UTILITAIRES POUR TEMPLATES)
     # ============================================

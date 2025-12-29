@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% from "macros/saisons.html" import saison_badge, score_saisonnier %}
+{% block title %}Recommandations{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/recommandations.css') }}">
+{% endblock %}
+
+{% block content %}
+<script>document.body.dataset.page = 'recommandations';</script>
+
+{# ============================================ #}
+{# EN-TÊTE #}
+{# ============================================ #}
+<div class="reco-header">
+    <div class="reco-header-content">
+        <h2>🎯 Recommandations de recettes</h2>
+        <p class="subtitle">
+            Recettes suggérées pour 
+            {{ saison_badge(saison) }}
+            {% if saison == saison_actuelle %}
+            <span class="badge badge-success">Saison actuelle</span>
+            {% endif %}
+        </p>
+    </div>
+    
+    {# Presets rapides #}
+    <div class="presets-bar">
+        <span class="presets-label">Profils :</span>
+        <a href="{{ url_for('recommandations.preset', preset='saison') }}" 
+           class="preset-btn {% if request.args.get('poids_saison') == '1.0' %}active{% endif %}">
+            🌿 De saison
+        </a>
+        <a href="{{ url_for('recommandations.preset', preset='frigo') }}" 
+           class="preset-btn {% if request.args.get('poids_disponibilite') == '1.0' and realisable_only %}active{% endif %}">
+            ❄️ Avec mon frigo
+        </a>
+        <a href="{{ url_for('recommandations.preset', preset='economique') }}" 
+           class="preset-btn {% if request.args.get('poids_cout') == '1.0' %}active{% endif %}">
+            💰 Économique
+        </a>
+        <a href="{{ url_for('recommandations.preset', preset='rapide') }}" 
+           class="preset-btn {% if request.args.get('poids_temps') == '1.0' %}active{% endif %}">
+            ⏱️ Rapide
+        </a>
+        <a href="{{ url_for('recommandations.preset', preset='equilibre') }}" 
+           class="preset-btn">
+            ⚖️ Équilibré
+        </a>
+    </div>
+</div>
+
+{# ============================================ #}
+{# PANNEAU DE CONFIGURATION #}
+{# ============================================ #}
+<div class="card config-card">
+    <h3 data-collapsable="config-form" class="collapsable-header">
+        ⚙️ Personnaliser les critères
+    </h3>
+    <div id="config-form" class="collapsable-content" style="display: none;">
+        <form method="GET" id="reco-form">
+            {# Filtres de base #}
+            <div class="config-section">
+                <h4>🔍 Filtres</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Saison</label>
+                        <select name="saison" class="form-control">
+                            {% for saison_code, saison_emoji in saisons %}
+                            <option value="{{ saison_code }}" {% if saison == saison_code %}selected{% endif %}>
+                                {{ saison_emoji }} 
+                                {% if saison_code == 'printemps' %}Printemps
+                                {% elif saison_code == 'ete' %}Été
+                                {% elif saison_code == 'automne' %}Automne
+                                {% elif saison_code == 'hiver' %}Hiver
+                                {% endif %}
+                                {% if saison_code == saison_actuelle %}(actuelle){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Type de recette</label>
+                        <select name="type" class="form-control">
+                            <option value="">Tous les types</option>
+                            {% for type in types_recettes %}
+                            <option value="{{ type }}" {% if type_filter == type %}selected{% endif %}>
+                                {{ type }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nombre de résultats</label>
+                        <select name="limit" class="form-control">
+                            <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
+                            <option value="20" {% if limit == 20 %}selected{% endif %}>20</option>
+                            <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="realisable" value="1" 
+                                   {% if realisable_only %}checked{% endif %}>
+                            Uniquement réalisables
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            {# Pondération des critères #}
+            <div class="config-section">
+                <h4>⚖️ Pondération des critères</h4>
+                <p class="config-help">
+                    Ajustez l'importance de chaque critère (0 = ignoré, 100% = prioritaire)
+                </p>
+                
+                <div class="criteres-grid">
+                    {% for nom, config in criteres_config.items() %}
+                    <div class="critere-slider">
+                        <label>
+                            <span class="critere-emoji">{{ config.emoji }}</span>
+                            {{ config.description }}
+                        </label>
+                        <div class="slider-container">
+                            <input type="range" 
+                                   name="poids_{{ nom }}" 
+                                   min="0" max="1" step="0.1"
+                                   value="{{ config.poids }}"
+                                   class="slider"
+                                   oninput="this.nextElementSibling.textContent = Math.round(this.value * 100) + '%'">
+                            <span class="slider-value">{{ (config.poids * 100)|round|int }}%</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    🔄 Appliquer
+                </button>
+                <a href="{{ url_for('recommandations.index') }}" class="btn btn-secondary">
+                    ↺ Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ============================================ #}
+{# LISTE DES RECOMMANDATIONS #}
+{# ============================================ #}
+<div class="card">
+    <div class="reco-results-header">
+        <h3>📋 {{ recommandations|length }} recette(s) recommandée(s)</h3>
+    </div>
+    
+    {% if recommandations %}
+    <div class="reco-list">
+        {% for reco in recommandations %}
+        {% set recette = reco.recette %}
+        <div class="reco-item" data-score="{{ reco.score_total }}">
+            {# Image #}
+            <div class="reco-image">
+                {% if recette.image %}
+                <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
+                     alt="{{ recette.nom }}" loading="lazy">
+                {% else %}
+                <div class="reco-image-placeholder">🍳</div>
+                {% endif %}
+            </div>
+            
+            {# Contenu principal #}
+            <div class="reco-content">
+                <div class="reco-title">
+                    <a href="{{ url_for('recettes.detail', id=recette.id) }}">
+                        {{ recette.nom }}
+                    </a>
+                    {% if recette.type_recette %}
+                    <span class="badge">{{ recette.type_recette }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="reco-meta">
+                    {% if recette.temps_preparation %}
+                    <span class="meta-item">⏱️ {{ recette.temps_preparation }} min</span>
+                    {% endif %}
+                    <span class="meta-item">📦 {{ recette.ingredients|length }} ingrédients</span>
+                    {% set cout = recette.calculer_cout() %}
+                    {% if cout > 0 %}
+                    <span class="meta-item">💰 {{ "%.2f"|format(cout) }}€</span>
+                    {% endif %}
+                </div>
+                
+                {# Détails des scores #}
+                <div class="reco-scores">
+                    {% if reco.scores_details.saison is defined %}
+                    <span class="score-badge saison" title="Score saisonnier">
+                        🌿 {{ reco.scores_details.saison|round|int }}%
+                    </span>
+                    {% endif %}
+                    
+                    {% if reco.scores_details.disponibilite is defined %}
+                    {% set dispo = reco.meta.disponibilite %}
+                    <span class="score-badge disponibilite {% if dispo.realisable %}realisable{% endif %}" 
+                          title="Disponibilité des ingrédients">
+                        ❄️ {{ reco.scores_details.disponibilite|round|int }}%
+                        {% if dispo.realisable %}✓{% endif %}
+                    </span>
+                    {% endif %}
+                    
+                    {% if reco.scores_details.variete is defined and reco.meta.variete.dans_historique %}
+                    <span class="score-badge variete" title="Cuisiné récemment">
+                        🔄 #{{ reco.meta.variete.position }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {# Score total #}
+            <div class="reco-score-total">
+                <div class="score-circle 
+                    {% if reco.score_total >= 80 %}excellent
+                    {% elif reco.score_total >= 60 %}bon
+                    {% elif reco.score_total >= 40 %}moyen
+                    {% else %}faible{% endif %}">
+                    {{ reco.score_total|round|int }}
+                </div>
+                <span class="score-label">Score</span>
+            </div>
+            
+            {# Actions #}
+            <div class="reco-actions">
+                <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-sm">
+                    👁️ Voir
+                </a>
+                <form method="POST" action="{{ url_for('recettes.planifier_rapide', id=recette.id) }}" style="display: inline;">
+                    <input type="hidden" name="next" value="{{ request.url }}">
+                    <button type="submit" class="btn btn-sm btn-success">
+                        📅 Planifier
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <p>Aucune recette ne correspond à vos critères.</p>
+        <p class="empty-hint">
+            {% if realisable_only %}
+            Essayez de désactiver le filtre "Uniquement réalisables" ou 
+            <a href="{{ url_for('courses.liste') }}">faites vos courses</a>.
+            {% else %}
+            Ajoutez des recettes ou ajustez les critères.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+{# Retour #}
+<div style="margin-top: 20px;">
+    <a href="{{ url_for('recettes.liste') }}" class="btn btn-secondary">
+        ← Retour aux recettes
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ versioned_url_for('static', filename='javascript/collapsable.js') }}"></script>
+<script>
+// Auto-submit quand on change un filtre (optionnel)
+document.querySelectorAll('#reco-form select').forEach(select => {
+    select.addEventListener('change', function() {
+        // Optionnel : auto-submit après un délai
+        // setTimeout(() => this.form.submit(), 300);
+    });
+});
+</script>
+{% endblock %}

@@ -6,3 +6,4 @@ from routes.planification import planification_bp
 from routes.courses import courses_bp
 from routes.historique import historique_bp
 from routes.api import api_bp
+from routes.recommandations import recommandations_bp
