@@ -4,6 +4,10 @@ Requêtes SQL centralisées et optimisées
 
 Ce module centralise les requêtes complexes réutilisées dans plusieurs routes,
 garantissant des performances optimales (pas de N+1) et une maintenance simplifiée.
+
+✅ CORRIGÉ : 
+- get_course_by_ingredient() précharge maintenant l'ingrédient
+- get_courses_non_achetees() filtre les items orphelins (sans ingrédient valide)
 """
 
 from sqlalchemy.orm import joinedload
@@ -25,12 +29,17 @@ def get_courses_non_achetees() -> List[ListeCourses]:
     Retourne les items de la liste de courses non achetés.
     Ingrédients préchargés pour éviter N+1.
     
+    ✅ CORRIGÉ : Filtre les items orphelins (ingredient_id invalide)
+    
     Returns:
         Liste de ListeCourses avec ingrédients préchargés
     """
-    return ListeCourses.query.options(
-        joinedload(ListeCourses.ingredient)
-    ).filter_by(achete=False).all()
+    # Jointure INNER pour exclure les items dont l'ingrédient n'existe plus
+    return ListeCourses.query\
+        .join(Ingredient, ListeCourses.ingredient_id == Ingredient.id)\
+        .options(joinedload(ListeCourses.ingredient))\
+        .filter(ListeCourses.achete == False)\
+        .all()
 
 
 def get_historique_courses(limit: int = 10) -> List[ListeCourses]:
@@ -43,29 +52,60 @@ def get_historique_courses(limit: int = 10) -> List[ListeCourses]:
     Returns:
         Liste de ListeCourses triée par id décroissant
     """
-    return ListeCourses.query.options(
-        joinedload(ListeCourses.ingredient)
-    ).filter_by(achete=True)\
-     .order_by(desc(ListeCourses.id))\
-     .limit(limit)\
-     .all()
+    return ListeCourses.query\
+        .join(Ingredient, ListeCourses.ingredient_id == Ingredient.id)\
+        .options(joinedload(ListeCourses.ingredient))\
+        .filter(ListeCourses.achete == True)\
+        .order_by(desc(ListeCourses.id))\
+        .limit(limit)\
+        .all()
 
 
 def get_course_by_ingredient(ingredient_id: int, achete: bool = False) -> Optional[ListeCourses]:
     """
     Recherche un item de courses par ingrédient.
     
+    ✅ CORRIGÉ : Précharge maintenant l'ingrédient pour éviter les problèmes de session
+    
     Args:
         ingredient_id: ID de l'ingrédient
         achete: Statut d'achat
     
     Returns:
-        ListeCourses ou None
+        ListeCourses avec ingrédient préchargé ou None
     """
-    return ListeCourses.query.filter_by(
-        ingredient_id=ingredient_id,
-        achete=achete
-    ).first()
+    return ListeCourses.query\
+        .options(joinedload(ListeCourses.ingredient))\
+        .filter_by(
+            ingredient_id=ingredient_id,
+            achete=achete
+        ).first()
+
+
+def nettoyer_courses_orphelines() -> int:
+    """
+    Supprime les items de la liste de courses dont l'ingrédient n'existe plus.
+    
+    ✅ NOUVEAU : Fonction utilitaire pour nettoyer la base
+    
+    Returns:
+        Nombre d'items supprimés
+    """
+    # Trouver les items orphelins
+    orphelins = ListeCourses.query\
+        .outerjoin(Ingredient, ListeCourses.ingredient_id == Ingredient.id)\
+        .filter(Ingredient.id == None)\
+        .all()
+    
+    count = len(orphelins)
+    
+    for item in orphelins:
+        db.session.delete(item)
+    
+    if count > 0:
+        db.session.commit()
+    
+    return count
 
 
 # ============================================
