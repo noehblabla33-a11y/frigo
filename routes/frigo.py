@@ -1,18 +1,17 @@
 """
-routes/frigo.py (VERSION REFACTORISÉE - CORRIGÉE)
+routes/frigo.py (VERSION CORRIGÉE)
 Gestion du stock du frigo
 
 CHANGEMENTS:
 - Utilise utils/stock.py pour les opérations sur le stock
 - Code plus concis et maintenable
-- ✅ CORRIGÉ: Ajout de valeur_totale_globale pour le template
+- ✅ CORRIGÉ: Utilise ingredient.calculer_prix() pour une gestion correcte des unités
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from models.models import db, Ingredient
 from utils.database import db_transaction_with_flash
 from utils.pagination import paginate_query
 from utils.forms import parse_float, parse_positive_float
-# ✅ NOUVEAUX IMPORTS
 from utils.stock import (
     ajouter_au_stock, 
     retirer_du_stock, 
@@ -29,6 +28,9 @@ def calculer_valeur_totale_stock(stocks):
     """
     Calcule la valeur totale du stock.
     
+    ✅ CORRIGÉ: Pour les pièces, le prix est stocké en €/g
+    Donc valeur = quantité × poids_piece × prix_unitaire
+    
     Args:
         stocks: Liste de StockFrigo avec ingrédients préchargés
     
@@ -37,9 +39,15 @@ def calculer_valeur_totale_stock(stocks):
     """
     total = 0
     for stock in stocks:
-        if stock.ingredient.prix_unitaire and stock.ingredient.prix_unitaire > 0:
-            total += stock.quantite * stock.ingredient.prix_unitaire
-    return total
+        ing = stock.ingredient
+        if ing.prix_unitaire and ing.prix_unitaire > 0:
+            if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
+                # Pour les pièces : quantité × poids_piece × prix_par_gramme
+                total += stock.quantite * ing.poids_piece * ing.prix_unitaire
+            else:
+                # Pour g/ml : calcul direct
+                total += stock.quantite * ing.prix_unitaire
+    return round(total, 2)
 
 
 @frigo_bp.route('/', methods=['GET', 'POST'])
@@ -61,7 +69,6 @@ def liste():
             # Récupérer l'ingrédient
             ingredient = Ingredient.query.get_or_404(ingredient_id)
             
-            # ✅ REFACTORISÉ: Utilisation de utils/stock.py
             try:
                 if action == 'add':
                     stock, nouvelle_quantite = ajouter_au_stock(int(ingredient_id), quantite)
@@ -78,17 +85,22 @@ def liste():
                     if stock is None:
                         flash(f'{ingredient.nom} n\'est pas dans le frigo !', 'warning')
                         return redirect(url_for('frigo.liste'))
-                    message_success = (
-                        f'✓ {quantite} {ingredient.unite} de {ingredient.nom} retiré(s) ! '
-                        f'Reste : {nouvelle_quantite} {ingredient.unite}'
-                    )
-                
-                else:  # action == 'set'
-                    stock = definir_stock(int(ingredient_id), quantite)
-                    if stock:
-                        message_success = f'✓ Stock de {ingredient.nom} mis à jour : {quantite} {ingredient.unite}'
+                    
+                    if nouvelle_quantite == 0:
+                        message_success = f'✓ {ingredient.nom} vidé du frigo.'
                     else:
-                        message_success = f'✓ {ingredient.nom} retiré du frigo.'
+                        message_success = (
+                            f'✓ {quantite} {ingredient.unite} de {ingredient.nom} retiré(s). '
+                            f'Reste : {nouvelle_quantite} {ingredient.unite}'
+                        )
+                
+                elif action == 'set':
+                    stock = definir_stock(int(ingredient_id), quantite)
+                    message_success = f'✓ Stock de {ingredient.nom} défini à {quantite} {ingredient.unite}'
+                
+                else:
+                    flash('Action non reconnue.', 'danger')
+                    return redirect(url_for('frigo.liste'))
                 
                 db.session.commit()
                 flash(message_success, 'success')
@@ -112,11 +124,10 @@ def liste():
         view_mode = request.args.get('view', 'list')
         items_per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
         
-        # ✅ REFACTORISÉ: Utilisation de utils/stock.py
         # Récupère TOUS les stocks pour calculer la valeur totale
         tous_les_stocks = get_stocks_avec_ingredients(order_by='nom')
         
-        # ✅ CORRIGÉ: Calculer la valeur totale GLOBALE (toutes pages)
+        # ✅ CORRIGÉ: Calculer la valeur totale avec la méthode corrigée
         valeur_totale_globale = calculer_valeur_totale_stock(tous_les_stocks)
         
         # Pagination manuelle
@@ -141,14 +152,13 @@ def liste():
         # Récupérer tous les ingrédients pour le formulaire d'ajout
         tous_ingredients = Ingredient.query.order_by(Ingredient.nom).all()
         
-        # ✅ CORRIGÉ: Passer valeur_totale_globale et view_mode au template
         return render_template(
             'frigo.html', 
             stocks=pagination['items'],
             pagination=pagination,
             tous_ingredients=tous_ingredients,
-            valeur_totale_globale=valeur_totale_globale,  # ✅ AJOUTÉ
-            view_mode=view_mode  # ✅ AJOUTÉ (utilisé dans pagination)
+            valeur_totale_globale=valeur_totale_globale,
+            view_mode=view_mode
         )
     
     except Exception as e:
@@ -163,8 +173,8 @@ def liste():
                 'prev_page': None, 'next_page': None
             },
             tous_ingredients=[],
-            valeur_totale_globale=0,  # ✅ AJOUTÉ
-            view_mode='list'  # ✅ AJOUTÉ
+            valeur_totale_globale=0,
+            view_mode='list'
         )
 
 
@@ -176,7 +186,6 @@ def retirer(id):
     ingredient = Ingredient.query.get_or_404(id)
     nom = ingredient.nom
     
-    # ✅ REFACTORISÉ: Utilisation de utils/stock.py
     with db_transaction_with_flash(
         success_message=f'✓ {nom} retiré du frigo.',
         error_message=f'Erreur lors du retrait de {nom}'
@@ -232,103 +241,31 @@ def vider_tout():
     return redirect(url_for('frigo.liste'))
 
 
-# ============================================
-# API JSON
-# ============================================
-
-@frigo_bp.route('/api/stock/<int:ingredient_id>')
-def api_get_stock(ingredient_id):
+@frigo_bp.route('/update-quantite/<int:stock_id>', methods=['POST'])
+def update_quantite(stock_id):
     """
-    Retourne le stock d'un ingrédient (API JSON)
-    """
-    # ✅ REFACTORISÉ: Utilisation de utils/stock.py
-    quantite = get_quantite_disponible(ingredient_id)
-    ingredient = Ingredient.query.get(ingredient_id)
-    
-    if not ingredient:
-        return jsonify({'error': 'Ingrédient non trouvé'}), 404
-    
-    return jsonify({
-        'ingredient_id': ingredient_id,
-        'ingredient_nom': ingredient.nom,
-        'quantite': quantite,
-        'unite': ingredient.unite
-    })
-
-
-@frigo_bp.route('/api/stock', methods=['POST'])
-def api_update_stock():
-    """
-    Met à jour le stock via API JSON
-    """
-    data = request.get_json()
-    
-    if not data:
-        return jsonify({'error': 'Données manquantes'}), 400
-    
-    ingredient_id = data.get('ingredient_id')
-    quantite = data.get('quantite', 0)
-    action = data.get('action', 'set')
-    
-    if not ingredient_id:
-        return jsonify({'error': 'ingredient_id requis'}), 400
-    
-    try:
-        # ✅ REFACTORISÉ: Utilisation de utils/stock.py
-        if action == 'add':
-            stock, nouvelle_quantite = ajouter_au_stock(ingredient_id, quantite)
-        elif action == 'remove':
-            stock, nouvelle_quantite = retirer_du_stock(ingredient_id, quantite)
-        else:
-            stock = definir_stock(ingredient_id, quantite)
-            nouvelle_quantite = quantite if stock else 0
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'ingredient_id': ingredient_id,
-            'nouvelle_quantite': nouvelle_quantite,
-            'action': action
-        })
-    
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-
-@frigo_bp.route('/api/stock/update', methods=['POST'])
-def api_update_quantite():
-    """
-    Met à jour la quantité d'un stock existant (utilisé par l'édition inline)
+    API endpoint pour mettre à jour la quantité d'un stock (appelé en AJAX)
     """
     from models.models import StockFrigo
     
-    data = request.get_json()
-    
-    if not data:
-        return jsonify({'success': False, 'error': 'Données manquantes'}), 400
-    
-    stock_id = data.get('stock_id')
-    nouvelle_quantite = data.get('quantite')
-    
-    if stock_id is None or nouvelle_quantite is None:
-        return jsonify({'success': False, 'error': 'stock_id et quantite requis'}), 400
-    
     try:
-        stock = StockFrigo.query.get(stock_id)
+        data = request.get_json()
+        nouvelle_quantite = float(data.get('quantite', 0))
         
-        if not stock:
-            return jsonify({'success': False, 'error': 'Stock non trouvé'}), 404
+        if nouvelle_quantite < 0:
+            return jsonify({'success': False, 'message': 'Quantité invalide'}), 400
         
-        if nouvelle_quantite <= 0:
-            # Si quantité <= 0, supprimer le stock
+        stock = StockFrigo.query.get_or_404(stock_id)
+        
+        if nouvelle_quantite == 0:
+            # Supprimer le stock si quantité = 0
             db.session.delete(stock)
             db.session.commit()
             return jsonify({
-                'success': True,
-                'deleted': True,
-                'message': f'{stock.ingredient.nom} retiré du frigo'
+                'success': True, 
+                'message': 'Stock supprimé',
+                'quantite': 0,
+                'deleted': True
             })
         
         stock.quantite = nouvelle_quantite
@@ -336,12 +273,12 @@ def api_update_quantite():
         
         return jsonify({
             'success': True,
-            'stock_id': stock_id,
-            'nouvelle_quantite': nouvelle_quantite,
-            'ingredient_nom': stock.ingredient.nom
+            'message': 'Quantité mise à jour',
+            'quantite': stock.quantite,
+            'deleted': False
         })
     
     except Exception as e:
+        current_app.logger.error(f'Erreur update_quantite: {str(e)}')
         db.session.rollback()
-        current_app.logger.error(f'Erreur API update stock: {str(e)}')
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'message': str(e)}), 500

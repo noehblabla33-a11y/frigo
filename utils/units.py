@@ -1,248 +1,207 @@
 """
 utils/units.py
-Gestion des unités et conversions pour les ingrédients
+Fonctions utilitaires pour le formatage des quantités et des prix
 
-Ce module gère la conversion entre les unités natives (g, ml, pièce)
-et les unités de base pour les calculs (g/ml).
+SYSTÈME D'UNITÉS (RÉALITÉ DU STOCKAGE) :
+- Le prix est TOUJOURS stocké en €/g (ou €/ml), même pour les pièces
+- Pour les pièces, on stocke €/g et on utilise poids_piece pour reconvertir
+- C'est le comportement du price-helper.js qui fait cette conversion
 
-PRINCIPE FONDAMENTAL :
-- Les quantités sont STOCKÉES dans l'unité native de l'ingrédient
-  (ex: 2 œufs stockés comme 2, pas 120g)
-- Pour les calculs (nutrition, coût basé sur €/g), on convertit vers grammes
-- Pour l'affichage, on utilise l'unité native avec formatage approprié
+✅ CORRIGÉ : Reconversion correcte de €/g vers €/pièce à l'affichage
 """
 
-# Unités supportées
-UNITES_SUPPORTEES = ['g', 'ml', 'pièce']
 
-
-def get_step_for_unite(unite: str) -> str:
+def formater_quantite(quantite: float, ingredient) -> str:
     """
-    Retourne le step HTML approprié pour un input de quantité selon l'unité.
+    Formate une quantité pour l'affichage selon l'unité de l'ingrédient.
     
     Args:
-        unite: L'unité de l'ingrédient
+        quantite: La quantité à formater
+        ingredient: L'objet Ingredient (doit avoir .unite)
     
     Returns:
-        La valeur du step pour l'input HTML
-    
-    Examples:
-        >>> get_step_for_unite('pièce')
-        '0.5'  # Permet les demi-pièces
-        >>> get_step_for_unite('g')
-        '1'
+        str: La quantité formatée (ex: "2 pièces", "500g", "250ml")
     """
+    if quantite is None or quantite == 0:
+        return "0"
+    
+    unite = ingredient.unite if ingredient else 'g'
+    
     if unite == 'pièce':
-        return '0.5'  # Permet les demi-pièces
-    return '1'
-
-
-def valider_unite(unite: str) -> bool:
-    """
-    Vérifie si une unité est valide.
+        # Afficher les pièces en entier ou demi
+        if quantite == int(quantite):
+            return f"{int(quantite)} {'pièce' if quantite == 1 else 'pièces'}"
+        else:
+            return f"{quantite:.1f} pièces"
     
-    Args:
-        unite: L'unité à valider
+    elif unite == 'g':
+        # Convertir en kg si > 1000g
+        if quantite >= 1000:
+            return f"{quantite / 1000:.2f}kg"
+        elif quantite == int(quantite):
+            return f"{int(quantite)}g"
+        else:
+            return f"{quantite:.1f}g"
     
-    Returns:
-        True si l'unité est supportée
-    """
-    return unite in UNITES_SUPPORTEES
-
-
-def convertir_vers_grammes(quantite: float, ingredient) -> float:
-    """
-    Convertit une quantité dans l'unité native de l'ingrédient vers des grammes/ml.
+    elif unite == 'ml':
+        # Convertir en L si > 1000ml
+        if quantite >= 1000:
+            return f"{quantite / 1000:.2f}L"
+        elif quantite == int(quantite):
+            return f"{int(quantite)}ml"
+        else:
+            return f"{quantite:.1f}ml"
     
-    Utilisé pour :
-    - Calculs nutritionnels (basés sur 100g)
-    - Comparaison avec le stock (stocké en unité native)
-    
-    Args:
-        quantite: Quantité dans l'unité native de l'ingrédient
-        ingredient: Objet Ingredient avec unite et poids_piece
-    
-    Returns:
-        Quantité en grammes (ou ml pour les liquides)
-    """
-    if not quantite or quantite <= 0:
-        return 0
-    
-    unite = getattr(ingredient, 'unite', 'g')
-    poids_piece = getattr(ingredient, 'poids_piece', None)
-    
-    if unite == 'pièce' and poids_piece and poids_piece > 0:
-        # Convertir pièces → grammes
-        return quantite * poids_piece
-    
-    # Pour g et ml, la quantité est déjà en unité de base
-    return quantite
-
-
-def convertir_depuis_grammes(quantite_grammes: float, ingredient) -> float:
-    """
-    Convertit une quantité en grammes vers l'unité native de l'ingrédient.
-    
-    Args:
-        quantite_grammes: Quantité en grammes
-        ingredient: Objet Ingredient avec unite et poids_piece
-    
-    Returns:
-        Quantité dans l'unité native de l'ingrédient
-    """
-    if not quantite_grammes or quantite_grammes <= 0:
-        return 0
-    
-    unite = getattr(ingredient, 'unite', 'g')
-    poids_piece = getattr(ingredient, 'poids_piece', None)
-    
-    if unite == 'pièce' and poids_piece and poids_piece > 0:
-        # Convertir grammes → pièces
-        return quantite_grammes / poids_piece
-    
-    return quantite_grammes
-
-
-def formater_quantite(quantite: float, ingredient, avec_unite: bool = True) -> str:
-    """
-    Formate une quantité pour l'affichage.
-    
-    La quantité est supposée être dans l'unité native de l'ingrédient.
-    
-    Args:
-        quantite: Quantité dans l'unité native
-        ingredient: Objet Ingredient
-        avec_unite: Inclure l'unité dans le formatage
-    
-    Returns:
-        String formatée (ex: "2 pièces", "150 g", "200 ml")
-    """
-    if not quantite or quantite <= 0:
-        return "0" if not avec_unite else "0"
-    
-    unite = getattr(ingredient, 'unite', 'g')
-    nom = getattr(ingredient, 'nom', '')
-    
-    # Formatage du nombre
-    if quantite == int(quantite):
-        quantite_str = str(int(quantite))
-    elif quantite < 1:
-        quantite_str = f"{quantite:.2f}"
     else:
-        quantite_str = f"{quantite:.1f}".rstrip('0').rstrip('.')
-    
-    if not avec_unite:
-        return quantite_str
-    
-    # Formatage de l'unité
-    if unite == 'pièce':
-        # Pluraliser intelligemment
-        if quantite > 1:
-            return f"{quantite_str} {_pluraliser(nom)}"
-        return f"{quantite_str} {nom}"
-    
-    return f"{quantite_str} {unite}"
-
-
-def _pluraliser(nom: str) -> str:
-    """
-    Pluralise un nom français.
-    
-    Args:
-        nom: Nom au singulier
-    
-    Returns:
-        Nom au pluriel
-    """
-    if not nom:
-        return nom
-    
-    nom_lower = nom.lower()
-    
-    # Exceptions courantes
-    exceptions = {
-        'oeuf': 'oeufs',
-        'œuf': 'œufs',
-        'chou': 'choux',
-        'bijou': 'bijoux',
-        'genou': 'genoux',
-        'hibou': 'hiboux',
-        'joujou': 'joujoux',
-        'pou': 'poux'
-    }
-    
-    if nom_lower in exceptions:
-        resultat = exceptions[nom_lower]
-        # Conserver la casse d'origine
-        if nom[0].isupper():
-            return resultat.capitalize()
-        return resultat
-    
-    # Déjà au pluriel
-    if nom_lower.endswith(('s', 'x', 'z')):
-        return nom
-    
-    # Terminaisons spéciales
-    if nom_lower.endswith(('au', 'eau', 'eu')):
-        return nom + 'x'
-    
-    if nom_lower.endswith('al'):
-        return nom[:-2] + 'aux'
-    
-    # Règle générale
-    return nom + 's'
-
-
-def calculer_prix_total(quantite: float, ingredient) -> float:
-    """
-    Calcule le prix total pour une quantité d'ingrédient.
-    
-    La quantité est supposée être dans l'unité native de l'ingrédient.
-    Le prix_unitaire est stocké par unité native.
-    
-    Args:
-        quantite: Quantité dans l'unité native
-        ingredient: Objet Ingredient avec prix_unitaire
-    
-    Returns:
-        Prix total arrondi à 2 décimales
-    """
-    if not quantite or quantite <= 0:
-        return 0
-    
-    prix_unitaire = getattr(ingredient, 'prix_unitaire', 0) or 0
-    
-    if prix_unitaire <= 0:
-        return 0
-    
-    return round(quantite * prix_unitaire, 2)
+        # Unité inconnue
+        return f"{quantite} {unite}"
 
 
 def formater_prix_unitaire(ingredient) -> str:
     """
-    Formate le prix unitaire pour l'affichage.
+    Formate le prix unitaire d'un ingrédient pour l'affichage.
+    
+    ⚠️ ATTENTION - LOGIQUE DE STOCKAGE :
+    Le prix est TOUJOURS stocké en €/g (ou €/ml par le price-helper.js)
+    même pour les ingrédients avec unite='pièce'.
+    
+    Pour les pièces avec poids_piece défini :
+    - prix_unitaire = prix_par_piece / poids_piece (stocké en €/g)
+    - Donc prix_par_piece = prix_unitaire × poids_piece
     
     Args:
-        ingredient: Objet Ingredient
+        ingredient: L'objet Ingredient
     
     Returns:
-        String formatée (ex: "1.50€/pièce", "5.00€/kg", "3.00€/L")
+        str: Le prix formaté (ex: "15.50€/kg", "2.30€/L", "1.35€/pièce")
     """
-    prix = getattr(ingredient, 'prix_unitaire', 0) or 0
-    unite = getattr(ingredient, 'unite', 'g')
+    if not ingredient:
+        return "Prix non renseigné"
     
-    if prix <= 0:
+    prix = ingredient.prix_unitaire
+    unite = ingredient.unite
+    poids_piece = getattr(ingredient, 'poids_piece', None)
+    
+    if not prix or prix <= 0:
         return "Prix non renseigné"
     
     if unite == 'pièce':
-        return f"{prix:.2f}€/pièce"
+        # ✅ CORRIGÉ : Pour les pièces, le prix est stocké en €/g
+        # On doit reconvertir en €/pièce en multipliant par poids_piece
+        if poids_piece and poids_piece > 0:
+            prix_piece = prix * poids_piece
+            return f"{prix_piece:.2f}€/pièce"
+        else:
+            # Si pas de poids_piece, on affiche le prix brut avec une note
+            # (cas anormal mais on gère)
+            return f"{prix:.2f}€/pièce"
+    
     elif unite == 'g':
-        # Convertir €/g en €/kg pour l'affichage
+        # Pour les grammes, convertir en €/kg pour l'affichage
         prix_kg = prix * 1000
         return f"{prix_kg:.2f}€/kg"
+    
     elif unite == 'ml':
-        # Convertir €/ml en €/L pour l'affichage
+        # Pour les millilitres, convertir en €/L pour l'affichage
         prix_l = prix * 1000
         return f"{prix_l:.2f}€/L"
+    
     else:
-        return f"{prix:.2f}€/{unite}"
+        # Unité inconnue, afficher tel quel
+        return f"{prix:.4f}€/{unite}"
+
+
+def calculer_prix_affichage_piece(ingredient) -> float:
+    """
+    Calcule le prix par pièce pour l'affichage.
+    
+    Le prix est stocké en €/g, cette fonction reconvertit en €/pièce.
+    
+    Args:
+        ingredient: L'objet Ingredient
+    
+    Returns:
+        float: Le prix par pièce, ou 0 si non calculable
+    """
+    if not ingredient or not ingredient.prix_unitaire:
+        return 0
+    
+    if ingredient.unite != 'pièce':
+        return ingredient.prix_unitaire
+    
+    poids_piece = getattr(ingredient, 'poids_piece', None)
+    if poids_piece and poids_piece > 0:
+        return ingredient.prix_unitaire * poids_piece
+    
+    return ingredient.prix_unitaire
+
+
+def calculer_valeur_stock(ingredient, quantite: float) -> float:
+    """
+    Calcule la valeur d'un stock pour un ingrédient.
+    
+    ⚠️ ATTENTION : Pour les pièces, la quantité est en nombre de pièces,
+    mais le prix est stocké en €/g. Il faut donc :
+    - Convertir la quantité en grammes (quantité × poids_piece)
+    - Multiplier par le prix en €/g
+    
+    OU de manière équivalente :
+    - quantité × prix_unitaire × poids_piece
+    
+    Args:
+        ingredient: L'objet Ingredient
+        quantite: La quantité dans l'unité native
+    
+    Returns:
+        float: La valeur en euros
+    """
+    if not ingredient or quantite <= 0:
+        return 0
+    
+    prix = ingredient.prix_unitaire
+    if not prix or prix <= 0:
+        return 0
+    
+    if ingredient.unite == 'pièce':
+        # Pour les pièces : quantité est en pièces, prix est en €/g
+        # Valeur = nb_pieces × poids_piece × prix_par_gramme
+        poids_piece = getattr(ingredient, 'poids_piece', None)
+        if poids_piece and poids_piece > 0:
+            return round(quantite * poids_piece * prix, 2)
+        else:
+            # Fallback si pas de poids_piece (ne devrait pas arriver)
+            return round(quantite * prix, 2)
+    else:
+        # Pour g/ml : calcul direct
+        return round(quantite * prix, 2)
+
+
+def get_prix_unitaire_affichage(ingredient) -> tuple:
+    """
+    Retourne le prix unitaire et son unité d'affichage.
+    
+    Args:
+        ingredient: L'objet Ingredient
+    
+    Returns:
+        tuple: (prix_affichage, unite_affichage)
+               ex: (15.50, "kg") pour un ingrédient à 0.0155€/g
+               ex: (1.35, "pièce") pour une aubergine
+    """
+    if not ingredient or not ingredient.prix_unitaire or ingredient.prix_unitaire <= 0:
+        return (0, None)
+    
+    prix = ingredient.prix_unitaire
+    unite = ingredient.unite
+    poids_piece = getattr(ingredient, 'poids_piece', None)
+    
+    if unite == 'pièce':
+        if poids_piece and poids_piece > 0:
+            return (prix * poids_piece, 'pièce')
+        return (prix, 'pièce')
+    elif unite == 'g':
+        return (prix * 1000, 'kg')
+    elif unite == 'ml':
+        return (prix * 1000, 'L')
+    else:
+        return (prix, unite)

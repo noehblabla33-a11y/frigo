@@ -88,9 +88,15 @@
                         </td>
                         <td>{{ item.ingredient.unite }}</td>
                         <td class="prix-ligne" id="prix-{{ item.id }}">
-                            {% if item.ingredient.prix_unitaire > 0 %}
+                            {# ✅ CORRIGÉ: Calcul correct pour les pièces (prix stocké en €/g) #}
+                            {% if item.ingredient.prix_unitaire and item.ingredient.prix_unitaire > 0 %}
+                                {% if item.ingredient.unite == 'pièce' and item.ingredient.poids_piece and item.ingredient.poids_piece > 0 %}
+                                    {% set prix_estime = item.quantite * item.ingredient.poids_piece * item.ingredient.prix_unitaire %}
+                                {% else %}
+                                    {% set prix_estime = item.quantite * item.ingredient.prix_unitaire %}
+                                {% endif %}
                             <span class="prix-estime">
-                                {{ "%.2f"|format(item.quantite * item.ingredient.prix_unitaire) }} €
+                                {{ "%.2f"|format(prix_estime) }} €
                             </span>
                             {% else %}
                             <span class="prix-inconnu">-</span>
@@ -100,87 +106,77 @@
                             <a href="{{ url_for('courses.retirer', id=item.id) }}" 
                                class="btn btn-danger btn-small"
                                onclick="return confirm('Retirer {{ item.ingredient.nom }} de la liste de courses ?')">
-                                ✖ Retirer
+                                🗑️
                             </a>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="5" style="text-align: right; font-weight: bold;">
+                            Total estimé :
+                        </td>
+                        <td id="total-footer" style="font-weight: bold; color: #28a745;">
+                            {{ "%.2f"|format(total_estime) }} €
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
-        <button type="submit" class="btn-valider-achats">
-            ✓ Valider mes achats
-        </button>
+        
+        <div style="margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+            <button type="submit" class="btn btn-success">
+                ✓ Valider les achats sélectionnés
+            </button>
+            <a href="{{ url_for('courses.vider') }}" 
+               class="btn btn-danger"
+               onclick="return confirm('Supprimer tous les articles de la liste de courses ?')">
+                🗑️ Vider la liste
+            </a>
+        </div>
     </form>
     
     {% else %}
-    
-    <!-- Message si liste vide -->
-    <div class="empty-courses">
-        <div class="empty-courses-icon">🛒</div>
-        <p>Votre liste de courses est vide !</p>
-        <p style="color: #6c757d; font-size: 0.95em;">
-            Planifiez des recettes pour la générer automatiquement.
+    <div class="empty-state">
+        <div class="empty-icon">🛒</div>
+        <p class="empty-text">Votre liste de courses est vide !</p>
+        <p style="color: #6c757d;">
+            Planifiez des recettes pour générer automatiquement votre liste de courses,
+            ou ajoutez des articles manuellement ci-dessous.
         </p>
-        <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" 
-           class="btn" 
-           style="margin-top: 15px;">
-            🥘 Voir les recettes disponibles
-        </a>
     </div>
-    
     {% endif %}
 </div>
 
-<!-- ============================================ -->
-<!-- FORMULAIRE D'AJOUT MANUEL                   -->
-<!-- ============================================ -->
+{# Formulaire d'ajout manuel #}
 <div class="card">
     <h3>➕ Ajouter un article manuellement</h3>
-    <p class="form-help" style="margin-bottom: 20px;">
-        Ajoutez un ingrédient à votre liste de courses, indépendamment des recettes planifiées.
-    </p>
-    
-    <form method="POST" action="{{ url_for('courses.ajouter') }}" class="form-ajout-manuel">
-        <div class="form-row form-row--align-end">
-            <!-- Sélection de l'ingrédient -->
-            <div class="form-group" style="flex: 3;">
-                <label for="ingredient_id">Ingrédient</label>
-                <select name="ingredient_id" 
-                        id="ingredient_id" 
-                        class="searchable-select"
-                        required>
-                    <option value="">Sélectionner un ingrédient...</option>
+    <form method="POST" action="{{ url_for('courses.ajouter') }}">
+        <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+                <label>Ingrédient</label>
+                <select name="ingredient_id" required class="searchable-select">
+                    <option value="">Sélectionner un ingrédient</option>
                     {% for ing in all_ingredients %}
                     <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
-                        {{ ing.nom }}
+                        {{ ing.nom }} ({{ ing.unite }})
                     </option>
                     {% endfor %}
                 </select>
             </div>
-            
-            <!-- Quantité -->
             <div class="form-group" style="flex: 1;">
-                <label for="quantite">Quantité</label>
+                <label>Quantité</label>
                 <input type="number" 
                        name="quantite" 
-                       id="quantite-ajout"
                        step="0.01" 
-                       min="0.01"
-                       value="1"
-                       class="quantite-input"
-                       required>
+                       min="0.01" 
+                       required 
+                       placeholder="Quantité">
             </div>
-            
-            <!-- Affichage de l'unité (dynamique) -->
-            <div class="form-group unite-display-group" style="flex: 0.5;">
-                <label>Unité</label>
-                <span class="unite-display-value" id="unite-display">-</span>
-            </div>
-            
-            <!-- Bouton d'ajout -->
-            <div class="form-group" style="flex: 0;">
-                <button type="submit" class="btn btn-success btn-ajout-manuel">
+            <div class="form-group" style="flex: 0; align-self: flex-end;">
+                <button type="submit" class="btn btn-primary">
                     ➕ Ajouter
                 </button>
             </div>
@@ -192,19 +188,5 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='javascript/courses.js') }}"></script>
-<script>
-// Mise à jour dynamique de l'unité lors de la sélection d'un ingrédient
-document.addEventListener('DOMContentLoaded', function() {
-    const selectIngredient = document.getElementById('ingredient_id');
-    const uniteDisplay = document.getElementById('unite-display');
-    
-    if (selectIngredient && uniteDisplay) {
-        selectIngredient.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const unite = selectedOption.dataset.unite || '-';
-            uniteDisplay.textContent = unite;
-        });
-    }
-});
-</script>
+<script src="{{ url_for('static', filename='javascript/select-search.js') }}"></script>
 {% endblock %}

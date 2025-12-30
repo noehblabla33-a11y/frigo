@@ -5,7 +5,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/frigo.css') }}">
 <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/pagination.css') }}">
-{# ✅ SUPPRIMÉ: frigo-grid.css - On utilise tables.css chargé via style.css #}
 {% endblock %}
 
 {% block content %}
@@ -24,7 +23,6 @@
     </p>
     
     {% if stocks %}
-        {# ✅ REFACTORISÉ: Utilisation de table-container de tables.css #}
         <div class="table-container">
             <table class="data-table data-table--header-gradient">
                 <thead>
@@ -42,7 +40,6 @@
                 <tbody>
                     {% for stock in stocks %}
                     <tr>
-                        {# ✅ REFACTORISÉ: Classes standard de tables.css #}
                         <td class="cell-img">
                             {% if stock.ingredient.image %}
                             <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" 
@@ -73,20 +70,23 @@
                             <span class="unite-badge">{{ stock.ingredient.unite }}</span>
                         </td>
                         <td class="hide-mobile">
-                            {# Conversion en €/kg si unité est en g #}
-                            {% if stock.ingredient.prix_unitaire > 0 %}
-                                {% if stock.ingredient.unite == 'g' %}
-                                    <span class="prix-table">{{ "%.3f"|format(stock.ingredient.prix_unitaire * 1000) }}€/kg</span>
-                                {% else %}
-                                    <span class="prix-table">{{ "%.3f"|format(stock.ingredient.prix_unitaire) }}€/{{ stock.ingredient.unite }}</span>
-                                {% endif %}
+                            {# ✅ CORRIGÉ: Utilisation de formater_prix_unitaire pour gérer tous les cas #}
+                            {% if stock.ingredient.prix_unitaire and stock.ingredient.prix_unitaire > 0 %}
+                                <span class="prix-table">{{ formater_prix_unitaire(stock.ingredient) }}</span>
                             {% else %}
                                 <span style="color: #adb5bd;">-</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if stock.ingredient.prix_unitaire > 0 %}
-                                {% set valeur_stock = stock.quantite * stock.ingredient.prix_unitaire %}
+                            {# ✅ CORRIGÉ: Calcul correct pour les pièces (prix stocké en €/g) #}
+                            {% if stock.ingredient.prix_unitaire and stock.ingredient.prix_unitaire > 0 %}
+                                {% if stock.ingredient.unite == 'pièce' and stock.ingredient.poids_piece and stock.ingredient.poids_piece > 0 %}
+                                    {# Pour les pièces : quantité × poids_piece × prix_par_gramme #}
+                                    {% set valeur_stock = stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire %}
+                                {% else %}
+                                    {# Pour g/ml : calcul direct #}
+                                    {% set valeur_stock = stock.quantite * stock.ingredient.prix_unitaire %}
+                                {% endif %}
                                 <span class="valeur-stock">{{ "%.2f"|format(valeur_stock) }}€</span>
                             {% else %}
                                 <span style="color: #adb5bd;">-</span>
@@ -113,11 +113,15 @@
                                 {{ "%.2f"|format(valeur_totale_globale) }}€
                                 {% if pagination.pages > 1 %}
                                     <br>
-                                    {# Calcul de la valeur de la page actuelle #}
+                                    {# Calcul de la valeur de la page actuelle avec la méthode correcte pour les pièces #}
                                     {% set valeur_page = namespace(total=0) %}
                                     {% for stock in stocks %}
-                                        {% if stock.ingredient.prix_unitaire > 0 %}
-                                            {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.prix_unitaire) %}
+                                        {% if stock.ingredient.prix_unitaire and stock.ingredient.prix_unitaire > 0 %}
+                                            {% if stock.ingredient.unite == 'pièce' and stock.ingredient.poids_piece and stock.ingredient.poids_piece > 0 %}
+                                                {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire) %}
+                                            {% else %}
+                                                {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.prix_unitaire) %}
+                                            {% endif %}
                                         {% endif %}
                                     {% endfor %}
                                     <span style="font-size: 0.75em; font-weight: normal; color: #6c757d;">
@@ -161,111 +165,62 @@
             </select>
             <small style="color: #6c757d;">
                 Vous ne trouvez pas votre ingrédient ? 
-                <a href="{{ url_for('ingredients.liste') }}">Ajoutez-le au catalogue</a>
+                <a href="{{ url_for('ingredients.liste') }}">Ajouter au catalogue</a>
             </small>
         </div>
         
-        <div class="form-group">
-            <label>Quantité</label>
-            <input type="number" name="quantite" step="0.01" min="0" value="1" required>
-            <span id="unite-display" style="margin-left: 10px; color: #6c757d;"></span>
+        <div class="form-row">
+            <div class="form-group" style="flex: 1;">
+                <label>Quantité</label>
+                <input type="number" name="quantite" step="0.01" min="0.01" required 
+                       placeholder="Quantité" id="quantite-input">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Unité</label>
+                <input type="text" id="unite-display" readonly disabled 
+                       style="background: #e9ecef; cursor: not-allowed;">
+            </div>
         </div>
         
         <div class="form-group">
             <label>Action</label>
-            <div class="action-buttons" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button type="submit" name="action" value="add" class="btn btn-success">
-                    ➕ Ajouter au stock
-                </button>
-                <button type="submit" name="action" value="remove" class="btn btn-warning">
-                    ➖ Retirer du stock
-                </button>
-                <button type="submit" name="action" value="set" class="btn btn-primary">
-                    ✏️ Définir la quantité
-                </button>
+            <div class="btn-group-action">
+                <label class="action-radio">
+                    <input type="radio" name="action" value="add" checked>
+                    <span class="action-btn action-add">➕ Ajouter</span>
+                </label>
+                <label class="action-radio">
+                    <input type="radio" name="action" value="remove">
+                    <span class="action-btn action-remove">➖ Retirer</span>
+                </label>
+                <label class="action-radio">
+                    <input type="radio" name="action" value="set">
+                    <span class="action-btn action-set">📝 Définir</span>
+                </label>
             </div>
         </div>
+        
+        <button type="submit" class="btn btn-success" style="width: 100%;">
+            ✓ Valider
+        </button>
     </form>
 </div>
+
+{% if pagination.total > 0 %}
+<div class="card" style="background: linear-gradient(135deg, #fff5f5, #ffe8e8); border-left: 4px solid #dc3545;">
+    <h3 style="color: #dc3545;">⚠️ Zone de danger</h3>
+    <p style="color: #721c24;">Vider complètement le frigo (irréversible)</p>
+    <a href="{{ url_for('frigo.vider_tout') }}" 
+       class="btn btn-danger" 
+       onclick="return confirm('⚠️ Êtes-vous sûr de vouloir vider complètement le frigo ?\n\nCette action est irréversible.')">
+        🗑️ Vider tout le frigo
+    </a>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ versioned_url_for('static', filename='javascript/frigo.js') }}"></script>
 <script src="{{ versioned_url_for('static', filename='javascript/select-search.js') }}"></script>
-<script>
-// Afficher l'unité sélectionnée
-document.getElementById('ingredient-select').addEventListener('change', function() {
-    const selected = this.options[this.selectedIndex];
-    const unite = selected.dataset.unite || '';
-    document.getElementById('unite-display').textContent = unite;
-});
-
-// Fonction pour sauvegarder la quantité en édition inline
-async function saveQuantite(stockId) {
-    const input = document.getElementById(`quantite-input-${stockId}`);
-    const status = document.getElementById(`status-${stockId}`);
-    const newQuantite = parseFloat(input.value);
-    const originalQuantite = parseFloat(input.dataset.original);
-    
-    // Pas de changement
-    if (newQuantite === originalQuantite) {
-        status.innerHTML = '<span style="color: #6c757d;">Pas de changement</span>';
-        setTimeout(() => status.innerHTML = '', 2000);
-        return;
-    }
-    
-    // Validation
-    if (isNaN(newQuantite) || newQuantite < 0) {
-        status.innerHTML = '<span style="color: #dc3545;">❌ Invalide</span>';
-        input.value = originalQuantite;
-        return;
-    }
-    
-    status.innerHTML = '<span style="color: #667eea;">⏳</span>';
-    
-    try {
-        const response = await fetch('/frigo/api/stock/update', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                stock_id: stockId,
-                quantite: newQuantite
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            input.dataset.original = newQuantite;
-            status.innerHTML = '<span style="color: #28a745;">✓</span>';
-            
-            // Si supprimé, recharger la page
-            if (data.deleted) {
-                setTimeout(() => location.reload(), 500);
-            } else {
-                setTimeout(() => status.innerHTML = '', 2000);
-            }
-        } else {
-            status.innerHTML = '<span style="color: #dc3545;">❌</span>';
-            input.value = originalQuantite;
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-        status.innerHTML = '<span style="color: #dc3545;">❌ Erreur</span>';
-        input.value = originalQuantite;
-    }
-}
-
-// Sauvegarder sur Enter
-document.querySelectorAll('.quantite-input-table').forEach(input => {
-    input.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const stockId = this.dataset.stockId;
-            saveQuantite(stockId);
-        }
-    });
-});
-</script>
 {% endblock %}
