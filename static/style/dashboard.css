@@ -1,0 +1,787 @@
+/* ============================================
+   DASHBOARD STYLES
+   Styles pour le tableau de bord dynamique
+   ============================================ */
+
+/* ============================================
+   VARIABLES ET BASE
+   ============================================ */
+.dashboard {
+    --dash-primary: #667eea;
+    --dash-primary-dark: #5a67d8;
+    --dash-success: #28a745;
+    --dash-warning: #ffc107;
+    --dash-danger: #dc3545;
+    --dash-info: #17a2b8;
+    --dash-light: #f8f9fa;
+    --dash-dark: #2d3436;
+    --dash-gray: #6c757d;
+    --dash-border: #e9ecef;
+    --dash-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    --dash-radius: 12px;
+    --dash-radius-sm: 8px;
+    --dash-transition: all 0.3s ease;
+}
+
+/* ============================================
+   EN-TÊTE DU DASHBOARD
+   ============================================ */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--dash-border);
+}
+
+.dashboard-title h2 {
+    margin: 0;
+    font-size: 1.8em;
+    color: var(--dash-dark);
+}
+
+.dashboard-subtitle {
+    margin: 5px 0 0;
+    color: var(--dash-gray);
+    font-size: 0.95em;
+}
+
+.dashboard-saison {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+    border-radius: var(--dash-radius);
+    border: 1px solid #c8e6c9;
+}
+
+.saison-emoji {
+    font-size: 2em;
+}
+
+.saison-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.saison-label {
+    font-size: 0.7em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #558b2f;
+}
+
+.saison-nom {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #2e7d32;
+    text-transform: capitalize;
+}
+
+/* ============================================
+   GRILLE DES STATISTIQUES
+   ============================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: white;
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow);
+    text-decoration: none;
+    color: inherit;
+    transition: var(--dash-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--dash-primary);
+    transition: var(--dash-transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card:hover::before {
+    width: 6px;
+}
+
+.stat-card:hover .stat-arrow {
+    transform: translateX(5px);
+    opacity: 1;
+}
+
+/* Couleurs par type */
+.stat-frigo::before { background: #17a2b8; }
+.stat-courses::before { background: #fd7e14; }
+.stat-recettes::before { background: #667eea; }
+.stat-planif::before { background: #28a745; }
+
+.stat-icon {
+    font-size: 2.5em;
+    opacity: 0.9;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 2em;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--dash-dark);
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: var(--dash-gray);
+    margin-top: 5px;
+}
+
+.stat-detail {
+    font-size: 0.85em;
+    color: var(--dash-gray);
+    margin-top: 5px;
+}
+
+.stat-positive {
+    color: var(--dash-success) !important;
+    font-weight: 600;
+}
+
+.stat-arrow {
+    font-size: 1.2em;
+    color: var(--dash-gray);
+    opacity: 0.5;
+    transition: var(--dash-transition);
+}
+
+/* ============================================
+   LAYOUT PRINCIPAL (2 COLONNES)
+   ============================================ */
+.dashboard-main {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.dashboard-col-left,
+.dashboard-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ============================================
+   CARTES DU DASHBOARD
+   ============================================ */
+.dashboard-card {
+    background: white;
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow);
+    overflow: hidden;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--dash-border);
+    background: var(--dash-light);
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: 1.1em;
+    color: var(--dash-dark);
+}
+
+.link-voir-plus {
+    font-size: 0.85em;
+    color: var(--dash-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.link-voir-plus:hover {
+    text-decoration: underline;
+}
+
+/* ============================================
+   ALERTES DE STOCK
+   ============================================ */
+.alertes-list {
+    padding: 15px 20px;
+}
+
+.alerte-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 0;
+    border-left: 4px solid var(--dash-warning);
+    padding-left: 12px;
+    margin-bottom: 10px;
+    background: #fffbf0;
+    border-radius: 0 var(--dash-radius-sm) var(--dash-radius-sm) 0;
+}
+
+.alerte-item:last-child {
+    margin-bottom: 0;
+}
+
+.alerte-info {
+    flex: 1;
+}
+
+.alerte-nom {
+    display: block;
+    font-weight: 600;
+    color: var(--dash-dark);
+}
+
+.alerte-quantite {
+    font-size: 0.85em;
+    color: var(--dash-gray);
+}
+
+.alerte-seuil {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.alerte-progress {
+    width: 60px;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.btn-add-courses {
+    padding: 8px;
+    background: white;
+    border: 1px solid var(--dash-border);
+    border-radius: var(--dash-radius-sm);
+    cursor: pointer;
+    transition: var(--dash-transition);
+    text-decoration: none;
+}
+
+.btn-add-courses:hover {
+    background: var(--dash-light);
+    border-color: var(--dash-primary);
+}
+
+/* ============================================
+   SUGGESTIONS DE RECETTES
+   ============================================ */
+.suggestions-list {
+    padding: 15px 20px;
+}
+
+.suggestion-item {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: var(--dash-light);
+    border-radius: var(--dash-radius-sm);
+    transition: var(--dash-transition);
+}
+
+.suggestion-item:last-child {
+    margin-bottom: 0;
+}
+
+.suggestion-item:hover {
+    background: #eef1ff;
+}
+
+.suggestion-ready {
+    background: #e8f5e9;
+    border: 1px solid #c8e6c9;
+}
+
+.suggestion-ready:hover {
+    background: #dcedc8;
+}
+
+.suggestion-image {
+    width: 70px;
+    height: 70px;
+    border-radius: var(--dash-radius-sm);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.suggestion-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.suggestion-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #dee2e6;
+    font-size: 1.8em;
+}
+
+.suggestion-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.suggestion-content h4 {
+    margin: 0 0 8px;
+    font-size: 1em;
+}
+
+.suggestion-content h4 a {
+    color: var(--dash-dark);
+    text-decoration: none;
+}
+
+.suggestion-content h4 a:hover {
+    color: var(--dash-primary);
+}
+
+.suggestion-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.suggestion-details {
+    display: flex;
+    gap: 15px;
+    font-size: 0.85em;
+    color: var(--dash-gray);
+}
+
+.suggestion-actions {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.btn-planifier {
+    padding: 10px;
+    background: white;
+    border: 1px solid var(--dash-border);
+    border-radius: var(--dash-radius-sm);
+    cursor: pointer;
+    transition: var(--dash-transition);
+    font-size: 1.2em;
+}
+
+.btn-planifier:hover {
+    background: var(--dash-success);
+    color: white;
+    border-color: var(--dash-success);
+}
+
+/* ============================================
+   BADGES
+   ============================================ */
+.badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.badge-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-info {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.badge-neutral {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.badge-saison {
+    background: #e8f5e9;
+    padding: 3px 8px;
+}
+
+/* ============================================
+   ACTIVITÉ
+   ============================================ */
+.activite-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding: 20px;
+}
+
+.activite-periode {
+    text-align: center;
+    padding: 15px;
+    background: var(--dash-light);
+    border-radius: var(--dash-radius-sm);
+}
+
+.activite-label {
+    display: block;
+    font-size: 0.8em;
+    color: var(--dash-gray);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.activite-numbers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.activite-count {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--dash-primary);
+    line-height: 1;
+}
+
+.activite-unit {
+    font-size: 0.85em;
+    color: var(--dash-gray);
+}
+
+.activite-cout {
+    font-size: 0.85em;
+    color: var(--dash-success);
+    margin-top: 5px;
+}
+
+.derniere-recette {
+    padding: 15px 20px;
+    border-top: 1px solid var(--dash-border);
+    font-size: 0.9em;
+}
+
+.derniere-label {
+    color: var(--dash-gray);
+}
+
+.derniere-recette a {
+    color: var(--dash-primary);
+    font-weight: 500;
+}
+
+.derniere-date {
+    color: var(--dash-gray);
+    font-size: 0.85em;
+    margin-left: 5px;
+}
+
+/* ============================================
+   RECETTES PLANIFIÉES
+   ============================================ */
+.planifiees-list {
+    padding: 15px 20px;
+}
+
+.planifiee-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: var(--dash-light);
+    border-radius: var(--dash-radius-sm);
+    border-left: 3px solid var(--dash-success);
+}
+
+.planifiee-item:last-child {
+    margin-bottom: 0;
+}
+
+.planifiee-nom {
+    display: block;
+    font-weight: 500;
+    color: var(--dash-dark);
+    text-decoration: none;
+}
+
+.planifiee-nom:hover {
+    color: var(--dash-primary);
+}
+
+.planifiee-date {
+    font-size: 0.8em;
+    color: var(--dash-gray);
+}
+
+.btn-preparer {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--dash-success);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    text-decoration: none;
+    font-weight: bold;
+    transition: var(--dash-transition);
+}
+
+.btn-preparer:hover {
+    background: #218838;
+    transform: scale(1.1);
+}
+
+/* ============================================
+   CATÉGORIES
+   ============================================ */
+.categories-list {
+    padding: 15px 20px;
+}
+
+.categorie-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--dash-border);
+}
+
+.categorie-item:last-child {
+    border-bottom: none;
+}
+
+.categorie-emoji {
+    font-size: 1.3em;
+}
+
+.categorie-nom {
+    flex: 1;
+    color: var(--dash-dark);
+}
+
+.categorie-count {
+    font-weight: 600;
+    color: var(--dash-primary);
+    background: #eef1ff;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.85em;
+}
+
+/* ============================================
+   ÉTAT VIDE
+   ============================================ */
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 3em;
+    display: block;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    color: var(--dash-gray);
+    margin-bottom: 20px;
+}
+
+/* ============================================
+   ACTIONS RAPIDES
+   ============================================ */
+.quick-actions {
+    margin-top: 30px;
+}
+
+.quick-actions h3 {
+    margin-bottom: 20px;
+    color: var(--dash-dark);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 25px 20px;
+    background: white;
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow);
+    text-decoration: none;
+    color: var(--dash-dark);
+    transition: var(--dash-transition);
+    text-align: center;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.action-icon {
+    font-size: 2em;
+}
+
+.action-text {
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+/* Couleurs d'actions */
+.action-cuisiner {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.action-cuisiner:hover {
+    background: linear-gradient(135deg, #218838 0%, #1ba87e 100%);
+    color: white;
+}
+
+.action-ingredients:hover { border-bottom: 3px solid #17a2b8; }
+.action-recettes:hover { border-bottom: 3px solid var(--dash-primary); }
+.action-courses:hover { border-bottom: 3px solid #fd7e14; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .dashboard-main {
+        grid-template-columns: 1fr;
+    }
+    
+    .actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 15px;
+    }
+    
+    .stat-icon {
+        font-size: 2em;
+    }
+    
+    .stat-number {
+        font-size: 1.5em;
+    }
+    
+    .suggestion-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .suggestion-image {
+        width: 100%;
+        height: 120px;
+    }
+    
+    .suggestion-meta {
+        justify-content: center;
+    }
+    
+    .suggestion-details {
+        justify-content: center;
+    }
+    
+    .activite-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-card {
+        flex-direction: row;
+        justify-content: center;
+        padding: 15px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-title h2 {
+        font-size: 1.4em;
+    }
+    
+    .alerte-item {
+        flex-wrap: wrap;
+    }
+    
+    .alerte-progress {
+        width: 100%;
+        margin-top: 10px;
+    }
+}

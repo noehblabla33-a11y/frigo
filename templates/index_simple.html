@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - Mon Frigo{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h3>🍳 Bienvenue dans votre gestionnaire de frigo !</h3>
+    <p style="margin: 15px 0;">Cette application vous permet de :</p>
+    <ul style="margin-left: 30px; line-height: 2;">
+        <li>📦 Gérer un catalogue d'ingrédients permanent</li>
+        <li>❄️ Suivre le stock de votre frigo en temps réel</li>
+        <li>📖 Créer et organiser vos recettes par type</li>
+        <li>📅 Planifier vos repas</li>
+        <li>🛒 Générer automatiquement votre liste de courses</li>
+        <li>📊 Consulter des statistiques sur vos habitudes culinaires</li>
+    </ul>
+    <div style="margin-top: 30px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center;">
+        <a href="{{ url_for('ingredients.liste') }}" class="btn">📦 Ingrédients</a>
+        <a href="{{ url_for('frigo.liste') }}" class="btn">❄️ Mon Frigo</a>
+        <a href="{{ url_for('recettes.liste') }}" class="btn">📖 Recettes</a>
+        <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" class="btn" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">🥘 Cuisiner</a>
+    </div>
+</div>
+{% endblock %}

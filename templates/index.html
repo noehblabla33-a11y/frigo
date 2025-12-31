@@ -1,21 +1,310 @@
 {% extends "base.html" %}
 
-{% block title %}Accueil - Mon Frigo{% endblock %}
+{% block title %}Tableau de Bord - Mon Frigo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/dashboard.css') }}">
+{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h3>Bienvenue dans votre gestionnaire de frigo !</h3>
-    <p style="margin: 15px 0;">Cette application vous permet de :</p>
-    <ul style="margin-left: 30px; line-height: 2;">
-        <li>Gérer un catalogue d'ingrédients permanent</li>
-        <li>Suivre le stock de votre frigo en temps réel</li>
-        <li>Créer et organiser vos recettes par type</li>
-        <li>Planifier vos repas</li>
-        <li>Générer automatiquement votre liste de courses</li>
-        <li>Consulter des statistiques sur vos habitudes culinaires</li>
-    </ul>
-    <div style="margin-top: 30px; text-align: center;">
-        <a href="{{ url_for('ingredients.liste') }}" class="btn">Commencer</a>
+<div class="dashboard">
+    
+    {# ============================================ #}
+    {# EN-TÊTE DU DASHBOARD                        #}
+    {# ============================================ #}
+    {% set saison_code = dashboard.saison_actuelle %}
+    {% set emojis_map = {'printemps': '🌸', 'ete': '☀️', 'automne': '🍂', 'hiver': '❄️'} %}
+    {% set noms_map = {'printemps': 'Printemps', 'ete': 'Été', 'automne': 'Automne', 'hiver': 'Hiver'} %}
+    
+    <div class="dashboard-header">
+        <div class="dashboard-title">
+            <h2>📊 Tableau de Bord</h2>
+            <p class="dashboard-subtitle">Vue d'ensemble de votre cuisine</p>
+        </div>
+        <div class="dashboard-saison">
+            <span class="saison-emoji">{{ emojis_map.get(saison_code, '🗓️') }}</span>
+            <div class="saison-info">
+                <span class="saison-label">Saison</span>
+                <span class="saison-nom">{{ noms_map.get(saison_code, saison_code|capitalize) }}</span>
+            </div>
+        </div>
     </div>
+
+    {# ============================================ #}
+    {# STATISTIQUES PRINCIPALES                    #}
+    {# ============================================ #}
+    <div class="stats-grid">
+        {# Stat Frigo #}
+        <a href="{{ url_for('frigo.liste') }}" class="stat-card stat-frigo">
+            <div class="stat-icon">❄️</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ dashboard.stats_frigo.nb_items }}</div>
+                <div class="stat-label">Ingrédients en stock</div>
+                {% if dashboard.stats_frigo.valeur_totale > 0 %}
+                <div class="stat-detail">≈ {{ "%.2f"|format(dashboard.stats_frigo.valeur_totale) }}€</div>
+                {% endif %}
+            </div>
+            <div class="stat-arrow">→</div>
+        </a>
+
+        {# Stat Courses #}
+        <a href="{{ url_for('courses.liste') }}" class="stat-card stat-courses">
+            <div class="stat-icon">🛒</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ dashboard.stats_courses.nb_items }}</div>
+                <div class="stat-label">Articles à acheter</div>
+                {% if dashboard.stats_courses.cout_estime > 0 %}
+                <div class="stat-detail">≈ {{ "%.2f"|format(dashboard.stats_courses.cout_estime) }}€</div>
+                {% endif %}
+            </div>
+            <div class="stat-arrow">→</div>
+        </a>
+
+        {# Stat Recettes #}
+        <a href="{{ url_for('recettes.liste') }}" class="stat-card stat-recettes">
+            <div class="stat-icon">📖</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ dashboard.stats_recettes.nb_total }}</div>
+                <div class="stat-label">Recettes au total</div>
+                {% if dashboard.stats_recettes.nb_realisables > 0 %}
+                <div class="stat-detail stat-positive">
+                    ✓ {{ dashboard.stats_recettes.nb_realisables }} réalisable{{ 's' if dashboard.stats_recettes.nb_realisables > 1 else '' }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="stat-arrow">→</div>
+        </a>
+
+        {# Stat Planification #}
+        <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" class="stat-card stat-planif">
+            <div class="stat-icon">🍽️</div>
+            <div class="stat-content">
+                <div class="stat-number">{{ dashboard.stats_recettes.nb_planifiees }}</div>
+                <div class="stat-label">Recettes planifiées</div>
+                <div class="stat-detail">À cuisiner</div>
+            </div>
+            <div class="stat-arrow">→</div>
+        </a>
+    </div>
+
+    {# ============================================ #}
+    {# CONTENU PRINCIPAL (2 COLONNES)              #}
+    {# ============================================ #}
+    <div class="dashboard-main">
+        
+        {# COLONNE GAUCHE #}
+        <div class="dashboard-col-left">
+            
+            {# SUGGESTIONS DE RECETTES #}
+            {% if dashboard.suggestions_recettes %}
+            <div class="card dashboard-card card-suggestions">
+                <div class="card-header">
+                    <h3>🌟 Suggestions du jour</h3>
+                    <a href="{{ url_for('recommandations.index') }}" class="link-voir-plus">Voir plus →</a>
+                </div>
+                <div class="suggestions-list">
+                    {% for suggestion in dashboard.suggestions_recettes %}
+                    <div class="suggestion-item {% if suggestion.score_disponibilite == 100 %}suggestion-ready{% endif %}">
+                        <div class="suggestion-image">
+                            {% if suggestion.recette.image %}
+                            <img src="{{ url_for('static', filename=suggestion.recette.image.replace('static/', '')) }}" 
+                                 alt="{{ suggestion.recette.nom }}"
+                                 loading="lazy">
+                            {% else %}
+                            <div class="suggestion-placeholder">🍳</div>
+                            {% endif %}
+                        </div>
+                        <div class="suggestion-content">
+                            <h4>
+                                <a href="{{ url_for('recettes.detail', id=suggestion.recette.id) }}">
+                                    {{ suggestion.recette.nom }}
+                                </a>
+                            </h4>
+                            <div class="suggestion-meta">
+                                {% if suggestion.score_disponibilite == 100 %}
+                                <span class="badge badge-success">✓ Tous les ingrédients</span>
+                                {% else %}
+                                <span class="badge badge-info">
+                                    {{ suggestion.score_disponibilite|round(0)|int }}% disponible
+                                </span>
+                                {% if suggestion.nb_ingredients_manquants > 0 %}
+                                <span class="badge badge-neutral">
+                                    {{ suggestion.nb_ingredients_manquants }} manquant{{ 's' if suggestion.nb_ingredients_manquants > 1 else '' }}
+                                </span>
+                                {% endif %}
+                                {% endif %}
+                                {% if suggestion.est_de_saison %}
+                                <span class="badge badge-saison" title="Recette de saison">{{ emojis_map.get(saison_code, '🗓️') }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="suggestion-details">
+                                {% if suggestion.temps_preparation %}
+                                <span>⏱️ {{ suggestion.temps_preparation }} min</span>
+                                {% endif %}
+                                {% if suggestion.cout_estime > 0 %}
+                                <span>💰 {{ "%.2f"|format(suggestion.cout_estime) }}€</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="suggestion-actions">
+                            <form action="{{ url_for('recettes.planifier_rapide', id=suggestion.recette.id) }}" method="post" style="display: inline;">
+                                <button type="submit" class="btn-icon btn-planifier" title="Planifier">
+                                    📅
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="card dashboard-card card-empty">
+                <div class="empty-state">
+                    <span class="empty-icon">📖</span>
+                    <p>Aucune recette disponible.</p>
+                    <a href="{{ url_for('recettes.liste') }}" class="btn btn-primary">Créer une recette</a>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        {# COLONNE DROITE #}
+        <div class="dashboard-col-right">
+            
+            {# ACTIVITÉ RÉCENTE #}
+            <div class="card dashboard-card card-activite">
+                <div class="card-header">
+                    <h3>📈 Activité</h3>
+                    <a href="{{ url_for('historique.liste') }}" class="link-voir-plus">Historique →</a>
+                </div>
+                <div class="activite-stats">
+                    <div class="activite-periode">
+                        <span class="activite-label">Cette semaine</span>
+                        <div class="activite-numbers">
+                            <span class="activite-count">{{ dashboard.stats_activite.recettes_semaine }}</span>
+                            <span class="activite-unit">recette{{ 's' if dashboard.stats_activite.recettes_semaine > 1 else '' }}</span>
+                            {% if dashboard.stats_activite.cout_semaine > 0 %}
+                            <span class="activite-cout">≈ {{ "%.2f"|format(dashboard.stats_activite.cout_semaine) }}€</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="activite-periode">
+                        <span class="activite-label">Ce mois</span>
+                        <div class="activite-numbers">
+                            <span class="activite-count">{{ dashboard.stats_activite.recettes_mois }}</span>
+                            <span class="activite-unit">recette{{ 's' if dashboard.stats_activite.recettes_mois > 1 else '' }}</span>
+                            {% if dashboard.stats_activite.cout_mois > 0 %}
+                            <span class="activite-cout">≈ {{ "%.2f"|format(dashboard.stats_activite.cout_mois) }}€</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% if dashboard.stats_activite.derniere_recette %}
+                <div class="derniere-recette">
+                    <span class="derniere-label">Dernière préparation :</span>
+                    <a href="{{ url_for('recettes.detail', id=dashboard.stats_activite.derniere_recette.recette_ref.id) }}">
+                        {{ dashboard.stats_activite.derniere_recette.recette_ref.nom }}
+                    </a>
+                    <span class="derniere-date">
+                        {{ dashboard.stats_activite.derniere_recette.date_preparation.strftime('%d/%m à %H:%M') }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+
+            {# RECETTES PLANIFIÉES #}
+            {% if recettes_planifiees %}
+            <div class="card dashboard-card card-planifiees">
+                <div class="card-header">
+                    <h3>🗓️ À cuisiner</h3>
+                    <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" class="link-voir-plus">Voir tout →</a>
+                </div>
+                <div class="planifiees-list">
+                    {% for plan in recettes_planifiees %}
+                    <div class="planifiee-item">
+                        <div class="planifiee-info">
+                            <a href="{{ url_for('recettes.detail', id=plan.recette_ref.id) }}" class="planifiee-nom">
+                                {{ plan.recette_ref.nom }}
+                            </a>
+                            <span class="planifiee-date">
+                                Planifiée le {{ plan.date_planification.strftime('%d/%m') }}
+                            </span>
+                        </div>
+                        <div class="planifiee-actions">
+                            <a href="{{ url_for('planification.preparer', id=plan.id) }}" 
+                               class="btn-icon btn-preparer" 
+                               title="Marquer comme préparée">
+                                ✓
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    {# ============================================ #}
+    {# ACTIONS RAPIDES                             #}
+    {# ============================================ #}
+    <div class="quick-actions">
+        <h3>🚀 Actions rapides</h3>
+        <div class="actions-grid">
+            <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" class="action-card action-cuisiner">
+                <span class="action-icon">🥘</span>
+                <span class="action-text">Cuisiner avec mon frigo</span>
+            </a>
+            <a href="{{ url_for('ingredients.liste') }}" class="action-card action-ingredients">
+                <span class="action-icon">📦</span>
+                <span class="action-text">Gérer les ingrédients</span>
+            </a>
+            <a href="{{ url_for('recettes.liste') }}" class="action-card action-recettes">
+                <span class="action-icon">➕</span>
+                <span class="action-text">Ajouter une recette</span>
+            </a>
+            <a href="{{ url_for('courses.liste') }}" class="action-card action-courses">
+                <span class="action-icon">🛒</span>
+                <span class="action-text">Voir les courses</span>
+            </a>
+        </div>
+    </div>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Optionnel : Rafraîchissement automatique des stats
+document.addEventListener('DOMContentLoaded', function() {
+    // Rafraîchir les stats toutes les 5 minutes si la page reste ouverte
+    setInterval(function() {
+        fetch('{{ url_for("main.api_dashboard_stats") }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mettre à jour les compteurs
+                    updateStats(data.data);
+                }
+            })
+            .catch(err => console.log('Erreur rafraîchissement:', err));
+    }, 300000); // 5 minutes
+});
+
+function updateStats(data) {
+    // Mise à jour du nombre d'items frigo
+    const frigoCount = document.querySelector('.stat-frigo .stat-number');
+    if (frigoCount) frigoCount.textContent = data.frigo.nb_items;
+    
+    // Mise à jour du nombre de courses
+    const coursesCount = document.querySelector('.stat-courses .stat-number');
+    if (coursesCount) coursesCount.textContent = data.courses.nb_items;
+    
+    // Mise à jour du nombre de recettes planifiées
+    const planifCount = document.querySelector('.stat-planif .stat-number');
+    if (planifCount) planifCount.textContent = data.recettes.nb_planifiees;
+}
+</script>
 {% endblock %}
