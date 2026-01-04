@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Page non trouvée - Mon Frigo{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon">🔍</div>
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">Page non trouvée</h2>
+        <p class="error-message">
+            Désolé, la page que vous recherchez n'existe pas ou a été déplacée.
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                🏠 Retour à l'accueil
+            </a>
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                ← Page précédente
+            </a>
+        </div>
+        <div class="error-suggestions">
+            <p>Peut-être cherchiez-vous :</p>
+            <ul>
+                <li><a href="{{ url_for('frigo.liste') }}">❄️ Mon Frigo</a></li>
+                <li><a href="{{ url_for('recettes.liste') }}">📖 Mes Recettes</a></li>
+                <li><a href="{{ url_for('ingredients.liste') }}">📦 Mes Ingrédients</a></li>
+                <li><a href="{{ url_for('courses.liste') }}">🛒 Ma Liste de Courses</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    text-align: center;
+}
+
+.error-content {
+    max-width: 500px;
+    padding: 40px;
+}
+
+.error-icon {
+    font-size: 4em;
+    margin-bottom: 20px;
+}
+
+.error-code {
+    font-size: 6em;
+    font-weight: 700;
+    color: #dee2e6;
+    margin: 0;
+    line-height: 1;
+}
+
+.error-title {
+    font-size: 1.5em;
+    color: #495057;
+    margin: 10px 0 20px;
+}
+
+.error-message {
+    color: #6c757d;
+    margin-bottom: 30px;
+}
+
+.error-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+}
+
+.error-suggestions {
+    text-align: left;
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.error-suggestions p {
+    color: #6c757d;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+.error-suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.error-suggestions li {
+    padding: 8px 0;
+}
+
+.error-suggestions a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.error-suggestions a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

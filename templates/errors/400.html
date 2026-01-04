@@ -1,0 +1,27 @@
+<!-- 
+    templates/errors/400.html 
+    Erreur 400 - Bad Request
+-->
+{% extends "base.html" %}
+{% block title %}Requête invalide - Mon Frigo{% endblock %}
+{% block content %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon">❌</div>
+        <h1 class="error-code">400</h1>
+        <h2 class="error-title">Requête invalide</h2>
+        <p class="error-message">
+            Les données envoyées ne sont pas valides.
+            Veuillez vérifier votre saisie et réessayer.
+        </p>
+        <div class="error-actions">
+            <a href="javascript:history.back()" class="btn btn-primary">
+                ← Retour
+            </a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+                🏠 Accueil
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

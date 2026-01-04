@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Méthode non autorisée - Mon Frigo{% endblock %}
+{% block content %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon">🚫</div>
+        <h1 class="error-code">405</h1>
+        <h2 class="error-title">Méthode non autorisée</h2>
+        <p class="error-message">
+            Cette action n'est pas permise sur cette page.
+        </p>
+        <div class="error-actions">
+            <a href="javascript:history.back()" class="btn btn-primary">
+                ← Retour
+            </a>
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+                🏠 Accueil
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -20,6 +20,7 @@ from config import get_config
 from utils.units import formater_quantite, formater_prix_unitaire
 from utils.saisons import get_saison_actuelle, get_contexte_saison
 from utils.cache import cache, init_cache
+from utils.errors import init_error_handlers
 from constants import formater_saison, formater_liste_saisons, SAISONS_EMOJIS, SAISONS_NOMS
 import os
 
@@ -161,4 +162,5 @@ def create_app(config_name=None):
 # Point d'entrée pour le développement
 if __name__ == '__main__':
     app = create_app()
+    init_error_handlers(app)
     app.run(host='0.0.0.0', port=5000)

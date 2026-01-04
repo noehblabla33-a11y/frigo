@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Accès interdit - Mon Frigo{% endblock %}
+{% block content %}
+<div class="error-page">
+    <div class="error-content">
+        <div class="error-icon">🔒</div>
+        <h1 class="error-code">403</h1>
+        <h2 class="error-title">Accès interdit</h2>
+        <p class="error-message">
+            Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+        </p>
+        <div class="error-actions">
+            <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                🏠 Retour à l'accueil
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
