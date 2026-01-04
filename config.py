@@ -37,7 +37,9 @@ class Config:
     UPLOAD_FOLDER = 'static/uploads'
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 5 * 1024 * 1024))  # 5MB par défaut
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
-    
+    IMAGE_MAX_SIZE = 1200
+    IMAGE_QUALITY = 85
+
     # ============================================
     # PAGINATION
     # ============================================
@@ -54,7 +56,8 @@ class Config:
     # CACHE / PERFORMANCE
     # ============================================
     SEND_FILE_MAX_AGE_DEFAULT = 31536000  # 1 an pour les fichiers statiques
-
+    CACHE_TYPE = 'SimpleCache'
+    CACHE_DEFAULT_TIMEOUT = 300
     
     COMPRESS_MIMETYPES = [
         'text/html',

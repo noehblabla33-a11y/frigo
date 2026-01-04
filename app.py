@@ -19,6 +19,7 @@ from routes import (
 from config import get_config
 from utils.units import formater_quantite, formater_prix_unitaire
 from utils.saisons import get_saison_actuelle, get_contexte_saison
+from utils.cache import cache, init_cache
 from constants import formater_saison, formater_liste_saisons, SAISONS_EMOJIS, SAISONS_NOMS
 import os
 
@@ -43,6 +44,7 @@ def create_app(config_name=None):
     # ============================================
     db.init_app(app)
     migrate = Migrate(app, db)
+    init_cache(app)
     Compress(app)
     
     # ============================================
