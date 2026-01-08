@@ -193,7 +193,7 @@
             <label>Image de l'ingrédient</label>
             {% if ingredient.image %}
             <div class="current-image" style="margin-bottom: 10px;">
-                <img src="{{ url_for('static', filename=ing.image|image_path) }}"
+                <img src="{{ url_for('static', filename=ingredient.image|image_path) }}"
                      alt="{{ ingredient.nom }}" 
                      style="max-width: 150px; border-radius: 8px;">
                 <p class="form-help">
