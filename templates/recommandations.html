@@ -167,7 +167,7 @@
             {# Image #}
             <div class="reco-image">
                 {% if recette.image %}
-                <img src="{{ url_for('static', filename=recette.image.replace('static/', '')) }}" 
+                <img src="{{ url_for('static', filename=ing.image|image_path) }}" 
                      alt="{{ recette.nom }}" loading="lazy">
                 {% else %}
                 <div class="reco-image-placeholder">🍳</div>

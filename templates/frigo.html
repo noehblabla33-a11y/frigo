@@ -42,7 +42,7 @@
                     <tr>
                         <td class="cell-img">
                             {% if stock.ingredient.image %}
-                            <img src="{{ url_for('static', filename=stock.ingredient.image.replace('static/', '')) }}" 
+                            <img src="{{ url_for('static', filename=ing.image|image_path) }}" 
                                  alt="{{ stock.ingredient.nom }}" 
                                  class="data-table-thumb"
                                  loading="lazy">

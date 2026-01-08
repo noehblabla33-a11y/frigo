@@ -260,7 +260,7 @@
         {% for ingredient in ingredients %}
         <div class="ingredient-card">
             {% if ingredient.image %}
-            <img src="{{ url_for('static', filename=ingredient.image.replace('static/', '')) }}" 
+            <img src="{{ url_for('static', filename=ing.image|image_path) }}" 
                  alt="{{ ingredient.nom }}">
             {% else %}
             <div class="placeholder-img">

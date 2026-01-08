@@ -45,7 +45,7 @@
         <div class="recette-planifiee-card">
             <div class="planifiee-image">
                 {% if plan.recette_ref.image %}
-                <img src="{{ url_for('static', filename=plan.recette_ref.image.replace('static/', '')) }}" 
+                <img src="{{ url_for('static', filename=ing.image|image_path) }}" 
                      alt="{{ plan.recette_ref.nom }}"
                      loading="lazy">
                 {% else %}

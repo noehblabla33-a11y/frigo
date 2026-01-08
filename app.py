@@ -156,8 +156,25 @@ def create_app(config_name=None):
             return 'pièce' if quantite <= 1 else 'pièces'
         return unite
 
-    return app
+    @app.template_filter('image_path')
+    def image_path_filter(path):
+        """
+        Normalise le chemin d'une image pour url_for('static', ...).
+        
+        Les images sont stockées en DB avec le préfixe 'static/' 
+        (ex: 'static/uploads/image.jpg'), mais url_for('static', filename=...)
+        attend un chemin relatif au dossier static (ex: 'uploads/image.jpg').
+        
+        Usage dans les templates :
+            {{ url_for('static', filename=obj.image|image_path) }}
+        """
+        if not path:
+            return ''
+        if path.startswith('static/'):
+            return path[7:]  # len('static/') = 7
+        return path
 
+    return app
 
 # Point d'entrée pour le développement
 if __name__ == '__main__':
