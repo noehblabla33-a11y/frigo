@@ -10,7 +10,7 @@
 <div class="rd-header">
     <div class="rd-image">
         {% if recette.image %}
-        <img src="{{ url_for('static', filename=ing.image|image_path) }}" alt="{{ recette.nom }}">
+        <img src="{{ url_for('static', filename=recette.image|image_path) }}" alt="{{ recette.nom }}">
         {% else %}
         <div class="rd-no-image">🍳</div>
         {% endif %}
@@ -52,7 +52,7 @@
         <div class="rd-ingredient-card">
             <div class="rd-ingredient-image">
                 {% if ing_rec.ingredient.image %}
-                <img src="{{ url_for('static', filename=ing.image|image_path) }}" 
+                <img src="{{ url_for('static', filename=ing_rec.ingredient.image|image_path) }}" 
                      alt="{{ ing_rec.ingredient.nom }}"
                      loading="lazy">
                 {% else %}
