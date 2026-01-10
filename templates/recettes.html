@@ -213,7 +213,7 @@
                     <tr>
                         <td class="item-img-cell">
                             {% if recette.image %}
-                            <img src="{{ url_for('static', filename=ing.image|image_path) }}" 
+                            <img src="{{ url_for('static', filename=recette.image|image_path) }}" 
                                 alt="{{ recette.nom }}" 
                                 class="item-thumbnail"
                                 loading="lazy">
