@@ -37,7 +37,7 @@
             <label>Image de la recette</label>
             {% if recette.image %}
             <div style="margin-bottom: 10px;">
-                <img src="{{ url_for('static', filename=ing.image|image_path) }}"
+                <img src="{{ url_for('static', filename=recette.image|image_path) }}"
                      alt="{{ recette.nom }}" 
                      style="max-width: 200px; border-radius: 8px;">
                 <p style="color: #6c757d; font-size: 0.9em; margin-top: 5px;">
