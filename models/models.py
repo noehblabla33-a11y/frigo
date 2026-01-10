@@ -111,14 +111,19 @@ class Ingredient(db.Model):
         quantite_grammes = self.get_quantite_en_grammes(quantite_native)
         factor = quantite_grammes / 100.0
         
+        # Helper pour gérer les valeurs NULL
+        def calc_value(val, decimals=1):
+            """Calcule la valeur nutritionnelle en gérant NULL"""
+            return round((val or 0) * factor, decimals) if val is not None else 0
+        
         return {
-            'calories': round(self.calories * factor, 1),
-            'proteines': round(self.proteines * factor, 1),
-            'glucides': round(self.glucides * factor, 1),
-            'lipides': round(self.lipides * factor, 1),
-            'fibres': round(self.fibres * factor, 1),
-            'sucres': round(self.sucres * factor, 1),
-            'sel': round(self.sel * factor, 2)
+            'calories': calc_value(self.calories),
+            'proteines': calc_value(self.proteines),
+            'glucides': calc_value(self.glucides),
+            'lipides': calc_value(self.lipides),
+            'fibres': calc_value(self.fibres),
+            'sucres': calc_value(self.sucres),
+            'sel': calc_value(self.sel, 2)  # 2 décimales pour le sel
         }
 
     def calculer_prix(self, quantite_native: float) -> float:
