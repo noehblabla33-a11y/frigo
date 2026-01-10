@@ -4,6 +4,10 @@
  * 
  * SYSTÈME D'UNITÉS SIMPLIFIÉ :
  * Les quantités sont saisies dans l'unité native de l'ingrédient.
+ * 
+ * NOMS DES CHAMPS (correspondant à parse_etapes_list et parse_ingredients_list) :
+ * - Ingrédients : ingredient_X, quantite_X
+ * - Étapes : etape_desc_X, etape_duree_X
  */
 
 (function() {
@@ -106,20 +110,23 @@
         `;
         
         container.appendChild(div);
+        window.ingredientCount++;
         
         // Configurer le nouveau select
         const newSelect = div.querySelector('.ingredient-select');
-        newSelect.selectedIndex = 0; // Reset selection
-        newSelect.addEventListener('change', function() {
-            updateUniteDisplay(this);
-        });
-        
-        // Réinitialiser le select avec recherche si disponible
-        if (window.SelectSearch) {
-            new window.SelectSearch(newSelect);
+        if (newSelect) {
+            newSelect.addEventListener('change', function() {
+                updateUniteDisplay(this);
+            });
+            // Réinitialiser la sélection
+            newSelect.value = '';
         }
         
-        window.ingredientCount++;
+        // Initialiser SelectSearch si disponible
+        if (typeof initSelectSearch === 'function') {
+            initSelectSearch();
+        }
+        
         updateRemoveIngredientsButtons();
     }
 
@@ -135,7 +142,7 @@
     }
 
     /**
-     * Met à jour l'affichage des boutons de suppression
+     * Met à jour l'affichage des boutons de suppression d'ingrédients
      */
     function updateRemoveIngredientsButtons() {
         const rows = document.querySelectorAll('.ingredient-row');
@@ -169,39 +176,42 @@
 
     /**
      * Ajoute une nouvelle étape
+     * IMPORTANT: Les noms de champs doivent correspondre à parse_etapes_list :
+     * - etape_desc_X pour la description
+     * - etape_duree_X pour la durée
      */
     function ajouterEtape() {
         const container = document.getElementById('etapes-container');
         if (!container) return;
         
+        const currentCount = window.etapeCount;
+        
         const div = document.createElement('div');
         div.className = 'etape-row';
-        div.dataset.etapeRow = window.etapeCount;
+        div.dataset.etape = currentCount;
         
+        // Structure cohérente avec le template recette_modifier.html
         div.innerHTML = `
-            <div class="etape-header">
-                <span class="etape-number">Étape ${window.etapeCount + 1}</span>
-                <button type="button" 
-                        class="btn-remove-etape" 
-                        onclick="removeEtape(${window.etapeCount})">
-                    ✖
-                </button>
-            </div>
-            <div class="etape-content">
-                <div class="form-group">
-                    <textarea name="etape_${window.etapeCount}" 
-                              placeholder="Décrivez cette étape..." 
-                              rows="2"
-                              required></textarea>
+            <div class="etape-number">${currentCount + 1}</div>
+            <div class="etape-inputs">
+                <div class="form-group" style="flex: 3; margin-bottom: 0;">
+                    <textarea name="etape_desc_${currentCount}" 
+                              placeholder="Décrivez cette étape..."
+                              rows="2"></textarea>
                 </div>
-                <div class="form-group etape-duree">
-                    <label>⏱️ Durée (minutes, optionnel)</label>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <input type="number" 
-                           name="duree_${window.etapeCount}" 
-                           placeholder="Ex: 10"
-                           min="0">
+                           name="etape_duree_${currentCount}" 
+                           placeholder="⏱️ Minutes (opt.)"
+                           min="0"
+                           title="Durée en minutes pour le minuteur (optionnel)">
                 </div>
             </div>
+            <button type="button" 
+                    class="btn-remove-etape" 
+                    onclick="removeEtape(${currentCount})">
+                ✖
+            </button>
         `;
         
         container.appendChild(div);
@@ -213,7 +223,7 @@
      * Supprime une étape
      */
     function removeEtape(index) {
-        const row = document.querySelector(`.etape-row[data-etape-row="${index}"]`);
+        const row = document.querySelector(`.etape-row[data-etape="${index}"]`);
         if (row) {
             row.remove();
             updateRemoveEtapesButtons();
@@ -235,14 +245,17 @@
     }
 
     /**
-     * Renumérote les étapes après suppression
+     * Renumérote les étapes après suppression (affichage uniquement)
+     * Note: Les noms des champs ne sont PAS renommés car parse_etapes_list
+     * parcourt séquentiellement et s'arrête au premier index manquant.
+     * Mais cela fonctionne car les champs existants gardent leurs indices.
      */
     function renumberEtapes() {
         const rows = document.querySelectorAll('.etape-row');
-        rows.forEach((row, index) => {
+        rows.forEach((row, visualIndex) => {
             const numberSpan = row.querySelector('.etape-number');
             if (numberSpan) {
-                numberSpan.textContent = `Étape ${index + 1}`;
+                numberSpan.textContent = visualIndex + 1;
             }
         });
     }
@@ -267,6 +280,8 @@
     window.removeEtape = removeEtape;
     window.updateUniteDisplay = updateUniteDisplay;
     window.initIngredientSelects = initIngredientSelects;
+    window.updateRemoveEtapesButtons = updateRemoveEtapesButtons;
+    window.renumberEtapes = renumberEtapes;
 
     // Initialisation au chargement du DOM
     document.addEventListener('DOMContentLoaded', initRecettesForm);

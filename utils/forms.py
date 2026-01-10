@@ -137,9 +137,11 @@ def parse_float_or_none(value: Any) -> Optional[float]:
         float ou None
     
     Examples:
-        >>> parse_float_or_none('50.5')
-        50.5
+        >>> parse_float_or_none('3.14')
+        3.14
         >>> parse_float_or_none('')
+        None
+        >>> parse_float_or_none(None)
         None
     """
     if value is None:
@@ -192,107 +194,12 @@ def parse_positive_int(value: Any, default: int = 0) -> int:
     return max(0, result)
 
 
-def validate_required(value: Any, field_name: str) -> str:
-    """
-    Valide qu'un champ requis n'est pas vide.
-    
-    Args:
-        value: Valeur à valider
-        field_name: Nom du champ pour le message d'erreur
-    
-    Returns:
-        str: Valeur nettoyée
-    
-    Raises:
-        ValueError: Si la valeur est vide
-    
-    Examples:
-        >>> validate_required('  test  ', 'nom')
-        'test'
-        >>> validate_required('', 'nom')
-        ValueError: Le champ 'nom' est requis
-    """
-    if value is None:
-        raise ValueError(f"Le champ '{field_name}' est requis")
-    
-    str_value = str(value).strip()
-    
-    if not str_value:
-        raise ValueError(f"Le champ '{field_name}' est requis")
-    
-    return str_value
-
-
-def validate_positive(value: float, field_name: str = "valeur") -> float:
-    """
-    Valide qu'une valeur numérique est strictement positive.
-    
-    Args:
-        value: Valeur à valider
-        field_name: Nom du champ pour le message d'erreur
-    
-    Returns:
-        float: La valeur validée
-    
-    Raises:
-        ValueError: Si la valeur est <= 0
-    """
-    if value <= 0:
-        raise ValueError(f"Le champ '{field_name}' doit être positif")
-    return value
-
-
-def validate_non_negative(value: float, field_name: str = "valeur") -> float:
-    """
-    Valide qu'une valeur numérique est positive ou nulle.
-    
-    Args:
-        value: Valeur à valider
-        field_name: Nom du champ pour le message d'erreur
-    
-    Returns:
-        float: La valeur validée
-    
-    Raises:
-        ValueError: Si la valeur est < 0
-    """
-    if value < 0:
-        raise ValueError(f"Le champ '{field_name}' ne peut pas être négatif")
-    return value
-
-
-def validate_range(value: float, min_val: float, max_val: float, 
-                   field_name: str = "valeur") -> float:
-    """
-    Valide qu'une valeur est dans une plage donnée.
-    
-    Args:
-        value: Valeur à valider
-        min_val: Valeur minimale (inclusive)
-        max_val: Valeur maximale (inclusive)
-        field_name: Nom du champ pour le message d'erreur
-    
-    Returns:
-        float: La valeur validée
-    
-    Raises:
-        ValueError: Si la valeur est hors de la plage
-    """
-    if value < min_val or value > max_val:
-        raise ValueError(
-            f"Le champ '{field_name}' doit être entre {min_val} et {max_val}"
-        )
-    return value
-
-
 def parse_checkbox(value: Any) -> bool:
     """
-    Parse une valeur de checkbox HTML.
-    
-    Les checkboxes envoient 'on' si cochées, ou sont absentes si non cochées.
+    Parse une valeur de checkbox depuis un formulaire.
     
     Args:
-        value: Valeur du formulaire (généralement 'on' ou None)
+        value: Valeur du formulaire
     
     Returns:
         bool: True si coché, False sinon
@@ -300,129 +207,116 @@ def parse_checkbox(value: Any) -> bool:
     Examples:
         >>> parse_checkbox('on')
         True
+        >>> parse_checkbox('1')
+        True
         >>> parse_checkbox(None)
         False
-        >>> parse_checkbox('true')
-        True
     """
     if value is None:
         return False
     
-    if isinstance(value, bool):
-        return value
-    
     str_value = str(value).lower().strip()
-    return str_value in ('on', 'true', '1', 'yes', 'oui')
+    return str_value in ('on', '1', 'true', 'yes', 'oui')
 
 
 def clean_string(value: Any, default: str = '') -> str:
     """
-    Nettoie et retourne une chaîne de caractères.
+    Nettoie une chaîne depuis un formulaire.
     
     Args:
         value: Valeur à nettoyer
-        default: Valeur par défaut si None ou vide
+        default: Valeur par défaut si None/vide
     
     Returns:
-        str: Chaîne nettoyée (strip)
+        Chaîne nettoyée (stripped)
     
     Examples:
         >>> clean_string('  hello  ')
         'hello'
         >>> clean_string(None, 'default')
         'default'
+        >>> clean_string('')
+        ''
     """
     if value is None:
         return default
     
-    str_value = str(value).strip()
-    return str_value if str_value else default
+    return str(value).strip() or default
 
 
 def clean_string_or_none(value: Any) -> Optional[str]:
     """
     Nettoie une chaîne, retourne None si vide.
     
-    Utile pour les champs optionnels comme categorie.
+    Utile pour les champs optionnels comme instructions.
     
     Args:
         value: Valeur à nettoyer
     
     Returns:
-        str ou None
+        Chaîne nettoyée ou None
     
     Examples:
-        >>> clean_string_or_none('  test  ')
-        'test'
+        >>> clean_string_or_none('  hello  ')
+        'hello'
         >>> clean_string_or_none('')
+        None
+        >>> clean_string_or_none('   ')
         None
     """
     if value is None:
         return None
     
-    str_value = str(value).strip()
-    return str_value if str_value else None
+    cleaned = str(value).strip()
+    return cleaned if cleaned else None
 
 
-# ============================================
-# HELPERS SPÉCIFIQUES À L'APPLICATION
-# ============================================
+def validate_required(value: Any, field_name: str) -> str:
+    """
+    Valide qu'un champ requis n'est pas vide.
+    
+    Args:
+        value: Valeur à valider
+        field_name: Nom du champ (pour le message d'erreur)
+    
+    Returns:
+        Valeur nettoyée
+    
+    Raises:
+        ValueError: Si la valeur est vide
+    """
+    cleaned = clean_string(value)
+    if not cleaned:
+        raise ValueError(f"Le champ '{field_name}' est requis")
+    return cleaned
+
 
 def parse_nutrition_values(form_data: dict) -> dict:
     """
-    Parse toutes les valeurs nutritionnelles depuis un formulaire.
+    Parse les valeurs nutritionnelles depuis un formulaire.
+    
+    Attend des champs nommés: calories, proteines, glucides, lipides, fibres
     
     Args:
         form_data: Dictionnaire du formulaire (request.form)
     
     Returns:
-        dict: Dictionnaire des valeurs nutritionnelles
+        dict avec les clés nutritionnelles, valeurs None si non renseignées
     
     Example:
-        >>> values = parse_nutrition_values(request.form)
-        >>> ingredient.calories = values['calories']
+        >>> nutrition = parse_nutrition_values(request.form)
+        >>> # {'calories': 250.0, 'proteines': None, ...}
     """
+    fields = ['calories', 'proteines', 'glucides', 'lipides', 'fibres']
     return {
-        'calories': parse_float(form_data.get('calories')),
-        'proteines': parse_float(form_data.get('proteines')),
-        'glucides': parse_float(form_data.get('glucides')),
-        'lipides': parse_float(form_data.get('lipides')),
-        'fibres': parse_float(form_data.get('fibres')),
-        'sucres': parse_float(form_data.get('sucres')),
-        'sel': parse_float(form_data.get('sel')),
+        field: parse_float_or_none(form_data.get(field))
+        for field in fields
     }
-
-
-def parse_ingredient_form(form_data: dict) -> dict:
-    """
-    Parse les données d'un formulaire d'ingrédient.
-    
-    Args:
-        form_data: Dictionnaire du formulaire (request.form)
-    
-    Returns:
-        dict: Données parsées prêtes pour créer/modifier un Ingredient
-    
-    Raises:
-        ValueError: Si le nom est manquant
-    """
-    data = {
-        'nom': validate_required(form_data.get('nom'), 'nom'),
-        'unite': clean_string(form_data.get('unite'), 'g'),
-        'prix_unitaire': parse_float(form_data.get('prix_unitaire')),
-        'categorie': clean_string_or_none(form_data.get('categorie')),
-        'poids_piece': parse_float_or_none(form_data.get('poids_piece')),
-    }
-    
-    # Ajouter les valeurs nutritionnelles
-    data.update(parse_nutrition_values(form_data))
-    
-    return data
 
 
 def parse_recette_form(form_data: dict) -> dict:
     """
-    Parse les données de base d'un formulaire de recette.
+    Parse les données de base d'une recette depuis un formulaire.
     
     Args:
         form_data: Dictionnaire du formulaire (request.form)
@@ -481,14 +375,18 @@ def parse_ingredients_list(form_data: dict) -> List[Tuple[int, float]]:
     return ingredients
 
 
-def parse_etapes_list(form_data: dict) -> Generator[Tuple[str, Optional[int]], None, None]:
+def parse_etapes_list(form_data: dict, max_index: int = 100) -> Generator[Tuple[str, Optional[int]], None, None]:
     """
     Parse la liste des étapes depuis un formulaire de recette.
     
     Attend des champs nommés etape_desc_0, etape_duree_0, etape_desc_1, etape_duree_1, etc.
     
+    VERSION ROBUSTE : Parcourt jusqu'à max_index pour trouver toutes les étapes,
+    même si certains indices sont manquants (cas de suppression d'étapes).
+    
     Args:
         form_data: Dictionnaire du formulaire
+        max_index: Index maximum à vérifier (défaut 100)
     
     Yields:
         tuple: (description, duree_minutes) pour chaque étape non vide
@@ -498,19 +396,16 @@ def parse_etapes_list(form_data: dict) -> Generator[Tuple[str, Optional[int]], N
         >>> for description, duree in parse_etapes_list(request.form):
         ...     etape = EtapeRecette(description=description, duree_minutes=duree)
     """
-    i = 0
-    while True:
+    # Parcourir tous les indices possibles pour trouver les étapes
+    # (permet de gérer le cas où des étapes ont été supprimées au milieu)
+    for i in range(max_index):
         desc_key = f'etape_desc_{i}'
         duree_key = f'etape_duree_{i}'
         
-        if desc_key not in form_data:
-            break
-        
         description = form_data.get(desc_key, '').strip()
+        
         if description:
             # Récupérer aussi la durée
             duree_str = form_data.get(duree_key, '').strip()
             duree_minutes = int(duree_str) if duree_str and duree_str.isdigit() else None
             yield (description, duree_minutes)
-        
-        i += 1
