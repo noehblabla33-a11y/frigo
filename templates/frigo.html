@@ -42,7 +42,7 @@
                     <tr>
                         <td class="cell-img">
                             {% if stock.ingredient.image %}
-                            <img src="{{ url_for('static', filename=ing.image|image_path) }}" 
+                            <img src="{{ url_for('static', filename=stock.ingredient.image|image_path) }}" 
                                  alt="{{ stock.ingredient.nom }}" 
                                  class="data-table-thumb"
                                  loading="lazy">
@@ -55,79 +55,81 @@
                         </td>
                         <td>
                             <div class="quantite-edit-inline" data-stock-id="{{ stock.id }}">
-                                <input type="number" 
-                                       step="0.01" 
-                                       class="quantite-input-table" 
-                                       id="quantite-input-{{ stock.id }}"
-                                       value="{{ stock.quantite }}"
-                                       data-stock-id="{{ stock.id }}"
-                                       data-original="{{ stock.quantite }}">
-                                <button class="btn-inline-mini btn-save-mini" onclick="saveQuantite({{ stock.id }})" title="Sauvegarder">✓</button>
-                                <div class="edit-status-mini" id="status-{{ stock.id }}"></div>
+                                {# Affichage normal #}
+                                <div class="quantite-display" onclick="enableEdit({{ stock.id }})">
+                                    <span class="quantite-value">{{ stock.quantite }}</span>
+                                    <span class="edit-hint">✏️</span>
+                                </div>
+                                
+                                {# Mode édition #}
+                                <div class="quantite-edit-form" id="quantite-edit-{{ stock.id }}" style="display: none;">
+                                    <input type="number" 
+                                           id="quantite-input-grid-{{ stock.id }}"
+                                           value="{{ stock.quantite }}" 
+                                           data-original="{{ stock.quantite }}"
+                                           step="0.01" 
+                                           min="0"
+                                           class="quantite-input-inline"
+                                           onkeydown="if(event.key==='Enter'){saveQuantite({{ stock.id }});} else if(event.key==='Escape'){cancelEdit({{ stock.id }});}">
+                                    <button type="button" class="btn-save-inline" onclick="saveQuantite({{ stock.id }})">✓</button>
+                                    <button type="button" class="btn-cancel-inline" onclick="cancelEdit({{ stock.id }})">✗</button>
+                                </div>
+                                <span class="edit-status" id="status-grid-{{ stock.id }}"></span>
                             </div>
                         </td>
-                        <td>
-                            <span class="unite-badge">{{ stock.ingredient.unite }}</span>
-                        </td>
+                        <td>{{ stock.ingredient.unite }}</td>
                         <td class="hide-mobile">
-                            {# ✅ CORRIGÉ: Utilisation de formater_prix_unitaire pour gérer tous les cas #}
-                            {% if stock.ingredient.prix_unitaire and stock.ingredient.prix_unitaire > 0 %}
-                                <span class="prix-table">{{ formater_prix_unitaire(stock.ingredient) }}</span>
+                            {% if stock.ingredient.prix_unitaire %}
+                                {{ "%.2f"|format(stock.ingredient.prix_unitaire) }}€/{{ stock.ingredient.unite }}
                             {% else %}
-                                <span style="color: #adb5bd;">-</span>
+                                -
                             {% endif %}
                         </td>
                         <td>
-                            {# ✅ CORRIGÉ: Calcul correct pour les pièces (prix stocké en €/g) #}
-                            {% if stock.ingredient.prix_unitaire and stock.ingredient.prix_unitaire > 0 %}
+                            {% if stock.ingredient.prix_unitaire %}
                                 {% if stock.ingredient.unite == 'pièce' and stock.ingredient.poids_piece and stock.ingredient.poids_piece > 0 %}
-                                    {# Pour les pièces : quantité × poids_piece × prix_par_gramme #}
-                                    {% set valeur_stock = stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire %}
+                                    {{ "%.2f"|format(stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire) }}€
                                 {% else %}
-                                    {# Pour g/ml : calcul direct #}
-                                    {% set valeur_stock = stock.quantite * stock.ingredient.prix_unitaire %}
+                                    {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€
                                 {% endif %}
-                                <span class="valeur-stock">{{ "%.2f"|format(valeur_stock) }}€</span>
                             {% else %}
-                                <span style="color: #adb5bd;">-</span>
+                                -
                             {% endif %}
                         </td>
                         <td class="hide-mobile">
-                            <span class="date-modif">{{ stock.date_modification.strftime('%d/%m/%y %H:%M') }}</span>
+                            {{ stock.date_modification.strftime('%d/%m/%Y %H:%M') if stock.date_modification else '-' }}
                         </td>
                         <td class="cell-actions">
-                            <a href="{{ url_for('frigo.vider', id=stock.id) }}" 
+                            <a href="{{ url_for('frigo.supprimer', stock_id=stock.id) }}" 
                                class="btn-icon btn-icon-danger" 
-                               title="Vider du frigo"
-                               onclick="return confirm('Retirer cet ingrédient du frigo ?')">🗑️</a>
+                               title="Supprimer"
+                               onclick="return confirm('Supprimer {{ stock.ingredient.nom }} du frigo ?')">🗑️</a>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
-                    <tr class="total-row-frigo">
-                        <td colspan="5" style="text-align: right; font-weight: bold;">Valeur totale du stock :</td>
-                        <td colspan="3" style="font-weight: bold; color: #28a745; font-size: 1.1em;">
-                            {# Valeur totale globale (passée depuis la route) #}
-                            {% if valeur_totale_globale > 0 %}
-                                {{ "%.2f"|format(valeur_totale_globale) }}€
-                                {% if pagination.pages > 1 %}
-                                    <br>
-                                    {# Calcul de la valeur de la page actuelle avec la méthode correcte pour les pièces #}
-                                    {% set valeur_page = namespace(total=0) %}
-                                    {% for stock in stocks %}
-                                        {% if stock.ingredient.prix_unitaire and stock.ingredient.prix_unitaire > 0 %}
-                                            {% if stock.ingredient.unite == 'pièce' and stock.ingredient.poids_piece and stock.ingredient.poids_piece > 0 %}
-                                                {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire) %}
-                                            {% else %}
-                                                {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.prix_unitaire) %}
-                                            {% endif %}
+                    <tr>
+                        <td colspan="5" style="text-align: right; font-weight: bold;">
+                            Valeur totale du stock :
+                        </td>
+                        <td colspan="3" style="font-weight: bold; color: #28a745;">
+                            {% if valeur_totale is defined and valeur_totale > 0 %}
+                                {{ "%.2f"|format(valeur_totale) }}€
+                                {# Calculer la valeur de la page courante #}
+                                {% set valeur_page = namespace(total=0) %}
+                                {% for stock in stocks %}
+                                    {% if stock.ingredient.prix_unitaire %}
+                                        {% if stock.ingredient.unite == 'pièce' and stock.ingredient.poids_piece and stock.ingredient.poids_piece > 0 %}
+                                            {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire) %}
+                                        {% else %}
+                                            {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.prix_unitaire) %}
                                         {% endif %}
-                                    {% endfor %}
-                                    <span style="font-size: 0.75em; font-weight: normal; color: #6c757d;">
-                                        ({{ "%.2f"|format(valeur_page.total) }}€ sur cette page)
-                                    </span>
-                                {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                                <span style="font-size: 0.75em; font-weight: normal; color: #6c757d;">
+                                    ({{ "%.2f"|format(valeur_page.total) }}€ sur cette page)
+                                </span>
                             {% else %}
                                 -
                             {% endif %}
@@ -221,6 +223,6 @@
 {% endblock %}
 
 {% block extra_js %}
+{# select-search.js est déjà chargé dans base.html - ne pas le recharger ici #}
 <script src="{{ versioned_url_for('static', filename='javascript/frigo.js') }}"></script>
-<script src="{{ versioned_url_for('static', filename='javascript/select-search.js') }}"></script>
 {% endblock %}

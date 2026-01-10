@@ -1,8 +1,11 @@
 // ============================================
 // Fichier: static/javascript/select-search.js
 // Transforme les selects en champs de recherche
-// VERSION CORRIGÉE - Protection double initialisation
+// VERSION CORRIGÉE - Protection double chargement
 // ============================================
+
+// ✅ PROTECTION GLOBALE : Éviter de redéclarer si déjà chargé
+if (typeof window.SelectSearch === 'undefined') {
 
 class SelectSearch {
     constructor(selectElement) {
@@ -30,6 +33,9 @@ class SelectSearch {
         this.selectedValue = selectElement.value;
         this.isInitialized = false;
         
+        // Log pour debug
+        console.log(`SelectSearch: Initialisation de ${selectElement.id || selectElement.name} avec ${this.options.length} options`);
+        
         this.init();
     }
 
@@ -50,7 +56,7 @@ class SelectSearch {
         this.input.type = 'text';
         this.input.className = 'select-search-input';
         this.input.placeholder = this.select.getAttribute('placeholder') || 'Rechercher...';
-        this.input.autocomplete = 'off'; // Éviter l'autocomplétion du navigateur
+        this.input.autocomplete = 'off';
         
         // Afficher la valeur sélectionnée si elle existe
         const selectedOption = this.options.find(opt => opt.value === this.selectedValue);
@@ -75,6 +81,8 @@ class SelectSearch {
         
         // Attacher les événements
         this.attachEvents();
+        
+        console.log(`SelectSearch: ${this.select.id || this.select.name} initialisé avec succès`);
     }
 
     attachEvents() {
@@ -293,13 +301,17 @@ function initSelectSearch(selector = '.searchable-select') {
     const selects = document.querySelectorAll(selector);
     const instances = [];
     
-    selects.forEach(select => {
+    console.log(`initSelectSearch: Trouvé ${selects.length} select(s) avec le sélecteur "${selector}"`);
+    
+    selects.forEach((select, i) => {
         // ✅ Triple vérification pour éviter les doublons
         if (select.dataset.selectSearchInit === 'true') {
+            console.log(`initSelectSearch: Select #${i} déjà initialisé, ignoré`);
             return;
         }
         if (select.parentElement && 
             select.parentElement.classList.contains('select-search-wrapper')) {
+            console.log(`initSelectSearch: Select #${i} déjà dans un wrapper, ignoré`);
             return;
         }
         
@@ -309,6 +321,7 @@ function initSelectSearch(selector = '.searchable-select') {
         }
     });
     
+    console.log(`initSelectSearch: ${instances.length} instance(s) créée(s)`);
     return instances;
 }
 
@@ -335,6 +348,7 @@ function initSingleSelectSearch(select) {
 
 // Initialiser automatiquement au chargement de la page
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('SelectSearch: DOMContentLoaded, initialisation...');
     initSelectSearch();
 });
 
@@ -380,3 +394,9 @@ document.addEventListener('DOMContentLoaded', () => {
 window.SelectSearch = SelectSearch;
 window.initSelectSearch = initSelectSearch;
 window.initSingleSelectSearch = initSingleSelectSearch;
+
+console.log('SelectSearch: Script chargé');
+
+} else {
+    console.log('SelectSearch: Script déjà chargé, ignoré');
+}
