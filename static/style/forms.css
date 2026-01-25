@@ -1,28 +1,13 @@
 /* ============================================ */
-/* Fichier: static/style/forms.css              */
-/* STYLES POUR LES FORMULAIRES FACTORISÉS      */
+/* FICHIER: static/style/forms.css             */
+/* FORMULAIRES AVANCÉS - PALETTE NATURELLE    */
+/* Ingrédients, recettes, étapes, etc.        */
 /* ============================================ */
-
-/* ========== FORM ROW (Ligne de formulaire) ========== */
-.form-row {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
-}
-
-.form-row > .form-group {
-    margin-bottom: 0;
-}
-
-.form-row > .form-group:only-child {
-    flex: 1;
-}
 
 /* ========== FORM SECTION ========== */
 .form-section {
-    margin-bottom: 25px;
-    padding-bottom: 20px;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
     border-bottom: 1px solid var(--border-light);
 }
 
@@ -33,47 +18,38 @@
 }
 
 .form-section h4 {
-    margin: 0 0 15px 0;
+    margin: 0 0 var(--spacing-md) 0;
     color: var(--text-primary);
-    font-size: 1.1em;
+    font-size: var(--font-base);
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--spacing-sm);
 }
 
 .form-section-description {
     color: var(--text-secondary);
-    font-size: 0.9em;
-    margin: 0 0 15px 0;
+    font-size: var(--font-sm);
+    margin: 0 0 var(--spacing-md) 0;
     line-height: 1.5;
-}
-
-/* ========== FORM HELP TEXT ========== */
-.form-help {
-    display: block;
-    margin-top: 6px;
-    color: var(--text-secondary);
-    font-size: 0.85em;
-    line-height: 1.4;
-}
-
-.form-help a {
-    color: var(--primary);
 }
 
 /* ========== NUTRITION DETAILS ========== */
 .nutrition-details {
-    margin-top: 20px;
-    padding: 15px;
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
     background: var(--bg-light);
     border-radius: var(--border-radius);
+    border: 1px solid var(--border-light);
 }
 
 .nutrition-details summary {
     cursor: pointer;
     font-weight: 600;
     color: var(--text-primary);
-    padding: 5px 0;
+    padding: var(--spacing-sm);
+    user-select: none;
+    transition: color var(--transition-fast);
 }
 
 .nutrition-details summary:hover {
@@ -81,90 +57,159 @@
 }
 
 .nutrition-details[open] summary {
-    margin-bottom: 15px;
-    padding-bottom: 10px;
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
     border-bottom: 1px solid var(--border-light);
 }
 
-.nutrition-fields-grid {
-    margin-top: 10px;
+.nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
 }
 
-/* ========== DYNAMIC ROWS (Ingrédients, Étapes) ========== */
+/* ========== INGREDIENT ROW (formulaire recette) ========== */
+#ingredients-container,
+#etapes-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
 .ingredient-row,
 .etape-row {
     display: flex;
-    gap: 15px;
-    align-items: flex-start;
-    margin-bottom: 15px;
-    padding: 15px;
+    gap: var(--spacing-md);
+    align-items: center;
+    padding: var(--spacing-md);
     background: var(--bg-light);
     border-radius: var(--border-radius);
-    animation: fadeIn 0.3s ease-out;
+    border: 1px solid var(--border-light);
+    animation: scaleIn 0.3s ease-out;
 }
 
-.ingredient-row:hover,
-.etape-row:hover {
-    background: var(--bg-cream);
+.ingredient-row .form-group,
+.etape-row .form-group {
+    margin-bottom: 0;
+    flex: 1;
 }
 
-/* Numéro d'étape */
+.ingredient-select-wrapper {
+    flex: 2;
+    min-width: 200px;
+}
+
+.ingredient-quantite-wrapper {
+    flex: 1;
+    min-width: 100px;
+}
+
+.unite-display {
+    flex: 0 0 auto;
+    padding: var(--spacing-md);
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+}
+
+/* ========== ETAPE ROW ========== */
 .etape-number {
-    flex-shrink: 0;
-    width: 35px;
-    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     background: var(--primary);
     color: white;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.95em;
+    font-weight: 700;
+    font-size: var(--font-sm);
+    flex-shrink: 0;
 }
 
-/* Conteneur des inputs d'étape */
 .etape-inputs {
+    display: flex;
+    gap: var(--spacing-md);
     flex: 1;
-    display: flex;
-    gap: 10px;
 }
 
-/* Affichage de l'unité */
-.unite-display {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.etape-inputs .form-group:first-child {
+    flex: 3;
 }
 
-.unite-label {
-    padding: 8px 12px;
-    background: var(--bg-cream);
-    border-radius: var(--border-radius);
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    min-width: 40px;
-    text-align: center;
+.etape-inputs .form-group:last-child {
+    flex: 1;
+    min-width: 120px;
 }
 
-/* Bouton de suppression dans les rows */
+/* ========== BOUTON REMOVE ========== */
 .btn-remove {
     flex-shrink: 0;
     align-self: center;
 }
 
-/* ========== BOUTONS DE FORMULAIRE ========== */
-.btn-secondary {
-    background: var(--bg-light);
-    color: var(--text-primary);
-    border: 2px solid var(--border-color);
+/* ========== BOUTON AJOUTER ========== */
+.btn-add {
+    margin-top: var(--spacing-md);
+    width: 100%;
+    background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
 }
 
-.btn-secondary:hover {
-    background: var(--bg-cream);
+.btn-add:hover {
+    background: linear-gradient(135deg, var(--secondary-light) 0%, var(--secondary) 100%);
+}
+
+/* ========== FILE INPUT CUSTOM ========== */
+.file-input-wrapper {
+    position: relative;
+}
+
+.file-input-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: white;
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.file-input-label:hover {
     border-color: var(--primary);
+    background: rgba(46, 204, 113, 0.02);
     color: var(--primary);
+}
+
+.file-input-label input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.file-preview {
+    margin-top: var(--spacing-md);
+    max-width: 200px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
 }
 
 /* ========== VALIDATION VISUELLE ========== */
@@ -184,22 +229,69 @@
     border-color: var(--success);
 }
 
+/* ========== CHECKBOX CUSTOM (saisons) ========== */
+.saisons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+@media (min-width: 768px) {
+    .saisons-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.saison-checkbox {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: white;
+}
+
+.saison-checkbox:hover {
+    border-color: var(--primary);
+    background: rgba(46, 204, 113, 0.02);
+}
+
+.saison-checkbox.selected {
+    border-color: var(--primary);
+    background: #e8f5ed;
+}
+
+.saison-checkbox input {
+    margin-right: var(--spacing-sm);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.saison-checkbox .saison-emoji {
+    font-size: 1.2em;
+    margin-right: var(--spacing-sm);
+}
+
+.saison-checkbox .saison-nom {
+    font-weight: 600;
+    font-size: var(--font-sm);
+}
+
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
-    .form-row {
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .form-row > .form-group {
-        flex: none !important;
-        width: 100%;
-    }
-    
     .ingredient-row,
     .etape-row {
         flex-direction: column;
-        gap: 10px;
+        gap: var(--spacing-sm);
+    }
+    
+    .ingredient-row .form-group,
+    .etape-row .form-group {
+        width: 100%;
     }
     
     .etape-inputs {
@@ -218,16 +310,8 @@
     .btn-remove {
         align-self: flex-end;
     }
-}
-
-/* ========== ANIMATION ========== */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    
+    .nutrition-grid {
+        grid-template-columns: 1fr;
     }
 }

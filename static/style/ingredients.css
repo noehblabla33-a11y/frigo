@@ -1,215 +1,36 @@
 /* ============================================ */
-/* Fichier: static/style/ingredients.css        */
-/* STYLES SPÉCIFIQUES AUX INGRÉDIENTS          */
-/* Version purgée - tableaux dans tables.css   */
+/* FICHIER: static/style/ingredients.css       */
+/* CATALOGUE INGRÉDIENTS - PALETTE NATURELLE  */
 /* ============================================ */
 
-/* ========== BADGES CATÉGORIE ========== */
-.category-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: white;
-    padding: 6px 12px;
+/* Note: Utilise principalement tables.css */
+/* Styles spécifiques aux ingrédients uniquement */
+
+.ingredient-stock-badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-md);
     border-radius: 20px;
-    font-size: 0.75em;
-    font-weight: 600;
-    z-index: 10;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    font-size: var(--font-xs);
+    font-weight: 700;
 }
 
-.category-badge-small {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: var(--bg-cream);
-    color: var(--text-primary);
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.85em;
-    font-weight: 500;
-}
-
-/* ========== BADGES DE STOCK ========== */
-.stock-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.85em;
-    font-weight: 500;
-}
-
-.stock-available {
-    background: linear-gradient(135deg, #d4f4dd, #e8f9ed);
-    color: #2d5f3e;
-}
-
-.stock-empty {
-    background: linear-gradient(135deg, #ffe6e6, #fff0f0);
-    color: #8b2e2e;
-}
-
-/* ========== INFORMATIONS INGRÉDIENT ========== */
-.ingredient-unite {
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    margin: 0;
-}
-
-.ingredient-prix {
+.ingredient-stock-badge.en-stock {
+    background: #e8f5ed;
     color: var(--success);
-    font-size: 0.95em;
-    font-weight: 600;
-    margin: 0;
 }
 
-.ingredient-stock {
-    color: var(--success);
-    font-weight: 600;
-    font-size: 0.9em;
-    margin: 5px 0;
-}
-
-.ingredient-stock-vide {
+.ingredient-stock-badge.stock-vide {
+    background: #fdecea;
     color: var(--danger);
-    font-size: 0.9em;
-    margin: 5px 0;
 }
 
-/* ========== FORMULAIRE D'AJOUT ========== */
-.ingredient-row {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 10px;
-    align-items: flex-end;
-}
-
-.ingredient-row > div {
-    flex: 1;
-}
-
-/* ========== FILTRES ET RECHERCHE ========== */
-.search-filters {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-}
-
-.search-filters .form-group {
-    flex: 1;
-    min-width: 200px;
-    margin-bottom: 0;
-}
-
-/* ========== HEADER DU CATALOGUE ========== */
-.catalogue-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.catalogue-header h3 {
-    margin: 0;
-    border: none;
-    padding: 0;
-}
-
-/* ========== COMPTEUR DE CATÉGORIES ========== */
-.categories-count {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 15px 0;
-    padding: 15px;
-    background: var(--bg-cream);
-    border-radius: var(--border-radius);
-}
-
-.category-count-badge {
+.ingredient-categorie {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    background: white;
-    border-radius: 15px;
-    font-size: 0.9em;
-    box-shadow: var(--shadow-xs);
-}
-
-.category-count-number {
-    background: var(--primary);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 10px;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--bg-cream);
+    border-radius: 20px;
+    font-size: var(--font-xs);
     font-weight: 600;
-    font-size: 0.85em;
-}
-
-/* ========== ÉTATS VIDES ========== */
-.empty-ingredients {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-secondary);
-}
-
-.empty-ingredients-icon {
-    font-size: 4em;
-    margin-bottom: 20px;
-    opacity: 0.5;
-}
-
-.empty-ingredients-text {
-    font-size: 1.2em;
-    margin-bottom: 10px;
-}
-
-.empty-ingredients-subtext {
-    color: var(--text-muted);
-    margin-bottom: 20px;
-}
-
-/* ========== HELPER DE PRIX ========== */
-#prix-helper {
-    animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* ========== RESPONSIVE ========== */
-@media (max-width: 768px) {
-    .search-filters {
-        flex-direction: column;
-    }
-    
-    .search-filters .form-group {
-        min-width: 100%;
-    }
-    
-    .catalogue-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    
-    .ingredient-row {
-        flex-direction: column;
-        gap: 10px;
-    }
 }

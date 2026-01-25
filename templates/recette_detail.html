@@ -2,7 +2,7 @@
 {% block title %}{{ recette.nom }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='style/recette-detail.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/recette-details.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -27,10 +27,6 @@
         {% endif %}
         {% if cout_estime > 0 %}
         <p class="rd-meta rd-cost">💰 Coût estimé : <strong>{{ cout_estime }}€</strong></p>
-        {% endif %}
-        <p class="rd-meta">📦 {{ recette.ingredients|length }} ingrédient(s) nécessaire(s)</p>
-        {% if recette.etapes %}
-        <p class="rd-meta">📝 {{ recette.etapes|length }} étape(s) de préparation</p>
         {% endif %}
         <div class="rd-actions">
             <a href="{{ url_for('recettes.liste') }}" class="btn">← Retour</a>

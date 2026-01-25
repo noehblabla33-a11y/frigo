@@ -1,53 +1,356 @@
-/**
- * static/style/cuisiner-frigo.css
- * Styles pour la page "Cuisiner avec mon frigo"
- * Intégration du système de recommandation
- */
+/* ============================================ */
+/* CUISINER AVEC MON FRIGO - VERSION PREMIUM FINALE */
+/* Design moderne et cohérent                  */
+/* ============================================ */
 
-/* ============================================
-   STATISTIQUES
-   ============================================ */
+/* ========== EN-TÊTE PAGE ========== */
+.page-header {
+    margin-bottom: 30px;
+}
 
+.page-header h2 {
+    font-size: 2em;
+    color: var(--text-primary);
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+
+.page-header p {
+    color: var(--text-secondary);
+    font-size: 1.05em;
+    margin: 0;
+}
+
+/* ========== STATISTIQUES PREMIUM ========== */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
 .stat-card {
     background: white;
-    border-radius: 12px;
-    padding: 20px;
+    border: 3px solid #e8ecef;
+    border-radius: 16px;
+    padding: 28px;
     text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.stat-card.stat-realisable {
-    border-left: 4px solid #28a745;
+/* Bande colorée sur le côté */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+    transition: width 0.3s ease;
 }
 
-.stat-card.stat-planifiee {
-    border-left: 4px solid #667eea;
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
 }
 
+.stat-card:hover::before {
+    width: 8px;
+}
+
+/* Numéro de stat */
 .stat-number {
-    font-size: 2.2em;
+    font-size: 3em;
     font-weight: 700;
-    color: #333;
+    color: var(--primary);
     line-height: 1;
+    margin-bottom: 12px;
+    font-variant-numeric: tabular-nums;
 }
 
+/* Label de stat */
 .stat-label {
-    color: #6c757d;
-    font-size: 0.9em;
-    margin-top: 8px;
+    font-size: 0.95em;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* ============================================
-   SECTION PLANIFIÉES
-   ============================================ */
+/* Variantes de couleur pour les stats */
+.stat-card.stat-realisable::before {
+    background: linear-gradient(180deg, #28a745 0%, #20c997 100%);
+}
 
+.stat-card.stat-realisable:hover {
+    border-color: #28a745;
+}
+
+.stat-card.stat-realisable .stat-number {
+    color: #28a745;
+}
+
+.stat-card.stat-planifiee::before {
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card.stat-planifiee:hover {
+    border-color: #667eea;
+}
+
+.stat-card.stat-planifiee .stat-number {
+    color: #667eea;
+}
+
+/* ========== CARTES SECTIONS ========== */
+.card {
+    background: white;
+    border: 2px solid #e8ecef;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.3em;
+    color: var(--text-primary);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card > p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* ========== FORMULAIRE DE CONFIGURATION PREMIUM ========== */
+.config-card {
+    margin-bottom: 30px;
+}
+
+.collapsable-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 !important;
+    padding: 0 !important;
+    transition: color 0.2s ease;
+}
+
+.collapsable-header:hover {
+    color: var(--primary);
+}
+
+.collapsable-header::after {
+    content: '▼';
+    font-size: 0.8em;
+    margin-left: auto;
+    transition: transform 0.3s ease;
+}
+
+.collapsable-header[aria-expanded="true"]::after {
+    transform: rotate(180deg);
+}
+
+.collapsable-content {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #e8ecef;
+}
+
+/* Sections du formulaire */
+.config-section {
+    margin-bottom: 25px;
+}
+
+.config-section h4 {
+    margin: 0 0 12px 0;
+    font-size: 1.1em;
+    color: var(--text-primary);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.config-help {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    margin: 0 0 16px 0;
+    font-style: italic;
+}
+
+/* Form row */
+.form-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95em;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #e8ecef;
+    border-radius: 8px;
+    font-size: 0.95em;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+}
+
+/* Checkbox group */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    padding-top: 28px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 600 !important;
+    color: var(--text-primary);
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+/* Grille de critères */
+.criteres-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.critere-slider {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 12px;
+    border: 2px solid #e8ecef;
+    transition: all 0.2s ease;
+}
+
+.critere-slider:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.critere-slider label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.critere-emoji {
+    font-size: 1.2em;
+}
+
+/* Slider container */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.slider {
+    flex: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 10px;
+    background: #e8ecef;
+    outline: none;
+    cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-value {
+    min-width: 50px;
+    text-align: right;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 1em;
+}
+
+/* Actions du formulaire */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 2px solid #e8ecef;
+}
+
+/* ========== RECETTES PLANIFIÉES ========== */
 .planifiees-container {
     display: flex;
     flex-direction: column;
@@ -57,19 +360,40 @@
 .recette-planifiee-card {
     display: flex;
     gap: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border-left: 4px solid #667eea;
+    padding: 18px;
+    background: white;
+    border: 2px solid #e8ecef;
+    border-radius: 12px;
     align-items: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
 }
 
+.recette-planifiee-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.recette-planifiee-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #667eea;
+    transform: translateX(5px);
+}
+
+/* Image planifiée */
 .planifiee-image {
     flex-shrink: 0;
     width: 100px;
     height: 100px;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .planifiee-image img {
@@ -89,6 +413,7 @@
     font-size: 2.5em;
 }
 
+/* Info planifiée */
 .planifiee-info {
     flex: 1;
     min-width: 0;
@@ -96,215 +421,88 @@
 
 .planifiee-info h4 {
     margin: 0 0 8px 0;
+    font-size: 1.1em;
 }
 
 .planifiee-info h4 a {
-    color: #333;
+    color: var(--text-primary);
     text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
 }
 
 .planifiee-info h4 a:hover {
     color: #667eea;
 }
 
+/* Meta badges */
 .planifiee-meta {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     font-size: 0.9em;
-    color: #6c757d;
 }
 
 .meta-badge {
-    background: #667eea;
-    color: white;
-    padding: 3px 10px;
+    background: linear-gradient(135deg, #e8f5ed 0%, #d4edda 100%);
+    color: var(--primary);
+    padding: 4px 12px;
     border-radius: 12px;
-    font-size: 0.85em;
+    font-weight: 600;
+    border: 1px solid #c3e6cb;
 }
 
+.meta-badge.type {
+    background: linear-gradient(135deg, #e7f3ff 0%, #d4e9ff 100%);
+    color: #0066cc;
+    border-color: #b3d9ff;
+}
+
+/* Statut ingrédients */
 .ingredients-status {
     margin-top: 8px;
 }
 
 .status-ready {
     color: #28a745;
+    font-size: 0.9em;
     font-weight: 600;
 }
 
 .status-partial {
-    color: #ff9800;
+    color: #ffc107;
+    font-size: 0.9em;
     font-weight: 600;
 }
 
 .ingredients-manquants {
-    margin: 8px 0 0 20px;
+    list-style: none;
+    padding: 8px 0 0 0;
+    margin: 0;
     font-size: 0.85em;
-    color: #6c757d;
-    padding-left: 0;
+    color: var(--text-secondary);
 }
 
 .ingredients-manquants li {
-    margin: 3px 0;
+    padding: 2px 0;
 }
 
+/* Actions planifiée */
 .planifiee-actions {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    flex-shrink: 0;
 }
 
-/* ============================================
-   CONFIGURATION PANEL
-   ============================================ */
-
-.config-card {
-    margin-bottom: 20px;
-}
-
-.config-card h3 {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.config-card h3::after {
-    content: '▼';
-    font-size: 0.7em;
-    opacity: 0.5;
-    margin-left: auto;
-    transition: transform 0.2s ease;
-}
-
-.config-card h3.collapsed::after {
-    transform: rotate(-90deg);
-}
-
-.config-section {
-    margin-bottom: 24px;
-}
-
-.config-section h4 {
-    margin: 0 0 12px 0;
-    color: #495057;
-    font-size: 1em;
-}
-
-.config-help {
-    color: #6c757d;
-    font-size: 0.9em;
-    margin-bottom: 16px;
-}
-
-.criteres-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 12px;
-}
-
-.critere-slider {
-    background: #f8f9fa;
-    padding: 12px 16px;
-    border-radius: 8px;
-}
-
-.critere-slider label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #495057;
-    font-size: 0.9em;
-}
-
-.critere-emoji {
-    font-size: 1.1em;
-}
-
-.slider-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.slider {
-    flex: 1;
-    height: 6px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: #dee2e6;
-    border-radius: 3px;
-    outline: none;
-}
-
-.slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    background: #667eea;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    background: #667eea;
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-}
-
-.slider-value {
-    min-width: 40px;
-    text-align: right;
-    font-weight: 600;
-    color: #667eea;
-    font-size: 0.9em;
-}
-
-.checkbox-group {
-    display: flex;
-    align-items: center;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-weight: normal !important;
-}
-
-.checkbox-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-    padding-top: 16px;
-    border-top: 1px solid #e9ecef;
-}
-
-/* ============================================
-   HEADER BAR RECOMMANDATIONS
-   ============================================ */
-
+/* ========== GRILLE RECETTES RECOMMANDÉES ========== */
 .reco-header-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 12px;
-    margin-bottom: 20px;
 }
 
 .reco-header-bar h3 {
@@ -319,53 +517,59 @@
 }
 
 .filter-badge {
-    background: #e9ecef;
-    color: #495057;
-    padding: 4px 12px;
+    background: #f8f9fa;
+    color: var(--text-primary);
+    padding: 6px 12px;
     border-radius: 12px;
     font-size: 0.85em;
+    font-weight: 600;
+    border: 1px solid #e8ecef;
 }
-
-/* ============================================
-   GRILLE DES RECOMMANDATIONS
-   ============================================ */
 
 .recettes-reco-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
+    margin-top: 20px;
 }
 
-.recette-reco-card {
+.recette-reco-card,
+.recette-card {
     background: white;
-    border-radius: 12px;
+    border: 2px solid #e8ecef;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e9ecef;
-    transition: all 0.2s ease;
-    display: flex;
-    flex-direction: column;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.recette-reco-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+.recette-reco-card:hover,
+.recette-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    border-color: var(--primary);
 }
 
-.recette-reco-card.realisable {
-    border: 2px solid #28a745;
+.recette-reco-card.realisable,
+.recette-card.realisable {
+    border-color: #28a745;
 }
 
-/* Image */
+/* ✅ CORRECTION : Lien image avec position relative */
 .recette-image-link {
     display: block;
     text-decoration: none;
+    color: inherit;
+    position: relative; /* AJOUTÉ pour que absolute fonctionne */
 }
 
+/* Image recette avec position relative aussi */
 .recette-image {
-    position: relative;
-    height: 160px;
+    width: 100%;
+    height: 180px;
     overflow: hidden;
+    position: relative; /* AJOUTÉ pour les badges */
+    background: #f8f9fa;
 }
 
 .recette-image img {
@@ -375,6 +579,7 @@
     transition: transform 0.3s ease;
 }
 
+.recette-card:hover .recette-image img,
 .recette-reco-card:hover .recette-image img {
     transform: scale(1.05);
 }
@@ -385,50 +590,27 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
     font-size: 3em;
 }
 
-/* Badges sur l'image */
-.recette-type-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: 500;
-}
-
-.badge-realisable {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #28a745;
-    color: white;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: 600;
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-}
-
+/* ✅ CORRECTION : Score badge overlay DANS l'image */
 .score-badge-overlay {
-    position: absolute;
+    position: absolute; /* Position absolue par rapport à .recette-image */
     bottom: 10px;
     right: 10px;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 0.9em;
+    font-size: 1em;
     color: white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10; /* Au-dessus de l'image */
 }
 
 .score-badge-overlay.excellent {
@@ -447,51 +629,82 @@
     background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
 }
 
-/* Contenu */
-.recette-content {
-    padding: 16px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+/* Badges sur image - également en absolute */
+.badge-realisable {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    z-index: 10;
 }
 
-.recette-content h4 {
-    margin: 0 0 8px 0;
-    font-size: 1.05em;
+.recette-type-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 16px;
+    font-size: 0.85em;
+    font-weight: 600;
+    z-index: 10;
+}
+
+/* Info recette */
+.recette-content,
+.recette-info {
+    padding: 18px;
+}
+
+.recette-content h4,
+.recette-info h4 {
+    margin: 0 0 12px 0;
+    color: var(--text-primary);
+    font-size: 1.1em;
+    font-weight: 600;
 }
 
 .recette-content h4 a {
-    color: #333;
+    color: var(--text-primary);
     text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .recette-content h4 a:hover {
-    color: #667eea;
+    color: var(--primary);
 }
 
 .recette-meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    color: #6c757d;
-    font-size: 0.85em;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 0.9em;
     margin-bottom: 12px;
 }
 
 /* Barre de disponibilité */
 .disponibilite-bar {
-    width: 100%;
     height: 6px;
-    background: #e9ecef;
-    border-radius: 3px;
+    background: #e8ecef;
+    border-radius: 10px;
     overflow: hidden;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .disponibilite-progress {
     height: 100%;
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    border-radius: 10px;
     transition: width 0.3s ease;
-    border-radius: 3px;
 }
 
 /* Scores mini */
@@ -499,77 +712,106 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: auto;
+    margin-top: 12px;
 }
 
 .score-mini {
     font-size: 0.8em;
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 10px;
     background: #f8f9fa;
     color: #495057;
+    font-weight: 600;
 }
 
 .score-mini.saison {
-    background: rgba(40, 167, 69, 0.1);
+    background: linear-gradient(135deg, #e8f5ed 0%, #d4edda 100%);
     color: #28a745;
+    border: 1px solid #c3e6cb;
 }
 
 .score-mini.dispo {
-    background: rgba(0, 123, 255, 0.1);
-    color: #007bff;
+    background: linear-gradient(135deg, #e7f3ff 0%, #d4e9ff 100%);
+    color: #0066cc;
+    border: 1px solid #b3d9ff;
 }
 
-.score-mini small {
-    opacity: 0.7;
-    margin-left: 2px;
-}
-
-/* Actions */
+/* Actions recette */
 .recette-actions {
-    padding: 12px 16px;
-    border-top: 1px solid #e9ecef;
+    padding: 12px 18px;
+    border-top: 2px solid #e8ecef;
     background: #f8f9fa;
 }
 
-.recette-actions .btn-small {
+.recette-actions .btn-small,
+.recette-actions button {
     width: 100%;
     text-align: center;
 }
 
-/* ============================================
-   ÉTAT VIDE
-   ============================================ */
-
+/* ========== ÉTAT VIDE ========== */
 .empty-state {
     text-align: center;
-    padding: 48px 20px;
-    color: #6c757d;
+    padding: 60px 20px;
+    color: var(--text-secondary);
 }
 
 .empty-icon {
-    font-size: 3em;
-    margin-bottom: 16px;
+    font-size: 4em;
+    margin-bottom: 20px;
     opacity: 0.5;
 }
 
 .empty-state p {
-    margin: 0 0 8px 0;
+    margin: 0 0 12px 0;
+    font-size: 1.1em;
 }
 
 .empty-hint {
-    font-size: 0.9em;
+    font-size: 0.95em;
 }
 
 .empty-hint a {
-    color: #667eea;
+    color: var(--primary);
+    text-decoration: underline;
+    font-weight: 600;
 }
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
+.empty-hint a:hover {
+    color: var(--primary-dark);
+}
 
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 2.5em;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        width: 100%;
+        min-width: 100%;
+    }
+    
+    .checkbox-group {
+        padding-top: 0;
+    }
+    
+    .criteres-grid {
+        grid-template-columns: 1fr;
+    }
+    
     .recette-planifiee-card {
         flex-direction: column;
         align-items: stretch;
@@ -594,26 +836,49 @@
         gap: 15px;
     }
     
+    .recette-image {
+        height: 140px;
+    }
+    
     .reco-header-bar {
         flex-direction: column;
         align-items: flex-start;
     }
-    
-    .criteres-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 480px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
     .recettes-reco-grid {
         grid-template-columns: 1fr;
     }
     
-    .recette-image {
-        height: 140px;
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
     }
 }
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stat-card,
+.recette-planifiee-card,
+.recette-card,
+.recette-reco-card {
+    animation: fadeInUp 0.5s ease-out backwards;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.1s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }

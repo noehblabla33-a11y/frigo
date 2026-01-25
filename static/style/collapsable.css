@@ -1,92 +1,205 @@
 /* ============================================ */
-/* Fichier: static/style/collapsable.css       */
-/* Styles pour les sections collapsables       */
+/* FICHIER: static/style/collapsable.css       */
+/* SECTIONS PLIABLES - PALETTE NATURELLE      */
+/* Accordéons et sections extensibles         */
 /* ============================================ */
 
-/* Header collapsable */
-.collapsable-header {
+/* ========== COLLAPSIBLE CONTAINER ========== */
+.collapsible-container {
+    margin-bottom: var(--spacing-lg);
+}
+
+.collapsible {
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-sm);
+    overflow: hidden;
+    box-shadow: var(--shadow-xs);
+    transition: all var(--transition-normal);
+}
+
+.collapsible:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.collapsible.active {
+    box-shadow: var(--shadow-md);
+}
+
+/* ========== HEADER ========== */
+.collapsible-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 0;
+    padding: var(--spacing-md) var(--spacing-lg);
     cursor: pointer;
     user-select: none;
-    transition: all 0.2s;
-    border-radius: 5px;
-    margin-bottom: 15px;
+    background: var(--bg-light);
+    transition: all var(--transition-fast);
+    border-bottom: 1px solid transparent;
 }
 
-.collapsable-header:hover {
-    background: rgba(102, 126, 234, 0.05);
-    padding-left: 10px;
-    padding-right: 10px;
+.collapsible-header:hover {
+    background: var(--bg-cream);
 }
 
-.collapsable-header h3 {
-    margin-bottom: 0;
+.collapsible.active .collapsible-header {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.05) 0%, rgba(39, 174, 96, 0.05) 100%);
+    border-bottom-color: var(--border-light);
+}
+
+.collapsible-title {
+    font-size: var(--font-base);
+    font-weight: 700;
+    color: var(--text-primary);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--spacing-sm);
 }
 
-.collapsable-header.collapsed h3 {
-    opacity: 0.7;
+.collapsible-title .icon {
+    font-size: 1.2em;
 }
 
-/* Icône de toggle - MASQUÉE */
-.collapsable-icon {
+.collapsible-toggle {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    font-size: var(--font-base);
+    transition: all var(--transition-normal);
+}
+
+.collapsible-toggle::before {
+    content: '+';
+    font-weight: 700;
+}
+
+.collapsible.active .collapsible-toggle {
+    background: var(--primary);
+    color: white;
+    transform: rotate(45deg);
+}
+
+/* ========== CONTENT ========== */
+.collapsible-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-normal) ease-out;
+}
+
+.collapsible.active .collapsible-content {
+    max-height: 2000px;
+    transition: max-height var(--transition-slow) ease-in;
+}
+
+.collapsible-body {
+    padding: var(--spacing-lg);
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ========== VARIANTES ========== */
+/* Collapsible avec badge */
+.collapsible-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    background: #e8f5ed;
+    color: var(--primary-dark);
+    border-radius: 12px;
+    font-size: var(--font-xs);
+    font-weight: 600;
+    margin-left: var(--spacing-sm);
+}
+
+/* Collapsible sans bordure */
+.collapsible-borderless {
+    border: none;
+    box-shadow: none;
+}
+
+.collapsible-borderless .collapsible-header {
+    border-bottom: 2px solid var(--border-light);
+    background: transparent;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.collapsible-borderless.active .collapsible-header {
+    border-bottom-color: var(--primary);
+}
+
+/* ========== DETAILS/SUMMARY (alternative HTML native) ========== */
+details {
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-md);
+    box-shadow: var(--shadow-xs);
+}
+
+details[open] {
+    box-shadow: var(--shadow-sm);
+}
+
+summary {
+    padding: var(--spacing-md) var(--spacing-lg);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-light);
+    transition: all var(--transition-fast);
+}
+
+summary:hover {
+    background: var(--bg-cream);
+}
+
+summary::-webkit-details-marker {
     display: none;
 }
 
-/* Badge "Nouveau" ou "Ajouter" */
-.collapsable-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    background: var(--primary);
-    color: white;
-    border-radius: 12px;
-    font-size: 0.7em;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    animation: pulse-badge 2s ease-in-out infinite;
+summary::before {
+    content: '+';
+    margin-right: var(--spacing-sm);
+    font-weight: 700;
+    color: var(--primary);
 }
 
-@keyframes pulse-badge {
-    0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 0.8;
-        transform: scale(0.95);
-    }
+details[open] summary::before {
+    content: '−';
 }
 
-.collapsable-header.collapsed .collapsable-badge {
-    animation: none;
-    opacity: 0.6;
+details[open] summary {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.05) 0%, rgba(39, 174, 96, 0.05) 100%);
+    border-bottom: 1px solid var(--border-light);
 }
 
-/* Contenu collapsable */
-.collapsable-content {
-    overflow: hidden;
+details > div {
+    padding: var(--spacing-lg);
+    animation: fadeIn 0.3s ease-out;
 }
 
-/* Card avec section collapsable */
-.card-collapsable {
-    border: 2px solid transparent;
-    transition: border-color 0.3s;
-}
-
-.card-collapsable:has(.collapsable-header:not(.collapsed)) {
-    border-color: rgba(102, 126, 234, 0.2);
-}
-
-/* Responsive */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
-    .collapsable-badge {
-        font-size: 0.65em;
-        padding: 3px 8px;
+    .collapsible-header,
+    summary {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    
+    .collapsible-body,
+    details > div {
+        padding: var(--spacing-md);
+    }
+    
+    .collapsible-title {
+        font-size: var(--font-sm);
     }
 }

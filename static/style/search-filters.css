@@ -1,26 +1,84 @@
 /* ============================================ */
-/* Fichier: static/style/search-filters.css     */
-/* Styles pour les composants de recherche      */
+/* Fichier: search-filters-compact-FIXED.css    */
+/* Version compacte SANS overflow qui coupe    */
 /* ============================================ */
 
-/* ========== CONTENEUR DE FILTRES ========== */
+/* ========== CONTENEUR DE FILTRES COMPACT ========== */
 .search-filters {
     display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
+    gap: 12px;
+    flex-wrap: nowrap; /* Tout sur une ligne */
     margin-bottom: 20px;
     align-items: flex-end;
+    overflow: visible; /* ✅ CORRECTION : visible au lieu de auto */
 }
 
+/* Supprimer le flex-wrap = tout sur une ligne */
 .search-filters .form-group {
-    flex: 1;
-    min-width: 180px;
+    flex: 1 1 auto;
+    min-width: 150px; /* Réduit de 180px */
+    max-width: 250px;
     margin-bottom: 0;
+    position: relative; /* ✅ Pour les dropdowns */
+    z-index: 1; /* ✅ Assurer que les selects soient au-dessus */
 }
 
+/* Champ de recherche un peu plus large */
 .search-filters .form-group:first-child {
-    flex: 2;
-    min-width: 250px;
+    flex: 1.5 1 auto;
+    min-width: 200px; /* Réduit de 250px */
+    max-width: 350px;
+}
+
+/* Boutons compacts */
+.search-filters .form-group:has(button),
+.search-filters .form-group:has(a.btn) {
+    flex: 0 0 auto;
+    min-width: auto;
+    max-width: none;
+}
+
+/* Labels plus compacts */
+.search-filters label {
+    font-size: 0.9em;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+/* Inputs plus compacts */
+.search-filters input,
+.search-filters select {
+    padding: 8px 12px;
+    font-size: 0.95em;
+}
+
+/* ✅ Assurer que les selects s'affichent au-dessus */
+.search-filters select {
+    position: relative;
+    z-index: 10;
+}
+
+.search-filters .form-group:focus-within {
+    z-index: 100; /* Monter le form-group au-dessus quand focus */
+}
+
+/* Boutons compacts */
+.search-filters button,
+.search-filters .btn {
+    padding: 8px 16px;
+    white-space: nowrap;
+}
+
+/* ========== WRAPPER POUR GÉRER LE SCROLL ========== */
+/* Si vraiment nécessaire, entourer .search-filters d'une div */
+.search-filters-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
+    margin-bottom: 20px;
+}
+
+.search-filters-wrapper .search-filters {
+    margin-bottom: 0;
 }
 
 /* ========== BARRE DES FILTRES ACTIFS ========== */
@@ -168,13 +226,25 @@
 }
 
 /* ========== RESPONSIVE ========== */
+/* Sur desktop/tablette : une seule ligne */
+@media (min-width: 769px) {
+    .search-filters {
+        flex-wrap: nowrap !important;
+        overflow: visible !important; /* ✅ Jamais de overflow qui coupe */
+    }
+}
+
+/* Sur mobile : retour au mode vertical */
 @media (max-width: 768px) {
     .search-filters {
         flex-direction: column;
+        flex-wrap: wrap;
+        overflow: visible;
     }
     
     .search-filters .form-group {
         min-width: 100%;
+        max-width: 100%;
         flex: 1 1 100% !important;
     }
     
@@ -198,4 +268,21 @@
         gap: 15px;
         align-items: stretch;
     }
+}
+
+/* ========== FIX SELECT SEARCHABLE ========== */
+/* Si vous utilisez des selects avec recherche personnalisés */
+.select-search-dropdown {
+    position: absolute;
+    z-index: 1000;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 4px;
 }

@@ -1,81 +1,66 @@
 /* ============================================ */
-/* Fichier: static/style/tables.css             */
-/* STYLES CENTRALISÉS POUR LES TABLEAUX        */
+/* FICHIER: static/style/tables.css            */
+/* TABLEAUX DE DONNÉES - PALETTE NATURELLE    */
+/* Compact, moderne, performant                */
 /* ============================================ */
-/*
- * Ce fichier centralise tous les styles de tableaux.
- * Le style de référence est celui de la page ingrédients (.item-table).
- * 
- * CLASSES DISPONIBLES :
- * - .data-table : Style de base (référence = ingredients)
- * - .data-table--simple : Variante simplifiée (historique)
- * - .data-table--header-gradient : Variante avec header coloré (courses)
- * 
- * CLASSES DE CELLULES :
- * - .cell-img : Cellule image/thumbnail
- * - .cell-name : Cellule nom principal
- * - .cell-actions : Cellule actions (boutons)
- * - .cell-numeric : Cellule numérique (alignée à droite)
- * - .cell-center : Cellule centrée
- * 
- * COMPATIBILITÉ :
- * Les anciennes classes (.item-table, .courses-table, etc.) 
- * sont conservées comme alias pour la rétrocompatibilité.
- */
 
-/* ============================================ */
-/* VARIABLES SPÉCIFIQUES AUX TABLEAUX          */
-/* ============================================ */
+/* ========== VARIABLES SPÉCIFIQUES ========== */
 :root {
-    /* Espacements */
-    --table-cell-padding: 15px;
-    --table-cell-padding-sm: 12px;
-    --table-row-gap: 8px;
-    
-    /* Thumbnail */
-    --table-thumb-size: 60px;
-    --table-thumb-size-sm: 50px;
-    --table-thumb-size-xs: 40px;
-    
-    /* Animations */
-    --table-hover-translate: 5px;
+    --table-cell-padding: 10px 12px;
+    --table-cell-padding-sm: 8px 10px;
+    --table-row-gap: 6px;
+    --table-thumb-size: 50px;
+    --table-thumb-size-sm: 40px;
+    --table-hover-translate: 3px;
 }
 
-/* ============================================ */
-/* STYLE DE BASE - .data-table                 */
-/* (Référence : page ingrédients)              */
-/* ============================================ */
+/* ========== CONTENEUR SCROLLABLE ========== */
+.table-container {
+    overflow-x: auto;
+    margin: var(--spacing-md) 0;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-xs);
+}
+
+/* ========== TABLE DE BASE ========== */
 .data-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0 var(--table-row-gap);
+    font-size: var(--font-sm);
 }
 
 /* En-tête */
 .data-table thead {
     background: var(--bg-cream);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .data-table th {
     padding: var(--table-cell-padding);
     text-align: left;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
-    font-size: 0.95em;
+    font-size: var(--font-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     border: none;
+    white-space: nowrap;
 }
 
-/* Lignes du corps */
+/* Lignes */
 .data-table tbody tr {
-    background: var(--bg-white);
+    background: white;
     transition: all var(--transition-normal);
     box-shadow: var(--shadow-xs);
 }
 
 .data-table tbody tr:hover {
-    transform: translateX(var(--table-hover-translate));
+    transform: scale(1.01);
     box-shadow: var(--shadow-md);
-    background: linear-gradient(to right, rgba(255, 107, 107, 0.03), var(--bg-white));
+    background: linear-gradient(to right, rgba(46, 204, 113, 0.02), white);
 }
 
 /* Cellules */
@@ -87,7 +72,7 @@
     vertical-align: middle;
 }
 
-/* Bordures arrondies sur première et dernière cellule */
+/* Bordures arrondies */
 .data-table td:first-child {
     border-left: 1px solid var(--border-light);
     border-radius: var(--border-radius) 0 0 var(--border-radius);
@@ -98,30 +83,23 @@
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
-/* ============================================ */
-/* CELLULES SPÉCIALISÉES                       */
-/* ============================================ */
-
-/* Cellule image/thumbnail */
-.cell-img,
-.item-img-cell {
-    width: 80px;
-    padding: 10px !important;
+/* ========== CELLULES SPÉCIALISÉES ========== */
+/* Cellule image */
+.cell-img {
+    width: 60px;
+    padding: var(--spacing-sm) !important;
 }
 
-/* Thumbnail image */
-.data-table-thumb,
-.item-thumbnail {
+.data-table-thumb {
     width: var(--table-thumb-size);
     height: var(--table-thumb-size);
     object-fit: cover;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-xs);
+    display: block;
 }
 
-/* Placeholder quand pas d'image */
-.data-table-thumb-placeholder,
-.item-thumbnail-placeholder {
+.data-table-thumb-placeholder {
     width: var(--table-thumb-size);
     height: var(--table-thumb-size);
     background: var(--bg-light);
@@ -129,27 +107,28 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5em;
-    color: #dee2e6;
+    font-size: 1.4em;
+    color: var(--text-muted);
 }
 
 /* Cellule nom */
-.cell-name,
-.item-name-cell {
+.cell-name {
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 /* Cellule actions */
-.cell-actions,
-.actions-cell {
+.cell-actions {
     text-align: right;
     white-space: nowrap;
+    width: 1%;
 }
 
 /* Cellule numérique */
 .cell-numeric {
     text-align: right;
     font-variant-numeric: tabular-nums;
+    font-weight: 500;
 }
 
 /* Cellule centrée */
@@ -157,49 +136,41 @@
     text-align: center;
 }
 
-/* ============================================ */
-/* VARIANTE : HEADER GRADIENT                  */
-/* (Style courses.html)                        */
-/* ============================================ */
+/* ========== VARIANTE : HEADER GRADIENT ========== */
 .data-table--header-gradient thead {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: white;
 }
 
 .data-table--header-gradient th {
     color: white;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: 0.9em;
 }
 
 .data-table--header-gradient th:first-child {
-    border-top-left-radius: var(--border-radius-lg);
+    border-radius: var(--border-radius) 0 0 0;
 }
 
 .data-table--header-gradient th:last-child {
-    border-top-right-radius: var(--border-radius-lg);
+    border-radius: 0 var(--border-radius) 0 0;
 }
 
-/* Effet hover différent pour cette variante */
 .data-table--header-gradient tbody tr:hover {
-    box-shadow: -5px 0 0 var(--primary), var(--shadow-md);
+    box-shadow: -4px 0 0 var(--primary), var(--shadow-md);
 }
 
-/* ============================================ */
-/* VARIANTE : SIMPLE                           */
-/* (Style historique, moins d'effets)          */
-/* ============================================ */
+/* ========== VARIANTE : SIMPLE ========== */
 .data-table--simple {
     border-spacing: 0;
 }
 
 .data-table--simple thead {
-    background: var(--bg-cream);
+    background: transparent;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .data-table--simple th {
-    border-bottom: 2px solid var(--border-light);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: var(--font-sm);
 }
 
 .data-table--simple tbody tr {
@@ -216,8 +187,6 @@
 .data-table--simple td {
     border: none;
     border-bottom: 1px solid var(--border-light);
-    padding: var(--table-cell-padding-sm);
-    color: var(--text-secondary);
 }
 
 .data-table--simple td:first-child,
@@ -227,238 +196,118 @@
     border-right: none;
 }
 
-/* ============================================ */
-/* VARIANTE : COMPACT                          */
-/* (Moins de padding, pour beaucoup de données)*/
-/* ============================================ */
+/* ========== VARIANTE : COMPACT ========== */
 .data-table--compact th,
 .data-table--compact td {
-    padding: 10px 12px;
-    font-size: 0.9em;
+    padding: var(--table-cell-padding-sm);
+    font-size: var(--font-xs);
 }
 
 .data-table--compact .data-table-thumb,
-.data-table--compact .item-thumbnail {
+.data-table--compact .data-table-thumb-placeholder {
     width: var(--table-thumb-size-sm);
     height: var(--table-thumb-size-sm);
 }
 
-.data-table--compact .data-table-thumb-placeholder,
-.data-table--compact .item-thumbnail-placeholder {
-    width: var(--table-thumb-size-sm);
-    height: var(--table-thumb-size-sm);
-    font-size: 1.2em;
+.data-table--compact .cell-img {
+    width: 50px;
 }
 
-.data-table--compact .cell-img,
-.data-table--compact .item-img-cell {
-    width: 60px;
-}
-
-/* ============================================ */
-/* BOUTONS D'ACTION DANS LES TABLEAUX          */
-/* ============================================ */
-.btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--border-radius);
-    background: var(--bg-light);
-    border: 1px solid var(--border-light);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    text-decoration: none;
-    font-size: 1em;
-}
-
-.btn-icon:hover {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
-    transform: scale(1.1);
-}
-
-.btn-icon-danger:hover {
-    background: var(--danger);
-    border-color: var(--danger);
-}
-
-.btn-icon-success:hover {
-    background: var(--success);
-    border-color: var(--success);
-}
-
-/* ============================================ */
-/* BADGES DANS LES TABLEAUX                    */
-/* ============================================ */
+/* ========== BADGES DANS TABLEAUX ========== */
 .table-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 15px;
-    font-size: 0.85em;
-    font-weight: 500;
-}
-
-.table-badge--category {
-    background: var(--bg-cream);
-    color: var(--text-primary);
-}
-
-.table-badge--type {
-    background: #e7f3ff;
-    color: var(--primary);
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: var(--font-xs);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .table-badge--success {
-    background: linear-gradient(135deg, #d4f4dd, #e8f9ed);
-    color: #2d5f3e;
-}
-
-.table-badge--warning {
-    background: linear-gradient(135deg, #fff3cd, #fff8e1);
-    color: #856404;
+    background: #e8f5ed;
+    color: var(--success);
 }
 
 .table-badge--danger {
-    background: linear-gradient(135deg, #ffe6e6, #fff0f0);
-    color: #8b2e2e;
+    background: #fdecea;
+    color: var(--danger);
 }
 
-/* ============================================ */
-/* LIGNE DE TOTAL                              */
-/* ============================================ */
-.data-table .row-total td {
-    background: var(--bg-cream);
-    font-weight: 600;
-    border-top: 2px solid var(--primary);
+.table-badge--warning {
+    background: #fef5e7;
+    color: var(--warning);
 }
 
-/* ============================================ */
-/* ÉTATS SPÉCIAUX                              */
-/* ============================================ */
-
-/* Ligne désactivée / grisée */
-.data-table tbody tr.row-disabled {
-    opacity: 0.6;
+.table-badge--info {
+    background: #e7f3f8;
+    color: var(--info);
 }
 
-.data-table tbody tr.row-disabled:hover {
-    transform: none;
-    box-shadow: var(--shadow-xs);
-}
-
-/* Ligne sélectionnée */
-.data-table tbody tr.row-selected {
-    background: linear-gradient(to right, rgba(102, 126, 234, 0.1), var(--bg-white));
-    border-left: 3px solid var(--primary);
-}
-
-/* Texte vide / placeholder */
-.text-muted,
-.prix-inconnu {
-    color: #adb5bd;
-}
-
-/* ============================================ */
-/* ANIMATIONS                                  */
-/* ============================================ */
-@keyframes tableRowFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
+/* ========== ANIMATION D'APPARITION ========== */
 .data-table tbody tr {
-    animation: tableRowFadeIn 0.3s ease-out;
+    animation: fadeIn 0.3s ease-out both;
 }
 
-/* Animation séquencée pour les premières lignes */
 .data-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
 .data-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
 .data-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
 .data-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
 .data-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
-.data-table tbody tr:nth-child(6) { animation-delay: 0.3s; }
 
-/* ============================================ */
-/* RESPONSIVE                                  */
-/* ============================================ */
+/* ========== RESPONSIVE ========== */
 @media (max-width: 1024px) {
     .data-table {
-        font-size: 0.95em;
+        font-size: var(--font-xs);
     }
     
     .data-table th,
     .data-table td {
-        padding: var(--table-cell-padding-sm);
+        padding: 8px 10px;
     }
 }
 
 @media (max-width: 768px) {
-    .data-table {
-        font-size: 0.85em;
-    }
-    
     .data-table th,
     .data-table td {
-        padding: 10px 8px;
+        padding: 6px 8px;
     }
     
-    /* Thumbnails plus petits */
     .data-table-thumb,
-    .item-thumbnail,
-    .data-table-thumb-placeholder,
-    .item-thumbnail-placeholder {
-        width: var(--table-thumb-size-xs);
-        height: var(--table-thumb-size-xs);
+    .data-table-thumb-placeholder {
+        width: var(--table-thumb-size-sm);
+        height: var(--table-thumb-size-sm);
+        font-size: 1.2em;
     }
     
-    .cell-img,
-    .item-img-cell {
+    .cell-img {
         width: 50px;
     }
     
-    /* Cacher les colonnes moins importantes */
-    .data-table .hide-mobile {
+    /* Cacher colonnes secondaires */
+    .hide-mobile {
         display: none;
     }
     
-    /* Désactiver l'effet de translation sur mobile */
+    /* Désactiver translation sur mobile */
     .data-table tbody tr:hover {
         transform: none;
     }
 }
 
-/* ============================================ */
-/* CONTENEUR SCROLLABLE                        */
-/* ============================================ */
-.table-container {
-    overflow-x: auto;
-    margin: 15px 0;
-    border-radius: var(--border-radius-lg);
+@media (max-width: 480px) {
+    .table-container {
+        margin: var(--spacing-sm) calc(var(--spacing-sm) * -1);
+        border-radius: 0;
+    }
+    
+    .data-table td:first-child,
+    .data-table td:last-child {
+        border-radius: 0;
+    }
 }
 
-.table-container--shadow {
-    box-shadow: var(--shadow-md);
-}
-
-/* ============================================ */
-/* ALIAS POUR RÉTROCOMPATIBILITÉ               */
-/* Ces classes mappent vers les nouveaux styles */
-/* ============================================ */
-
-/* .item-table → .data-table (déjà défini dans ingredients.css, alias ici) */
+/* ========== ALIAS POUR RÉTROCOMPATIBILITÉ ========== */
 .item-table {
-    /* Hérite de .data-table */
     width: 100%;
     border-collapse: separate;
     border-spacing: 0 var(--table-row-gap);
@@ -468,84 +317,109 @@
 .item-table th {
     padding: var(--table-cell-padding);
     text-align: left;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-primary);
-    font-size: 0.95em;
-    border: none;
 }
+
 .item-table tbody tr {
-    background: var(--bg-white);
+    background: white;
     transition: all var(--transition-normal);
     box-shadow: var(--shadow-xs);
 }
+
 .item-table tbody tr:hover {
     transform: translateX(var(--table-hover-translate));
     box-shadow: var(--shadow-md);
-    background: linear-gradient(to right, rgba(255, 107, 107, 0.03), var(--bg-white));
 }
+
 .item-table td {
     padding: var(--table-cell-padding);
     color: var(--text-primary);
     border-top: 1px solid var(--border-light);
     border-bottom: 1px solid var(--border-light);
-    vertical-align: middle;
 }
+
 .item-table td:first-child {
     border-left: 1px solid var(--border-light);
     border-radius: var(--border-radius) 0 0 var(--border-radius);
 }
+
 .item-table td:last-child {
     border-right: 1px solid var(--border-light);
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
-/* .historique-table → .data-table--simple */
-.historique-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 15px;
-}
-.historique-table thead { background: var(--bg-cream); }
-.historique-table thead th {
-    padding: var(--table-cell-padding-sm);
-    text-align: left;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 0.95em;
-    border-bottom: 2px solid var(--border-light);
-}
-.historique-table tbody tr {
-    border-bottom: 1px solid var(--border-light);
-    transition: background var(--transition-fast);
-}
-.historique-table tbody tr:hover {
-    background: var(--bg-light);
-}
-.historique-table tbody td {
-    padding: var(--table-cell-padding-sm);
-    color: var(--text-secondary);
-    font-size: 0.95em;
+.item-thumbnail,
+.item-thumbnail-placeholder {
+    width: var(--table-thumb-size);
+    height: var(--table-thumb-size);
+    object-fit: cover;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-xs);
 }
 
-/* ============================================ */
-/* PRINT                                       */
-/* ============================================ */
-@media print {
-    .data-table tbody tr:hover,
-    .item-table tbody tr:hover {
-        transform: none;
-        box-shadow: none;
-        background: white;
-    }
-    
-    .cell-actions,
-    .actions-cell {
-        display: none;
-    }
-    
-    .data-table--header-gradient thead {
-        background: #f8f9fa;
-        color: black;
-    }
+.item-thumbnail-placeholder {
+    background: var(--bg-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.item-img-cell {
+    width: 60px;
+}
+
+.item-name-cell {
+    font-weight: 600;
+}
+
+.actions-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.courses-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 var(--table-row-gap);
+}
+
+.courses-table thead {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.courses-table th {
+    padding: var(--table-cell-padding);
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: var(--font-xs);
+}
+
+.courses-table tbody tr {
+    background: white;
+    box-shadow: var(--shadow-xs);
+    transition: all var(--transition-normal);
+}
+
+.courses-table tbody tr:hover {
+    box-shadow: -4px 0 0 var(--primary), var(--shadow-md);
+}
+
+.courses-table td {
+    padding: var(--table-cell-padding);
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.courses-table td:first-child {
+    border-left: 1px solid var(--border-light);
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+}
+
+.courses-table td:last-child {
+    border-right: 1px solid var(--border-light);
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }

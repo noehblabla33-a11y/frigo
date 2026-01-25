@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% from "macros/pagination.html" import render_pagination %}
 {% from "macros/search_filters.html" import render_search_form, render_empty_state %}
-{% from "macros/forms.html" import input_field, select_field, select_categories, file_field, submit_button, nutrition_fields %}
+{% from "macros/forms.html" import 
+    premium_section, 
+    ingredient_info_grid,
+    ingredient_image_section,
+    nutrition_section_premium,
+    saisons_section_premium,
+    submit_hero 
+%}
+
 {% block title %}Catalogue des ingrédients{% endblock %}
 
 {% block extra_css %}
@@ -10,6 +18,8 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style/ingredients.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/search-filters.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='style/forms.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes-form-premium.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style/ingredients-form.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -81,47 +91,54 @@
 {# ============================================ #}
 {# FORMULAIRE D'AJOUT (COLLAPSABLE + MACROS)   #}
 {# ============================================ #}
-<div class="card">
-    <h3 data-collapsable="add-form" class="collapsable-header">
+<div style="margin-bottom: 20px;">
+    <button onclick="openModal('modal-add-ingredient')" class="btn-open-modal">
         ➕ Ajouter un ingrédient
-    </h3>
-    <div id="add-form" class="collapsable-content">
-        <form method="POST" enctype="multipart/form-data">
-            {# Ligne 1 : Nom, Unité, Prix #}
-            <div class="form-row">
-                {{ input_field('nom', label='Nom de l\'ingrédient', 
-                              placeholder='Ex: Tomates cerises', required=true, flex=2) }}
+    </button>
+</div>
 
-                {{ select_categories('categorie', categories, placeholder='Aucune') }}
+<!-- Modal -->
+<div id="modal-add-ingredient" class="modal-overlay">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <h3 class="modal-title">➕ Ajouter un ingrédient</h3>
+            <button class="modal-close" onclick="closeModal('modal-add-ingredient')">✕</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" enctype="multipart/form-data">
+                <!-- COPIER TOUT LE FORMULAIRE ICI -->
+                {# SECTION 1 : Informations de base #}
+                {% call premium_section(1, "Informations de base", "Nom, catégorie et prix") %}
+                    {{ ingredient_info_grid(
+                        categories=categories
+                    ) }}
+                    
+                    {{ ingredient_image_section() }}
+                {% endcall %}
                 
-                {{ input_field('prix_unitaire', label='Prix unitaire (€)', type='number',
-                              placeholder='0.00', step='0.001', min=0, 
-                              attrs={'id': 'prix-unitaire-input'}, flex=1) }}
-            </div>
-            
-            <div class="form-row">
-                {% set unite_options = [
-                    ('g', 'Grammes (g)'),
-                    ('ml', 'Millilitres (ml)'),
-                    ('pièce', 'Pièce')
-                ] %}
-                {{ select_field('unite', label='Unité', options=unite_options, 
-                               attrs={'id': 'unite-select'}, flex=1) }}
+                {# SECTION 2 : Valeurs nutritionnelles #}
+                {% call premium_section(2, "Nutrition", "Informations nutritionnelles (optionnel)") %}
+                    {{ nutrition_section_premium() }}
+                {% endcall %}
                 
-                {{ input_field('poids_piece', label='Poids par pièce (g)', type='number',
-                              placeholder='Si unité = pièce', step='0.1', min=0,
-                              help_text='Pour les ingrédients comptés en pièces',
-                              attrs={'id': 'poids-piece-input'}, flex=1) }}
+                {# SECTION 3 : Saisons #}
+                {% call premium_section(3, "Disponibilité", "Saisons où cet ingrédient est disponible") %}
+                    {{ saisons_section_premium() }}
+                {% endcall %}
                 
-                {{ file_field('image', label='Image', flex=1) }}
-            </div>
-            
-            {{ nutrition_fields() }}
-            
-            <div style="margin-top: 20px;">
-                {{ submit_button(text='Ajouter l\'ingrédient', icon='✓', variant='success') }}
-            </div>
-        </form>
+                {# SUBMIT #}
+                {{ submit_hero('Ajouter l\'ingrédient', '✓') }}
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" 
+                            data-modal-cancel="modal-add-ingredient">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        ✓ Ajouter
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

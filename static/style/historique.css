@@ -1,71 +1,179 @@
-/* ========================================
-   STYLES POUR LA PAGE HISTORIQUE
-   Styles additionnels pour les statistiques
-   ======================================== */
+/* ============================================ */
+/* HISTORIQUE - VERSION PREMIUM CORRIGÉE       */
+/* Design moderne et lisible                   */
+/* ============================================ */
 
-/* Amélioration des cartes de statistiques */
-.stat-card {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: white;
-    padding: 30px;
-    border-radius: var(--border-radius-lg);
-    text-align: center;
-    box-shadow: var(--shadow-primary);
-    transition: all var(--transition-normal);
-    position: relative;
-    overflow: hidden;
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    pointer-events: none;
-}
-
-.stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-}
-
-.stat-number {
-    font-size: 3em;
-    font-weight: bold;
-    margin-bottom: 10px;
-    position: relative;
-    z-index: 1;
-}
-
-.stat-label {
-    font-size: 1.1em;
-    opacity: 0.9;
-    position: relative;
-    z-index: 1;
-}
-
-/* Grille responsive pour les statistiques */
+/* ========== STATISTIQUES MODERNES ========== */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 20px;
     margin-bottom: 30px;
 }
 
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .stat-number {
-        font-size: 2.5em;
-    }
+/* Carte statistique premium */
+.stat-card {
+    background: white;
+    border: 3px solid #e8ecef;
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* Top recettes - amélioration visuelle */
+/* Bande colorée sur le côté */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+    transition: width 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary);
+}
+
+.stat-card:hover::before {
+    width: 8px;
+}
+
+/* Numéro de stat */
+.stat-number {
+    font-size: 3em;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+    margin-bottom: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Label de stat */
+.stat-label {
+    font-size: 0.95em;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Variantes de couleur */
+.stat-card:nth-child(1)::before {
+    background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-card:nth-child(1):hover {
+    border-color: #667eea;
+}
+
+.stat-card:nth-child(1) .stat-number {
+    color: #667eea;
+}
+
+.stat-card:nth-child(2)::before {
+    background: linear-gradient(180deg, #20c997 0%, #17a589 100%);
+}
+
+.stat-card:nth-child(2):hover {
+    border-color: #20c997;
+}
+
+.stat-card:nth-child(2) .stat-number {
+    color: #20c997;
+}
+
+.stat-card:nth-child(3)::before {
+    background: linear-gradient(180deg, #f39c12 0%, #e67e22 100%);
+}
+
+.stat-card:nth-child(3):hover {
+    border-color: #f39c12;
+}
+
+.stat-card:nth-child(3) .stat-number {
+    color: #f39c12;
+}
+
+.stat-card:nth-child(4)::before {
+    background: linear-gradient(180deg, #28a745 0%, #20c997 100%);
+}
+
+.stat-card:nth-child(4):hover {
+    border-color: #28a745;
+}
+
+.stat-card:nth-child(4) .stat-number {
+    color: #28a745;
+}
+
+/* ========== STATS AVEC STYLE INLINE (anciennes cartes colorées) ========== */
+/* Ces cartes ont un style inline dans le HTML, on les override */
+.stat-card[style*="background"] {
+    background: white !important;
+    color: var(--text-primary) !important;
+}
+
+.stat-card[style*="background"] .stat-number {
+    color: var(--primary) !important;
+}
+
+.stat-card[style*="background"] .stat-label {
+    color: var(--text-secondary) !important;
+}
+
+.stat-card[style*="background"] > div:not(.stat-number):not(.stat-label) {
+    color: var(--text-secondary) !important;
+    opacity: 1 !important;
+}
+
+/* Détails supplémentaires dans la stat */
+.stat-card > div:not(.stat-number):not(.stat-label) {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e8ecef;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+/* ========== CARTES SECTION (Graphiques, Top) ========== */
+.card {
+    background: white;
+    border: 2px solid #e8ecef;
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+    margin: 0 0 20px 0;
+    font-size: 1.3em;
+    color: var(--text-primary);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* ========== TOP RECETTES ========== */
 .top-recettes {
     margin-top: 20px;
 }
@@ -73,33 +181,71 @@
 .top-recette-item {
     display: flex;
     align-items: center;
-    padding: 15px;
-    margin: 10px 0;
-    background: var(--bg-white);
-    border-left: 4px solid var(--primary);
-    border-radius: var(--border-radius);
-    transition: all var(--transition-normal);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    gap: 20px;
+    padding: 18px 20px;
+    margin: 12px 0;
+    background: white;
+    border: 2px solid #e8ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.top-recette-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary);
+    transition: width 0.3s ease;
 }
 
 .top-recette-item:hover {
     transform: translateX(5px);
-    box-shadow: var(--shadow-md);
-    border-left-width: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
 }
 
+.top-recette-item:hover::before {
+    width: 6px;
+}
+
+/* Numéro de rang */
 .top-recette-item .rank {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--primary);
+    font-size: 1.8em;
+    font-weight: 700;
     min-width: 50px;
     text-align: center;
+    background: linear-gradient(135deg, #e8f5ed 0%, #d4edda 100%);
+    color: var(--primary);
+    border-radius: 10px;
+    padding: 12px;
+    line-height: 1;
 }
 
-.top-recette-item:nth-child(1) .rank { font-size: 2em; }
-.top-recette-item:nth-child(2) .rank { font-size: 1.8em; }
-.top-recette-item:nth-child(3) .rank { font-size: 1.6em; }
+/* ✅ CORRECTION : Médailles podium SANS ::after (pour éviter doublon) */
+.top-recette-item:nth-child(1) .rank {
+    font-size: 2em;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #b8860b;
+}
 
+.top-recette-item:nth-child(2) .rank {
+    font-size: 1.9em;
+    background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+    color: #808080;
+}
+
+.top-recette-item:nth-child(3) .rank {
+    font-size: 1.8em;
+    background: linear-gradient(135deg, #cd7f32 0%, #e8a56f 100%);
+    color: #8b4513;
+}
+
+/* Nom de recette */
 .top-recette-item .recette-nom {
     flex: 1;
     font-weight: 600;
@@ -107,17 +253,20 @@
     font-size: 1.05em;
 }
 
+/* Badge compteur */
 .top-recette-item .recette-count {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
-    padding: 8px 16px;
+    padding: 10px 20px;
     border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+    font-size: 0.95em;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.3);
+    min-width: 60px;
+    text-align: center;
 }
 
-/* Historique détaillé */
+/* ========== HISTORIQUE DÉTAILLÉ ========== */
 .historique-liste {
     margin-top: 20px;
 }
@@ -125,104 +274,136 @@
 .historique-item {
     display: flex;
     gap: 20px;
-    padding: 15px;
-    margin: 10px 0;
-    background: var(--bg-white);
-    border-left: 3px solid var(--success);
-    border-radius: var(--border-radius);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    transition: all var(--transition-normal);
+    padding: 20px;
+    margin: 12px 0;
+    background: white;
+    border: 2px solid #e8ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.historique-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--success);
 }
 
 .historique-item:hover {
-    box-shadow: var(--shadow-md);
-    background: #fafbfc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: var(--success);
 }
 
+/* Date */
 .historique-date {
-    min-width: 150px;
+    min-width: 160px;
     color: var(--text-secondary);
-    font-size: 0.9em;
-    padding-top: 2px;
-    font-weight: 500;
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+    align-self: flex-start;
 }
 
+/* Infos recette */
 .historique-recette {
     flex: 1;
 }
 
 .historique-recette strong {
     color: var(--text-primary);
-    font-size: 1.1em;
+    font-size: 1.15em;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-weight: 700;
 }
 
+/* Badge coût */
 .historique-cout {
     color: var(--primary);
-    font-weight: 600;
-    background: rgba(102, 126, 234, 0.1);
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.9em;
-    margin-left: 10px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #e8f5ed 0%, #d4edda 100%);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.95em;
     display: inline-block;
+    margin-left: 12px;
+    border: 2px solid #c3e6cb;
 }
 
+/* Ingrédients */
 .historique-ingredients {
     color: var(--text-secondary);
     font-size: 0.9em;
-    margin-top: 8px;
+    margin-top: 10px;
     font-style: italic;
+    padding-left: 12px;
+    border-left: 3px solid #e8ecef;
 }
 
-/* Responsive pour historique */
+/* ========== GRAPHIQUES ========== */
+canvas {
+    max-height: 300px !important;
+}
+
+/* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 2.5em;
+    }
+    
+    .top-recette-item {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .top-recette-item .rank {
+        font-size: 1.5em !important;
+        min-width: 60px;
+    }
+    
+    .top-recette-item .recette-nom {
+        flex-basis: 100%;
+    }
+    
     .historique-item {
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
     }
     
     .historique-date {
         min-width: auto;
-        border-bottom: 1px solid #e0e0e0;
-        padding-bottom: 8px;
+        width: 100%;
+    }
+    
+    .historique-cout {
+        display: block;
+        margin-left: 0;
+        margin-top: 8px;
+        text-align: center;
     }
 }
 
-/* Amélioration des cartes */
-.card {
-    background: white;
-    padding: 25px;
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-    margin-bottom: 25px;
-    transition: all var(--transition-normal);
-}
-
-.card:hover {
-    box-shadow: var(--shadow-lg);
-}
-
-.card h3 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: var(--text-primary);
-    font-size: 1.4em;
-    font-weight: 700;
-    padding-bottom: 15px;
-    border-bottom: 2px solid #f0f0f0;
-}
-
-/* Animation de chargement pour les graphiques */
-canvas {
-    animation: fadeIn 0.5s ease-in;
-}
-
-@keyframes fadeIn {
+/* ========== ANIMATIONS ========== */
+@keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(20px);
     }
     to {
         opacity: 1;
@@ -230,59 +411,13 @@ canvas {
     }
 }
 
-/* Styles pour les tooltips Chart.js (si besoin de personnalisation) */
-.chartjs-tooltip {
-    opacity: 1;
-    position: absolute;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    border-radius: 8px;
-    padding: 12px;
-    pointer-events: none;
-    transform: translate(-50%, -100%);
-    transition: all 0.2s ease;
+.stat-card,
+.top-recette-item,
+.historique-item {
+    animation: fadeInUp 0.5s ease-out backwards;
 }
 
-/* Indicateur de période active */
-.periode-active {
-    background: linear-gradient(135deg, #20c997 0%, #17a589 100%);
-}
-
-.periode-mois {
-    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-}
-
-/* Message d'aide/info */
-.info-message {
-    background: #e7f3ff;
-    border-left: 4px solid #2196F3;
-    padding: 15px;
-    margin: 20px 0;
-    border-radius: var(--border-radius);
-    color: #0d47a1;
-}
-
-.info-message p {
-    margin: 0;
-    font-size: 0.95em;
-}
-
-/* Message vide */
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-secondary);
-}
-
-.empty-state p {
-    font-size: 1.1em;
-    margin: 20px 0;
-}
-
-.empty-state::before {
-    content: '📊';
-    font-size: 4em;
-    display: block;
-    margin-bottom: 20px;
-    opacity: 0.5;
-}
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.1s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.2s; }

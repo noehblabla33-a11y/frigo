@@ -1,91 +1,38 @@
 /* ============================================ */
-/* Fichier: static/style/style.css              */
-/* STYLES SPÉCIFIQUES - VERSION PURGÉE         */
+/* FICHIER: static/style/style.css             */
+/* FICHIER PRINCIPAL - PALETTE NATURELLE      */
+/* Import de tous les fichiers CSS            */
 /* ============================================ */
 
-/* Import des fichiers de base */
+/* ========== IMPORTS PRINCIPAUX ========== */
 @import url('base.css');
 @import url('components.css');
-@import url('list-grid-view.css');
+@import url('forms.css');
 @import url('tables.css');
 
-/* ========== INGRÉDIENTS (spécifique) ========== */
-/* Note: Les styles de grille (.ingredient-grid, .ingredient-card) 
-   ont été supprimés car non utilisés */
+/* ========== IMPORTS LAYOUT ========== */
+@import url('list-grid-view.css');
+@import url('pagination.css');
+@import url('collapsable.css');
+@import url('search-filters.css');
+@import url('select-search.css');
 
-.ingredient-quantite {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: var(--primary);
-    margin: 5px 0;
-}
+/* ========== IMPORTS PAGES ========== */
+@import url('dashboard.css');
+@import url('ingredients.css');
+@import url('frigo.css');
+@import url('recettes.css');
+@import url('courses.css');
+@import url('historique.css');
 
-.ingredient-prix {
-    font-size: 0.9em;
-    color: var(--text-secondary);
-}
+/* ========== STYLES SPÉCIFIQUES ADDITIONNELS ========== */
+/* Ajouter ici les styles qui ne rentrent dans aucune catégorie */
 
-.ingredient-unite {
-    color: var(--text-secondary);
-    font-size: 0.9em;
-    margin: 5px 0;
-}
-
-.ingredient-stock {
-    color: var(--success);
-    font-weight: bold;
-    font-size: 0.9em;
-    margin: 5px 0;
-}
-
-.ingredient-stock-vide {
-    color: var(--danger);
-    font-size: 0.9em;
-    margin: 5px 0;
-}
-
-.ingredient-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
-    align-items: end;
-}
-
-.ingredient-row > div {
-    flex: 1;
-}
-
-/* ========== RECETTES (spécifique) ========== */
-/* Note: .recettes-grid conservé car utilisé dans cuisiner_avec_frigo */
-.recettes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.recette-card {
-    background: var(--bg-white);
-    border-radius: var(--border-radius-lg);
-    overflow: hidden;
-    box-shadow: var(--shadow-md);
-    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
-}
-
-.recette-card:hover {
-    transform: translateY(-5px);
-    box-shadow: var(--shadow-lg);
-}
-
-.recette-link {
-    text-decoration: none;
-    color: inherit;
-    display: block;
-}
-
+/* Liens dans tableaux */
 .recette-link-table {
     color: var(--text-primary);
     text-decoration: none;
+    font-weight: 600;
     transition: color var(--transition-fast);
 }
 
@@ -93,81 +40,54 @@
     color: var(--primary);
 }
 
-.recette-image {
-    width: 100%;
-    height: 180px;
-    overflow: hidden;
-    background: var(--bg-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+/* Prix et valeurs monétaires */
+.prix-display {
+    font-weight: 700;
+    color: var(--success);
 }
 
-.recette-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform var(--transition-slow);
+/* Quantités */
+.quantite-display {
+    font-weight: 700;
+    color: var(--primary);
 }
 
-.recette-card:hover .recette-image img {
-    transform: scale(1.1);
+/* Animation de chargement */
+@keyframes loading {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
-.recette-info {
-    padding: 15px;
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(46, 204, 113, 0.3);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: loading 0.8s linear infinite;
 }
 
-.recette-info h4 {
-    margin: 0 0 10px 0;
-    color: var(--text-primary);
-    font-size: 1.1em;
-}
-
-.recette-meta {
-    display: flex;
-    justify-content: space-between;
-    color: var(--text-secondary);
-    font-size: 0.9em;
-}
-
-.recette-type-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.8em;
-    font-weight: 600;
-}
-
-.badge-realisable {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: linear-gradient(135deg, var(--success), #20c997);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.8em;
-    font-weight: 600;
-}
-
-/* ========== FRIGO (spécifique) ========== */
-/* Note: Les styles de grille (.frigo-grid, .frigo-card) 
-   ont été supprimés car non utilisés */
-
-/* ========== RESPONSIVE ========== */
-@media (max-width: 768px) {
-    .recettes-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 15px;
+/* ========== PRINT STYLES ========== */
+@media print {
+    .btn,
+    nav,
+    .search-filters-container,
+    .pagination-container,
+    .form-actions {
+        display: none !important;
     }
     
-    .recette-image {
-        height: 140px;
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    body {
+        background: white;
     }
 }

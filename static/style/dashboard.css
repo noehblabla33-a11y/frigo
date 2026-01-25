@@ -1,59 +1,73 @@
-/* ============================================
-   DASHBOARD STYLES
-   Styles pour le tableau de bord dynamique
-   ============================================ */
+/* ============================================ */
+/* FICHIER: static/style/dashboard.css         */
+/* TABLEAU DE BORD - PALETTE NATURELLE        */
+/* Page d'accueil avec statistiques           */
+/* ============================================ */
 
-/* ============================================
-   VARIABLES ET BASE
-   ============================================ */
-.dashboard {
-    --dash-primary: #667eea;
-    --dash-primary-dark: #5a67d8;
-    --dash-success: #28a745;
-    --dash-warning: #ffc107;
-    --dash-danger: #dc3545;
-    --dash-info: #17a2b8;
-    --dash-light: #f8f9fa;
-    --dash-dark: #2d3436;
-    --dash-gray: #6c757d;
-    --dash-border: #e9ecef;
-    --dash-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    --dash-radius: 12px;
-    --dash-radius-sm: 8px;
-    --dash-transition: all 0.3s ease;
+/* ========== KEYFRAMES ANIMATIONS ========== */
+/* Animation pulse pour les alertes */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+    }
 }
 
-/* ============================================
-   EN-TÊTE DU DASHBOARD
-   ============================================ */
+/* Animation shimmer pour le bouton Cuisiner */
+@keyframes shimmer {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+/* Animation d'entrée en cascade */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== HEADER DASHBOARD ========== */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid var(--dash-border);
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 2px solid var(--border-light);
 }
 
 .dashboard-title h2 {
     margin: 0;
-    font-size: 1.8em;
-    color: var(--dash-dark);
+    font-size: var(--font-xl);
+    color: var(--text-primary);
 }
 
 .dashboard-subtitle {
-    margin: 5px 0 0;
-    color: var(--dash-gray);
-    font-size: 0.95em;
+    margin: var(--spacing-xs) 0 0;
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
 }
 
 .dashboard-saison {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
-    border-radius: var(--dash-radius);
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: linear-gradient(135deg, #e8f5ed 0%, #f1f8e9 100%);
+    border-radius: var(--border-radius-lg);
     border: 1px solid #c8e6c9;
 }
 
@@ -67,42 +81,42 @@
 }
 
 .saison-label {
-    font-size: 0.7em;
+    font-size: var(--font-xs);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     color: #558b2f;
+    font-weight: 700;
 }
 
 .saison-nom {
-    font-size: 1.1em;
-    font-weight: 600;
+    font-size: var(--font-base);
+    font-weight: 700;
     color: #2e7d32;
     text-transform: capitalize;
 }
 
-/* ============================================
-   GRILLE DES STATISTIQUES
-   ============================================ */
+/* ========== GRILLE STATS ========== */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
 }
 
 .stat-card {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 20px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
     background: white;
-    border-radius: var(--dash-radius);
-    box-shadow: var(--dash-shadow);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
     text-decoration: none;
     color: inherit;
-    transition: var(--dash-transition);
+    transition: all var(--transition-normal);
     position: relative;
     overflow: hidden;
+    border: 1px solid var(--border-light);
 }
 
 .stat-card::before {
@@ -110,35 +124,37 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
+    width: 3px;
     height: 100%;
-    background: var(--dash-primary);
-    transition: var(--dash-transition);
+    background: var(--primary);
+    transition: width var(--transition-normal);
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
 }
 
 .stat-card:hover::before {
-    width: 6px;
+    width: 5px;
 }
 
 .stat-card:hover .stat-arrow {
-    transform: translateX(5px);
+    transform: translateX(4px);
     opacity: 1;
 }
 
 /* Couleurs par type */
-.stat-frigo::before { background: #17a2b8; }
-.stat-courses::before { background: #fd7e14; }
-.stat-recettes::before { background: #667eea; }
-.stat-planif::before { background: #28a745; }
+.stat-frigo::before { background: var(--info); }
+.stat-courses::before { background: var(--accent); }
+.stat-recettes::before { background: var(--primary); }
+.stat-planif::before { background: var(--success); }
 
 .stat-icon {
-    font-size: 2.5em;
+    font-size: 2.2em;
     opacity: 0.9;
+    flex-shrink: 0;
 }
 
 .stat-content {
@@ -146,207 +162,450 @@
 }
 
 .stat-number {
-    font-size: 2em;
+    font-size: var(--font-xl);
     font-weight: 700;
     line-height: 1;
-    color: var(--dash-dark);
+    color: var(--text-primary);
 }
 
 .stat-label {
-    font-size: 0.9em;
-    color: var(--dash-gray);
-    margin-top: 5px;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+    font-weight: 600;
 }
 
 .stat-detail {
-    font-size: 0.85em;
-    color: var(--dash-gray);
-    margin-top: 5px;
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
 }
 
 .stat-positive {
-    color: var(--dash-success) !important;
-    font-weight: 600;
+    color: var(--success) !important;
+    font-weight: 700;
 }
 
 .stat-arrow {
     font-size: 1.2em;
-    color: var(--dash-gray);
-    opacity: 0.5;
-    transition: var(--dash-transition);
+    color: var(--text-muted);
+    opacity: 0.4;
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
 }
 
-/* ============================================
-   LAYOUT PRINCIPAL (2 COLONNES)
-   ============================================ */
+/* ========== LAYOUT 2 COLONNES ========== */
 .dashboard-main {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 25px;
-    margin-bottom: 30px;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
 }
 
 .dashboard-col-left,
 .dashboard-col-right {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--spacing-lg);
 }
 
-/* ============================================
-   CARTES DU DASHBOARD
-   ============================================ */
+/* ========== CARTES DASHBOARD ========== */
 .dashboard-card {
     background: white;
-    border-radius: var(--dash-radius);
-    box-shadow: var(--dash-shadow);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
+    border: 1px solid var(--border-light);
 }
 
 .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--dash-border);
-    background: var(--dash-light);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-light);
 }
 
 .card-header h3 {
     margin: 0;
-    font-size: 1.1em;
-    color: var(--dash-dark);
+    font-size: var(--font-base);
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 .link-voir-plus {
-    font-size: 0.85em;
-    color: var(--dash-primary);
+    font-size: var(--font-xs);
+    color: var(--primary);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
+    transition: color var(--transition-fast);
 }
 
 .link-voir-plus:hover {
+    color: var(--primary-dark);
     text-decoration: underline;
 }
 
-/* ============================================
-   ALERTES DE STOCK
-   ============================================ */
+/* ========== ALERTES STOCK ========== */
 .alertes-list {
-    padding: 15px 20px;
+    padding: var(--spacing-md);
 }
 
 .alerte-item {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 12px 0;
-    border-left: 4px solid var(--dash-warning);
-    padding-left: 12px;
-    margin-bottom: 10px;
-    background: #fffbf0;
-    border-radius: 0 var(--dash-radius-sm) var(--dash-radius-sm) 0;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-sm);
+    border-left: 3px solid var(--warning);
 }
 
 .alerte-item:last-child {
     margin-bottom: 0;
 }
 
-.alerte-info {
+.alerte-icon {
+    font-size: 1.5em;
+    color: var(--warning);
+    flex-shrink: 0;
+}
+
+.alerte-content {
     flex: 1;
 }
 
-.alerte-nom {
-    display: block;
-    font-weight: 600;
-    color: var(--dash-dark);
+.alerte-ingredient {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
 }
 
-.alerte-quantite {
-    font-size: 0.85em;
-    color: var(--dash-gray);
+.alerte-message {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
 }
 
-.alerte-seuil {
-    font-size: 0.8em;
-    opacity: 0.7;
+/* ========== RECETTES RÉCENTES ========== */
+.recentes-list {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
 }
 
-.alerte-progress {
-    width: 60px;
-    height: 6px;
-    background: #e9ecef;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-.btn-add-courses {
-    padding: 8px;
-    background: white;
-    border: 1px solid var(--dash-border);
-    border-radius: var(--dash-radius-sm);
-    cursor: pointer;
-    transition: var(--dash-transition);
+.recente-item {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
     text-decoration: none;
+    color: inherit;
+    transition: all var(--transition-fast);
 }
 
-.btn-add-courses:hover {
-    background: var(--dash-light);
-    border-color: var(--dash-primary);
+.recente-item:hover {
+    background: var(--bg-cream);
+    transform: translateX(4px);
 }
 
-/* ============================================
-   SUGGESTIONS DE RECETTES
-   ============================================ */
+.recente-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--border-radius);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.recente-thumb-placeholder {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--border-radius);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8em;
+    color: var(--text-muted);
+}
+
+.recente-info {
+    flex: 1;
+}
+
+.recente-nom {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.recente-date {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 968px) {
+    .dashboard-main {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--spacing-md);
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
+    }
+    
+    .stat-card {
+        padding: var(--spacing-md);
+    }
+}
+
+/* ========== GRILLE STATS ========== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--primary);
+    transition: width var(--transition-normal);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
+}
+
+.stat-card:hover::before {
+    width: 5px;
+}
+
+.stat-card:hover .stat-arrow {
+    transform: translateX(4px);
+    opacity: 1;
+}
+
+/* Couleurs par type */
+.stat-frigo::before { background: var(--info); }
+.stat-courses::before { background: var(--accent); }
+.stat-recettes::before { background: var(--primary); }
+.stat-planif::before { background: var(--success); }
+
+.stat-icon {
+    font-size: 2.2em;
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: var(--font-xl);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+    font-weight: 600;
+}
+
+.stat-detail {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.stat-positive {
+    color: var(--success) !important;
+    font-weight: 700;
+}
+
+.stat-arrow {
+    font-size: 1.2em;
+    color: var(--text-muted);
+    opacity: 0.4;
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+}
+
+/* ========== LAYOUT 2 COLONNES ========== */
+.dashboard-main {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+.dashboard-col-left,
+.dashboard-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+/* ========== CARTES DASHBOARD ========== */
+.dashboard-card {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-light);
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: var(--font-base);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.link-voir-plus {
+    font-size: var(--font-xs);
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--transition-fast);
+}
+
+.link-voir-plus:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* ========== SUGGESTIONS DE RECETTES - CAROUSEL COMPACT ========== */
 .suggestions-list {
-    padding: 15px 20px;
+    padding: var(--spacing-md);
+    display: flex;
+    gap: var(--spacing-md);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) var(--bg-light);
+}
+
+/* Scrollbar personnalisée pour webkit */
+.suggestions-list::-webkit-scrollbar {
+    height: 6px;
+}
+
+.suggestions-list::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: 3px;
+}
+
+.suggestions-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+}
+
+.suggestions-list::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
 }
 
 .suggestion-item {
     display: flex;
-    gap: 15px;
-    padding: 15px;
-    margin-bottom: 15px;
-    background: var(--dash-light);
-    border-radius: var(--dash-radius-sm);
-    transition: var(--dash-transition);
-}
-
-.suggestion-item:last-child {
-    margin-bottom: 0;
+    flex-direction: column;
+    min-width: 220px;
+    max-width: 220px;
+    padding: var(--spacing-md);
+    background: white;
+    border-radius: var(--border-radius-lg);
+    border: 2px solid var(--border-light);
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
 }
 
 .suggestion-item:hover {
-    background: #eef1ff;
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
 }
 
-.suggestion-ready {
-    background: #e8f5e9;
-    border: 1px solid #c8e6c9;
-}
-
-.suggestion-ready:hover {
-    background: #dcedc8;
+.suggestion-item.suggestion-ready {
+    border-color: var(--success);
+    background: linear-gradient(to bottom, #e8f5ed 0%, white 100%);
 }
 
 .suggestion-image {
-    width: 70px;
-    height: 70px;
-    border-radius: var(--dash-radius-sm);
+    width: 100%;
+    height: 140px;
+    border-radius: var(--border-radius);
     overflow: hidden;
-    flex-shrink: 0;
+    background: var(--bg-cream);
+    margin-bottom: var(--spacing-md);
+    position: relative;
 }
 
 .suggestion-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform var(--transition-normal);
+}
+
+.suggestion-item:hover .suggestion-image img {
+    transform: scale(1.08);
 }
 
 .suggestion-placeholder {
@@ -355,433 +614,580 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #dee2e6;
-    font-size: 1.8em;
+    font-size: 3em;
+    color: var(--text-muted);
+    opacity: 0.25;
+}
+
+/* Badge "PRÊT" en overlay sur l'image */
+.suggestion-item.suggestion-ready .suggestion-image::after {
+    content: '✓ PRÊT';
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--success);
+    color: white;
+    border-radius: 20px;
+    font-size: var(--font-xs);
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
 }
 
 .suggestion-content {
     flex: 1;
-    min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .suggestion-content h4 {
-    margin: 0 0 8px;
-    font-size: 1em;
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: var(--font-sm);
+    font-weight: 700;
+    line-height: 1.3;
+    min-height: 35px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .suggestion-content h4 a {
-    color: var(--dash-dark);
+    color: var(--text-primary);
     text-decoration: none;
+    transition: color var(--transition-fast);
 }
 
 .suggestion-content h4 a:hover {
-    color: var(--dash-primary);
+    color: var(--primary);
 }
 
 .suggestion-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 8px;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+    min-height: 24px;
 }
 
 .suggestion-details {
     display: flex;
-    gap: 15px;
-    font-size: 0.85em;
-    color: var(--dash-gray);
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.suggestion-details span {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
 }
 
 .suggestion-actions {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    margin-top: auto;
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid var(--border-light);
 }
 
 .btn-planifier {
-    padding: 10px;
-    background: white;
-    border: 1px solid var(--dash-border);
-    border-radius: var(--dash-radius-sm);
-    cursor: pointer;
-    transition: var(--dash-transition);
-    font-size: 1.2em;
+    background: var(--primary) !important;
+    color: white !important;
 }
 
 .btn-planifier:hover {
-    background: var(--dash-success);
-    color: white;
-    border-color: var(--dash-success);
-}
-
-/* ============================================
-   BADGES
-   ============================================ */
-.badge {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 0.75em;
-    font-weight: 600;
-}
-
-.badge-success {
-    background: #d4edda;
-    color: #155724;
-}
-
-.badge-warning {
-    background: #fff3cd;
-    color: #856404;
-}
-
-.badge-info {
-    background: #cce5ff;
-    color: #004085;
-}
-
-.badge-neutral {
-    background: #e9ecef;
-    color: #495057;
+    background: var(--primary-dark) !important;
 }
 
 .badge-saison {
-    background: #e8f5e9;
-    padding: 3px 8px;
+    background: #e8f5ed;
+    color: var(--success);
 }
 
-/* ============================================
-   ACTIVITÉ
-   ============================================ */
+.badge-neutral {
+    background: var(--bg-cream);
+    color: var(--text-secondary);
+}
+
+/* ========== ACTIVITÉ RÉCENTE ========== */
 .activite-stats {
+    padding: var(--spacing-lg);
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    padding: 20px;
+    gap: var(--spacing-lg);
 }
 
 .activite-periode {
+    padding: var(--spacing-md);
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
     text-align: center;
-    padding: 15px;
-    background: var(--dash-light);
-    border-radius: var(--dash-radius-sm);
 }
 
 .activite-label {
     display: block;
-    font-size: 0.8em;
-    color: var(--dash-gray);
-    margin-bottom: 8px;
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
 }
 
 .activite-numbers {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: var(--spacing-xs);
 }
 
 .activite-count {
-    font-size: 2em;
+    font-size: var(--font-xl);
     font-weight: 700;
-    color: var(--dash-primary);
+    color: var(--primary);
     line-height: 1;
 }
 
 .activite-unit {
-    font-size: 0.85em;
-    color: var(--dash-gray);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
 }
 
 .activite-cout {
-    font-size: 0.85em;
-    color: var(--dash-success);
-    margin-top: 5px;
+    font-size: var(--font-sm);
+    color: var(--success);
+    font-weight: 600;
+    margin-top: var(--spacing-xs);
 }
 
 .derniere-recette {
-    padding: 15px 20px;
-    border-top: 1px solid var(--dash-border);
-    font-size: 0.9em;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-cream);
+    border-top: 1px solid var(--border-light);
+    font-size: var(--font-sm);
 }
 
 .derniere-label {
-    color: var(--dash-gray);
+    color: var(--text-secondary);
+    font-size: var(--font-xs);
+    display: block;
+    margin-bottom: var(--spacing-xs);
 }
 
 .derniere-recette a {
-    color: var(--dash-primary);
-    font-weight: 500;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.derniere-recette a:hover {
+    text-decoration: underline;
 }
 
 .derniere-date {
-    color: var(--dash-gray);
-    font-size: 0.85em;
-    margin-left: 5px;
+    color: var(--text-secondary);
+    font-size: var(--font-xs);
+    display: block;
+    margin-top: var(--spacing-xs);
 }
 
-/* ============================================
-   RECETTES PLANIFIÉES
-   ============================================ */
+/* ========== RECETTES PLANIFIÉES (À CUISINER) ========== */
 .planifiees-list {
-    padding: 15px 20px;
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
 }
 
 .planifiee-item {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 12px;
-    margin-bottom: 10px;
-    background: var(--dash-light);
-    border-radius: var(--dash-radius-sm);
-    border-left: 3px solid var(--dash-success);
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    border-left: 3px solid var(--primary);
+    transition: all var(--transition-fast);
 }
 
-.planifiee-item:last-child {
-    margin-bottom: 0;
+.planifiee-item:hover {
+    background: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.planifiee-info {
+    flex: 1;
 }
 
 .planifiee-nom {
-    display: block;
-    font-weight: 500;
-    color: var(--dash-dark);
+    color: var(--text-primary);
     text-decoration: none;
+    font-weight: 600;
+    font-size: var(--font-sm);
+    transition: color var(--transition-fast);
 }
 
 .planifiee-nom:hover {
-    color: var(--dash-primary);
+    color: var(--primary);
 }
 
 .planifiee-date {
-    font-size: 0.8em;
-    color: var(--dash-gray);
+    display: block;
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.planifiee-actions {
+    display: flex;
+    gap: var(--spacing-xs);
 }
 
 .btn-preparer {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--dash-success);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    text-decoration: none;
-    font-weight: bold;
-    transition: var(--dash-transition);
+    background: var(--success) !important;
+    color: white !important;
 }
 
 .btn-preparer:hover {
-    background: #218838;
-    transform: scale(1.1);
+    background: var(--primary-dark) !important;
 }
 
-/* ============================================
-   CATÉGORIES
-   ============================================ */
-.categories-list {
-    padding: 15px 20px;
+/* ========== ALERTES DE STOCK ========== */
+.alertes-list {
+    padding: var(--spacing-md);
 }
 
-.categorie-item {
+.alerte-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--dash-border);
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-light);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-sm);
+    border-left: 3px solid var(--warning);
 }
 
-.categorie-item:last-child {
-    border-bottom: none;
+.alerte-item:last-child {
+    margin-bottom: 0;
 }
 
-.categorie-emoji {
-    font-size: 1.3em;
+.alerte-icon {
+    font-size: 1.5em;
+    color: var(--warning);
+    flex-shrink: 0;
 }
 
-.categorie-nom {
+.alerte-content {
     flex: 1;
-    color: var(--dash-dark);
 }
 
-.categorie-count {
-    font-weight: 600;
-    color: var(--dash-primary);
-    background: #eef1ff;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 0.85em;
+.alerte-ingredient {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: var(--font-sm);
 }
 
-/* ============================================
-   ÉTAT VIDE
-   ============================================ */
-.empty-state {
-    padding: 40px 20px;
-    text-align: center;
+.alerte-message {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
 }
 
-.empty-icon {
-    font-size: 3em;
-    display: block;
-    margin-bottom: 15px;
-    opacity: 0.5;
-}
-
-.empty-state p {
-    color: var(--dash-gray);
-    margin-bottom: 20px;
-}
-
-/* ============================================
-   ACTIONS RAPIDES
-   ============================================ */
+/* ========== ACTIONS RAPIDES - FORMAT HORIZONTAL ========== */
 .quick-actions {
-    margin-top: 30px;
+    margin-top: var(--spacing-xl);
 }
 
 .quick-actions h3 {
-    margin-bottom: 20px;
-    color: var(--dash-dark);
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-lg);
+    color: var(--text-primary);
 }
 
 .actions-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
+    display: flex;
+    gap: var(--spacing-md);
+    overflow-x: auto;
+    padding-bottom: var(--spacing-sm);
 }
 
 .action-card {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 25px 20px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg) var(--spacing-xl);
     background: white;
-    border-radius: var(--dash-radius);
-    box-shadow: var(--dash-shadow);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
     text-decoration: none;
-    color: var(--dash-dark);
-    transition: var(--dash-transition);
-    text-align: center;
+    color: var(--text-primary);
+    transition: all var(--transition-normal);
+    border: 2px solid var(--border-light);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: fit-content;
 }
 
 .action-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
 }
 
 .action-icon {
     font-size: 2em;
+    flex-shrink: 0;
 }
 
 .action-text {
-    font-size: 0.9em;
-    font-weight: 500;
+    font-size: var(--font-base);
+    font-weight: 600;
 }
 
-/* Couleurs d'actions */
+/* Couleurs d'actions - avec bordure distinctive */
 .action-cuisiner {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, var(--success) 0%, var(--primary-dark) 100%);
     color: white;
+    border-color: var(--success);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
 }
 
 .action-cuisiner:hover {
-    background: linear-gradient(135deg, #218838 0%, #1ba87e 100%);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--success) 100%);
     color: white;
+    border-color: var(--primary-dark);
+    box-shadow: 0 6px 16px rgba(39, 174, 96, 0.4);
 }
 
-.action-ingredients:hover { border-bottom: 3px solid #17a2b8; }
-.action-recettes:hover { border-bottom: 3px solid var(--dash-primary); }
-.action-courses:hover { border-bottom: 3px solid #fd7e14; }
+.action-ingredients {
+    border-left: 4px solid var(--info);
+}
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
+.action-ingredients:hover {
+    border-left-width: 6px;
+    border-color: var(--info);
+}
+
+.action-recettes {
+    border-left: 4px solid var(--primary);
+}
+
+.action-recettes:hover {
+    border-left-width: 6px;
+    border-color: var(--primary);
+}
+
+.action-courses {
+    border-left: 4px solid var(--accent);
+}
+
+.action-courses:hover {
+    border-left-width: 6px;
+    border-color: var(--accent);
+}
+
+/* ========== ÉTAT VIDE ========== */
+.card-empty {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-2xl);
+}
+
+.empty-icon {
+    font-size: 4em;
+    display: block;
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.3;
+}
+
+/* ========== RESPONSIVE ========== */
 @media (max-width: 1200px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+}
+
+@media (max-width: 968px) {
     .dashboard-main {
         grid-template-columns: 1fr;
-    }
-    
-    .actions-grid {
-        grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 768px) {
     .dashboard-header {
         flex-direction: column;
-        gap: 15px;
-        text-align: center;
+        align-items: flex-start;
+        gap: var(--spacing-md);
     }
     
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: var(--spacing-md);
     }
     
     .stat-card {
-        padding: 15px;
-    }
-    
-    .stat-icon {
-        font-size: 2em;
-    }
-    
-    .stat-number {
-        font-size: 1.5em;
-    }
-    
-    .suggestion-item {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .suggestion-image {
-        width: 100%;
-        height: 120px;
-    }
-    
-    .suggestion-meta {
-        justify-content: center;
-    }
-    
-    .suggestion-details {
-        justify-content: center;
+        padding: var(--spacing-md);
     }
     
     .activite-stats {
         grid-template-columns: 1fr;
     }
     
-    .actions-grid {
-        grid-template-columns: 1fr;
+    /* Suggestions carousel reste horizontal sur mobile */
+    .suggestion-item {
+        min-width: 180px;
+        max-width: 180px;
     }
     
+    .suggestion-image {
+        height: 120px;
+    }
+    
+    /* Actions restent horizontales mais plus compactes */
     .action-card {
-        flex-direction: row;
-        justify-content: center;
-        padding: 15px 20px;
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+    
+    .action-icon {
+        font-size: 1.5em;
+    }
+    
+    .action-text {
+        font-size: var(--font-sm);
     }
 }
 
 @media (max-width: 480px) {
-    .dashboard-title h2 {
-        font-size: 1.4em;
+    /* Suggestions encore plus compactes */
+    .suggestion-item {
+        min-width: 160px;
+        max-width: 160px;
     }
     
-    .alerte-item {
-        flex-wrap: wrap;
+    .suggestion-image {
+        height: 100px;
     }
     
-    .alerte-progress {
-        width: 100%;
-        margin-top: 10px;
+    /* Actions très compactes */
+    .action-card {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-md);
+        min-width: 100px;
+    }
+    
+    .action-icon {
+        font-size: 1.8em;
+    }
+    
+    .action-text {
+        font-size: var(--font-xs);
+    }
+}
+
+/* ============================================ */
+/* MICRO-ANIMATIONS - PACK ESSENTIEL          */
+/* ============================================ */
+
+/* 1. PULSE SUR LES ALERTES */
+.alerte-icon {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* 2. ANIMATION D'ENTRÉE DÉCALÉE POUR LES SUGGESTIONS */
+.suggestion-item {
+    animation: slideInUp 0.5s ease-out both;
+}
+
+.suggestion-item:nth-child(1) { animation-delay: 0.1s; }
+.suggestion-item:nth-child(2) { animation-delay: 0.2s; }
+.suggestion-item:nth-child(3) { animation-delay: 0.3s; }
+.suggestion-item:nth-child(4) { animation-delay: 0.4s; }
+.suggestion-item:nth-child(5) { animation-delay: 0.5s; }
+
+/* 3. SHIMMER EFFECT SUR LE BOUTON CUISINER */
+.action-cuisiner {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(
+        135deg,
+        var(--success) 0%,
+        var(--primary-dark) 50%,
+        var(--success) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Amélioration du shimmer au hover */
+.action-cuisiner:hover {
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* BONUS : Badge "PRÊT" qui pop au hover de la carte */
+.suggestion-item.suggestion-ready .suggestion-image::after {
+    animation: none;
+    transition: transform var(--transition-normal);
+}
+
+.suggestion-item.suggestion-ready:hover .suggestion-image::after {
+    animation: popBadge 0.3s ease-out;
+}
+
+@keyframes popBadge {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Animation subtile sur les stats au hover */
+.stat-card {
+    transition: all var(--transition-normal);
+}
+
+.stat-number {
+    transition: transform var(--transition-fast);
+}
+
+.stat-card:hover .stat-number {
+    transform: scale(1.1);
+}
+
+/* Animation des actions rapides au chargement */
+.action-card {
+    animation: slideInUp 0.4s ease-out both;
+}
+
+.action-card:nth-child(1) { animation-delay: 0.1s; }
+.action-card:nth-child(2) { animation-delay: 0.15s; }
+.action-card:nth-child(3) { animation-delay: 0.2s; }
+.action-card:nth-child(4) { animation-delay: 0.25s; }
+
+/* Désactiver animations si préférence utilisateur */
+@media (prefers-reduced-motion: reduce) {
+    .alerte-icon,
+    .action-cuisiner,
+    .suggestion-item,
+    .action-card {
+        animation: none !important;
+    }
+    
+    .suggestion-item.suggestion-ready:hover .suggestion-image::after {
+        animation: none !important;
     }
 }

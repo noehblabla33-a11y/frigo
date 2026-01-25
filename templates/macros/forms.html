@@ -424,3 +424,524 @@
     </button>
 </div>
 {% endmacro %}
+
+{# ============================================ #}
+{# MACROS PREMIUM POUR FORMULAIRES            #}
+{# À ajouter dans templates/macros/forms.html  #}
+{# ============================================ #}
+
+{# 
+   Section Premium avec numéro
+   Utilisation:
+   {% call premium_section(1, "Titre", "Description") %}
+       ... contenu ...
+   {% endcall %}
+#}
+{% macro premium_section(number, title, description='') %}
+<div class="form-section-premium">
+    <div class="section-header-premium">
+        <div class="section-number">{{ number }}</div>
+        <div class="section-title-content">
+            <h3>{{ title }}</h3>
+            {% if description %}
+            <p>{{ description }}</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="section-body-premium">
+        {{ caller() }}
+    </div>
+</div>
+{% endmacro %}
+
+
+{# 
+   Grille d'informations
+   Utilisation:
+   {% call info_grid(columns=3) %}
+       {{ input_field(...) }}
+       {{ select_field(...) }}
+   {% endcall %}
+#}
+{% macro info_grid(columns=3) %}
+<div class="info-grid" style="grid-template-columns: repeat({{ columns }}, 1fr);">
+    {{ caller() }}
+</div>
+{% endmacro %}
+
+
+{# 
+   Input premium (surcouche de input_field)
+   Ajoute automatiquement la classe "input-premium"
+#}
+{% macro input_premium(name, label='', value='', placeholder='', required=false, type='text', help_text='', min=none, max=none, step=none, attrs={}) %}
+    {% set premium_attrs = attrs.copy() %}
+    {% set _ = premium_attrs.update({'class': 'input-premium'}) %}
+    <div>
+        {% if label %}
+        <label class="form-label-premium">
+            {{ label }}
+            {% if required %}<span class="required-star">*</span>{% endif %}
+        </label>
+        {% endif %}
+        <input type="{{ type }}" 
+            name="{{ name }}" 
+            id="{{ name }}"
+            class="input-premium"
+            {% if value %}value="{{ value }}"{% endif %}
+            {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+            {% if required %}required{% endif %}
+            {% if min is not none %}min="{{ min }}"{% endif %}
+            {% if max is not none %}max="{{ max }}"{% endif %}
+            {% if step is not none %}step="{{ step }}"{% endif %}
+            {% for attr, val in attrs.items() %}{{ attr }}="{{ val }}" {% endfor %}>
+        {% if help_text %}
+        <div class="helper-text">{{ help_text }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+
+{# 
+   Select premium
+#}
+{% macro select_premium(name, label='', options=[], selected='', placeholder='', required=false, help_text='') %}
+    <div>
+        {% if label %}
+        <label class="form-label-premium">
+            {{ label }}
+            {% if required %}<span class="required-star">*</span>{% endif %}
+        </label>
+        {% endif %}
+        <select name="{{ name }}" 
+                id="{{ name }}"
+                class="input-premium"
+                {% if required %}required{% endif %}>
+            {% if placeholder %}
+            <option value="">{{ placeholder }}</option>
+            {% endif %}
+            {% for opt in options %}
+                {% if opt is mapping %}
+                    <option value="{{ opt.value }}" 
+                            {% if opt.value|string == selected|string %}selected{% endif %}>
+                        {% if opt.icon %}{{ opt.icon }} {% endif %}{{ opt.text }}
+                    </option>
+                {% else %}
+                    <option value="{{ opt[0] }}" 
+                            {% if opt[0]|string == selected|string %}selected{% endif %}>
+                        {{ opt[1] }}
+                    </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        {% if help_text %}
+        <div class="helper-text">{{ help_text }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+
+{# 
+   Textarea premium
+#}
+{% macro textarea_premium(name, label='', value='', placeholder='', required=false, rows=3, help_text='') %}
+    <div>
+        {% if label %}
+        <label class="form-label-premium">
+            {{ label }}
+            {% if required %}<span class="required-star">*</span>{% endif %}
+        </label>
+        {% endif %}
+        <textarea name="{{ name }}" 
+                  id="{{ name }}"
+                  class="input-premium"
+                  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                  {% if required %}required{% endif %}
+                  rows="{{ rows }}">{{ value }}</textarea>
+        {% if help_text %}
+        <div class="helper-text">{{ help_text }}</div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+
+{# 
+   Upload image premium
+#}
+{% macro image_upload_premium(name='image', current_image=none) %}
+<label class="image-upload-premium">
+    <input type="file" name="{{ name }}" accept="image/*" id="{{ name }}">
+    <div class="upload-icon">📸</div>
+    <div class="upload-text">Ajouter une photo</div>
+    <div class="upload-hint">Cliquez ou glissez une image (JPG, PNG)</div>
+</label>
+
+{% if current_image %}
+<div class="image-preview-premium">
+    <img src="{{ url_for('static', filename=current_image) }}" alt="Preview">
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{# 
+   Compteur visuel
+#}
+{% macro visual_counter(icon, label, value, value_id='') %}
+<div class="visual-counter">
+    <div class="counter-icon">{{ icon }}</div>
+    <div class="counter-content">
+        <div class="counter-label">{{ label }}</div>
+        <div class="counter-value"{% if value_id %} id="{{ value_id }}"{% endif %}>{{ value }}</div>
+    </div>
+</div>
+{% endmacro %}
+
+
+{# 
+   Liste d'ingrédients premium
+   Compatible avec le système existant
+#}
+{% macro ingredients_list_premium(ingredients_data=[], all_ingredients=[], id='ingredients-container') %}
+{{ visual_counter('📦', 'Total ingrédients', ingredients_data|length if ingredients_data else 1, 'ingredients-count') }}
+
+<div class="ingredients-list-premium" id="{{ id }}">
+    {% if ingredients_data %}
+        {% for ing_data in ingredients_data %}
+        {{ _ingredient_item_premium(loop.index0, all_ingredients, ing_data) }}
+        {% endfor %}
+    {% else %}
+        {{ _ingredient_item_premium(0, all_ingredients) }}
+    {% endif %}
+</div>
+
+<button type="button" onclick="ajouterIngredient()" class="btn-add-premium">
+    <span class="icon">+</span>
+    Ajouter un ingrédient
+</button>
+{% endmacro %}
+
+{% macro _ingredient_item_premium(index, ingredients, data=none) %}
+<div class="ingredient-item-premium dynamic-item" data-index="{{ index }}">
+    <div class="ingredient-drag-handle">⋮⋮</div>
+    
+    <div class="form-group" style="flex: 2; margin: 0;">
+        <select name="ingredient_{{ index }}" class="input-premium ingredient-select searchable-select" required>
+            <option value="">Sélectionner un ingrédient</option>
+            {% for ing in ingredients %}
+            <option value="{{ ing.id }}" 
+                    data-unite="{{ ing.unite }}"
+                    {% if data and data.ingredient_id == ing.id %}selected{% endif %}>
+                {{ ing.nom }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="form-group" style="flex: 1; margin: 0;">
+        <input type="number" 
+               step="1" 
+               name="quantite_{{ index }}" 
+               class="input-premium"
+               placeholder="Quantité"
+               value="{{ data.quantite if data else '' }}"
+               required>
+    </div>
+    
+    <div class="unite-badge">{{ data.unite if data else 'g' }}</div>
+    
+    <button type="button" class="btn-delete-modern btn-remove" style="{% if index == 0 %}display: none;{% endif %}">
+        🗑️
+    </button>
+</div>
+{% endmacro %}
+
+
+{# 
+   Liste d'étapes premium
+#}
+{% macro etapes_list_premium(etapes_data=[], id='etapes-container') %}
+{{ visual_counter('📋', 'Total étapes', etapes_data|length if etapes_data else 1, 'etapes-count') }}
+
+<div class="etapes-list-premium" id="{{ id }}">
+    {% if etapes_data %}
+        {% for etape in etapes_data %}
+        {{ _etape_item_premium(loop.index0, etape) }}
+        {% endfor %}
+    {% else %}
+        {{ _etape_item_premium(0) }}
+    {% endif %}
+</div>
+
+<button type="button" onclick="ajouterEtape()" class="btn-add-premium">
+    <span class="icon">+</span>
+    Ajouter une étape
+</button>
+{% endmacro %}
+
+{% macro _etape_item_premium(index, data=none) %}
+<div class="etape-item-premium dynamic-item" data-index="{{ index }}">
+    <div class="etape-numero-premium">{{ index + 1 }}</div>
+    
+    <div class="etape-content-premium">
+        <textarea name="etape_desc_{{ index }}" 
+                  class="input-premium"
+                  placeholder="Décrivez cette étape en détail..."
+                  rows="3"
+                  required>{{ data.description if data else '' }}</textarea>
+        
+        <div class="timer-input-group">
+            <span class="timer-icon">⏱️</span>
+            <input type="number" 
+                   name="etape_duree_{{ index }}" 
+                   placeholder="0"
+                   value="{{ data.duree_minutes if data and data.duree_minutes else '' }}"
+                   min="0">
+            <span class="timer-label">minutes</span>
+        </div>
+    </div>
+    
+    <button type="button" class="btn-delete-modern btn-remove" style="{% if index == 0 %}display: none;{% endif %}">
+        🗑️
+    </button>
+</div>
+{% endmacro %}
+
+
+{# 
+   Bouton submit hero
+#}
+{% macro submit_hero(text='Enregistrer', icon='✓') %}
+<div class="submit-section">
+    <button type="submit" class="btn-submit-hero">
+        <span>{{ icon }}</span>
+        {{ text }}
+    </button>
+    <div class="helper-text" style="justify-content: center; margin-top: 16px;">
+        Tous les champs marqués * sont obligatoires
+    </div>
+</div>
+{% endmacro %}
+
+{# ============================================ #}
+{# MACROS PREMIUM SPÉCIFIQUES AUX INGRÉDIENTS #}
+{# À ajouter dans templates/macros/forms.html  #}
+{# ============================================ #}
+
+{# 
+   Grille d'infos de base pour ingrédient
+   Utilisation dans premium_section
+#}
+{% macro ingredient_info_grid(nom_value='', categorie_selected='', categories=[], unite_selected='g', prix_value='', poids_value='') %}
+<div class="info-grid" style="grid-template-columns: 2fr 1fr 1fr;">
+    {# Nom (prend 2 colonnes) #}
+    <div class="info-grid-full" style="grid-column: span 2;">
+        {{ input_premium('nom', label='Nom de l\'ingrédient', 
+                        value=nom_value,
+                        placeholder='Ex: Tomates cerises', 
+                        required=true,
+                        help_text='Nom complet et précis de l\'ingrédient') }}
+    </div>
+    
+    {# Prix unitaire #}
+    <div>
+        {{ input_premium('prix_unitaire', label='Prix unitaire (€)', 
+                        type='number',
+                        value=prix_value,
+                        placeholder='0.00', 
+                        step='0.001', 
+                        min=0,
+                        attrs={'id': 'prix-unitaire-input'}) }}
+    </div>
+    
+    {# Catégorie #}
+    <div>
+        {% set cat_options = [] %}
+        {% for cat_name, cat_icon in categories %}
+            {% set _ = cat_options.append({'value': cat_name, 'text': cat_name, 'icon': cat_icon}) %}
+        {% endfor %}
+        
+        <label class="form-label-premium">Catégorie</label>
+        <select name="categorie" class="input-premium searchable-select">
+            <option value="">Aucune</option>
+            {% for cat_name, cat_icon in categories %}
+            <option value="{{ cat_name }}" {% if categorie_selected == cat_name %}selected{% endif %}>
+                {{ cat_icon }} {{ cat_name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    {# Unité #}
+    <div>
+        <label class="form-label-premium">Unité de mesure<span class="required-star">*</span></label>
+        <select name="unite" id="unite-select" class="input-premium" required>
+            <option value="g" {% if unite_selected == 'g' %}selected{% endif %}>Grammes (g)</option>
+            <option value="ml" {% if unite_selected == 'ml' %}selected{% endif %}>Millilitres (ml)</option>
+            <option value="pièce" {% if unite_selected == 'pièce' %}selected{% endif %}>Pièce</option>
+        </select>
+    </div>
+    
+    {# Poids pièce #}
+    <div>
+        {{ input_premium('poids_piece', label='Poids par pièce (g)', 
+                        type='number',
+                        value=poids_value,
+                        placeholder='Ex: 150', 
+                        step='0.1', 
+                        min=0,
+                        attrs={'id': 'poids-piece-input'},
+                        help_text='Si vendu à la pièce') }}
+    </div>
+</div>
+{% endmacro %}
+
+
+{# 
+   Section upload image pour ingrédient
+#}
+{% macro ingredient_image_section(current_image=none) %}
+<div style="margin-top: 24px;">
+    <label class="image-upload-premium">
+        <input type="file" name="image" accept="image/*">
+        <div class="upload-icon">📸</div>
+        <div class="upload-text">Ajouter une photo de l'ingrédient</div>
+        <div class="upload-hint">Cliquez ou glissez une image (JPG, PNG • Max 5MB)</div>
+    </label>
+    
+    {% if current_image %}
+    <div class="image-preview-premium" style="margin-top: 20px;">
+        <img src="{{ url_for('static', filename=current_image) }}" alt="Image actuelle">
+        <div style="text-align: center; margin-top: 8px; font-size: 13px; color: var(--text-secondary);">
+            Image actuelle
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endmacro %}
+
+
+{# 
+   Section valeurs nutritionnelles premium
+#}
+{% macro nutrition_section_premium(values={}) %}
+<details class="nutrition-details-premium">
+    <summary>
+        <span class="summary-icon">📊</span>
+        <span class="summary-text">Valeurs nutritionnelles (optionnel)</span>
+        <span class="summary-arrow">▶</span>
+    </summary>
+    
+    <div class="nutrition-content">
+        <div class="info-grid" style="grid-template-columns: repeat(4, 1fr);">
+            {{ input_premium('calories', label='Calories', 
+                            type='number', 
+                            value=values.get('calories', ''),
+                            placeholder='kcal/100g',
+                            step='0.1', min=0) }}
+            
+            {{ input_premium('proteines', label='Protéines', 
+                            type='number',
+                            value=values.get('proteines', ''),
+                            placeholder='g/100g',
+                            step='0.1', min=0) }}
+            
+            {{ input_premium('glucides', label='Glucides', 
+                            type='number',
+                            value=values.get('glucides', ''),
+                            placeholder='g/100g',
+                            step='0.1', min=0) }}
+            
+            {{ input_premium('lipides', label='Lipides', 
+                            type='number',
+                            value=values.get('lipides', ''),
+                            placeholder='g/100g',
+                            step='0.1', min=0) }}
+        </div>
+        
+        <div class="info-grid" style="grid-template-columns: repeat(3, 1fr); margin-top: 16px;">
+            {{ input_premium('fibres', label='Fibres', 
+                            type='number',
+                            value=values.get('fibres', ''),
+                            placeholder='g/100g',
+                            step='0.1', min=0) }}
+            
+            {{ input_premium('sucres', label='Sucres', 
+                            type='number',
+                            value=values.get('sucres', ''),
+                            placeholder='g/100g',
+                            step='0.1', min=0) }}
+            
+            {{ input_premium('sel', label='Sel', 
+                            type='number',
+                            value=values.get('sel', ''),
+                            placeholder='g/100g',
+                            step='0.01', min=0) }}
+        </div>
+    </div>
+</details>
+{% endmacro %}
+
+
+{# 
+   Section saisons premium
+#}
+{% macro saisons_section_premium(saisons_ingredient=[]) %}
+<div class="saisons-container-premium">
+    <div class="visual-counter" style="margin-bottom: 20px;">
+        <div class="counter-icon">🌿</div>
+        <div class="counter-content">
+            <div class="counter-label">Saisons sélectionnées</div>
+            <div class="counter-value" id="saisons-count">{{ saisons_ingredient|length if saisons_ingredient else 0 }}</div>
+        </div>
+    </div>
+    
+    <div class="saisons-grid-premium">
+        {% set saisons_data = [
+            ('printemps', '🌸', 'Printemps'),
+            ('ete', '☀️', 'Été'),
+            ('automne', '🍂', 'Automne'),
+            ('hiver', '❄️', 'Hiver')
+        ] %}
+        
+        {% for saison_code, emoji, nom in saisons_data %}
+        <label class="saison-card-premium {% if saison_code in saisons_ingredient %}selected{% endif %}">
+            <input type="checkbox" 
+                   name="saison" 
+                   value="{{ saison_code }}"
+                   {% if saison_code in saisons_ingredient %}checked{% endif %}
+                   onchange="updateSaisonsCount()">
+            <div class="saison-card-content">
+                <div class="saison-emoji-large">{{ emoji }}</div>
+                <div class="saison-nom">{{ nom }}</div>
+            </div>
+            <div class="saison-checkmark">✓</div>
+        </label>
+        {% endfor %}
+    </div>
+    
+    <div class="helper-text" style="margin-top: 16px; justify-content: center;">
+        Ces informations permettent de suggérer des recettes de saison
+    </div>
+</div>
+
+<script>
+function updateSaisonsCount() {
+    const count = document.querySelectorAll('input[name="saison"]:checked').length;
+    const counterEl = document.getElementById('saisons-count');
+    if (counterEl) {
+        counterEl.textContent = count;
+    }
+    
+    // Update visual state
+    document.querySelectorAll('.saison-card-premium').forEach(card => {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox.checked) {
+            card.classList.add('selected');
+        } else {
+            card.classList.remove('selected');
+        }
+    });
+}
+</script>
+{% endmacro %}

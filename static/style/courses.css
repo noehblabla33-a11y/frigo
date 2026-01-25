@@ -1,225 +1,206 @@
 /* ============================================ */
-/* Fichier: static/style/courses.css            */
-/* STYLES LISTE DE COURSES - VERSION PURGÉE    */
-/* Les styles de tableaux sont dans tables.css */
+/* FICHIER: static/style/courses.css           */
+/* LISTE DE COURSES - PALETTE NATURELLE       */
 /* ============================================ */
 
-/* ========== CARTE BUDGET ========== */
+/* ========== BUDGET CARD ========== */
 .budget-card {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    color: white;
+    background: white;
+    border: 3px solid var(--primary);
     border-radius: var(--border-radius-lg);
-    padding: 25px;
+    padding: 28px;
     margin-bottom: 25px;
-    box-shadow: 0 4px 20px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 20px rgba(46, 204, 113, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Bande colorée sur le côté */
+.budget-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
 }
 
 .budget-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #e8f5ed;
 }
 
-.budget-title {
-    font-size: 1.2em;
-    font-weight: 600;
+.budget-icon {
+    font-size: 32px;
+    background: linear-gradient(135deg, #e8f5ed 0%, #d4edda 100%);
+    width: 56px;
+    height: 56px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(46, 204, 113, 0.15);
+}
+
+.budget-header h4 {
+    margin: 0;
+    font-size: 1.3em;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+/* Section montant total */
+.budget-content {
+    margin-top: 20px;
+}
+
+.budget-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #e8f5ed 0%, #f1f8e9 100%);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.budget-label {
+    font-size: 1.1em;
+    color: var(--text-secondary);
+    font-weight: 600;
 }
 
 .budget-amount {
     font-size: 2.5em;
     font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
 }
 
+/* Détails du budget */
 .budget-details {
     display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
 }
 
 .budget-detail-item {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
     font-size: 0.95em;
 }
 
+.budget-detail-item span:first-child {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.budget-detail-item span:last-child {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.budget-warning {
+    color: var(--warning) !important;
+    background: #fff3cd;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-weight: 700 !important;
+}
+
+/* Note d'avertissement */
 .budget-note {
-    margin-top: 12px;
-    padding: 12px 15px;
-    background: rgba(255, 193, 7, 0.25);
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+    border-left: 4px solid #ffc107;
     border-radius: 8px;
     font-size: 0.9em;
-    border-left: 4px solid #ffc107;
+    color: #856404;
+    line-height: 1.5;
+}
+
+.budget-note::before {
+    content: '⚠️ ';
+    font-size: 1.2em;
+    margin-right: 6px;
 }
 
 .budget-note a {
-    color: white;
+    color: #d39e00;
     text-decoration: underline;
     font-weight: 700;
 }
 
+.budget-note a:hover {
+    color: #c69500;
+}
+
+/* État sans prix */
 .budget-no-price {
     text-align: center;
-    padding: 25px;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 2px dashed #cbd5e0;
 }
 
-.budget-no-price a {
-    color: white;
-    text-decoration: underline;
-    font-weight: bold;
-}
-
-/* ========== CONTENEUR TABLE ========== */
-.courses-table-container {
-    overflow-x: auto;
-    margin: 20px 0;
-    border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-}
-
-/* ========== ÉLÉMENTS SPÉCIFIQUES COURSES ========== */
-.courses-checkbox {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    accent-color: var(--success);
-}
-
-.quantite-input {
-    width: 100px;
-    padding: 8px 10px;
-    border: 2px solid var(--border-light);
-    border-radius: var(--border-radius);
-    font-size: 0.95em;
-    text-align: center;
-    transition: all var(--transition-fast);
-}
-
-.quantite-input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    outline: none;
-}
-
-.prix-estime {
-    color: var(--success);
-    font-weight: 600;
-}
-
-.prix-inconnu {
-    color: #adb5bd;
-}
-
-.ingredient-name-cell {
-    font-weight: 600;
+.budget-no-price p:first-child {
+    font-size: 1.2em;
+    margin-bottom: 12px;
     color: var(--text-primary);
 }
 
-/* ========== BOUTON VALIDER ========== */
-.btn-valider-achats {
-    display: block;
-    margin: 25px auto 0;
-    padding: 15px 40px;
-    font-size: 1.1em;
-    font-weight: 600;
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius-lg);
-    cursor: pointer;
-    transition: all var(--transition-normal);
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-    width: 100%;
-    max-width: 400px;
-}
-
-.btn-valider-achats:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-}
-
-/* ========== MESSAGES VIDES ========== */
-.empty-courses {
-    text-align: center;
-    padding: 60px 20px;
+.budget-no-price p:last-child {
+    font-size: 0.95em;
     color: var(--text-secondary);
 }
 
-.empty-courses-icon {
-    font-size: 4em;
-    margin-bottom: 20px;
-    opacity: 0.5;
+.budget-no-price a {
+    color: var(--primary);
+    text-decoration: underline;
+    font-weight: 700;
 }
 
-.empty-courses p {
-    font-size: 1.1em;
-    margin: 10px 0;
-}
-
-/* ============================================ */
-/* FORMULAIRE D'AJOUT MANUEL                   */
-/* ============================================ */
-.form-ajout-manuel {
-    background: var(--bg-light);
-    padding: 20px;
-    border-radius: var(--border-radius-lg);
-    border: 1px dashed var(--border-color);
-}
-
-.form-row--align-end {
-    display: flex;
-    gap: 15px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-}
-
-.form-row--align-end .form-group {
-    margin-bottom: 0;
-}
-
-/* Groupe d'affichage de l'unité */
-.unite-display-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.unite-display-value {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px 16px;
-    background: var(--bg-white);
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
-    font-weight: 600;
-    color: var(--text-secondary);
-    min-height: 47px;
-    min-width: 60px;
-}
-
-/* Bouton d'ajout */
-.btn-ajout-manuel {
-    white-space: nowrap;
-    padding: 12px 20px;
-}
-
-.btn-ajout-manuel:hover {
-    transform: translateY(-2px);
+.budget-no-price a:hover {
+    color: var(--primary-dark);
 }
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
+    .budget-card {
+        padding: 20px;
+    }
+    
     .budget-header {
+        flex-direction: row;
+        text-align: left;
+    }
+    
+    .budget-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 28px;
+    }
+    
+    .budget-header h4 {
+        font-size: 1.1em;
+    }
+    
+    .budget-total {
         flex-direction: column;
+        gap: 12px;
         text-align: center;
-        gap: 8px;
     }
     
     .budget-amount {
@@ -228,48 +209,8 @@
     
     .budget-detail-item {
         flex-direction: column;
-        gap: 5px;
+        gap: 6px;
         text-align: center;
-    }
-    
-    .courses-table-container {
-        margin: 10px -15px;
-        border-radius: 0;
-    }
-    
-    .quantite-input {
-        width: 60px;
-        padding: 6px;
-    }
-    
-    .btn-valider-achats {
-        padding: 12px 20px;
-        font-size: 1em;
-    }
-    
-    /* Formulaire d'ajout manuel responsive */
-    .form-row--align-end {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .form-row--align-end .form-group {
-        flex: none !important;
-        width: 100%;
-    }
-    
-    .form-ajout-manuel {
-        padding: 15px;
-    }
-    
-    .unite-display-value {
-        justify-content: flex-start;
-        padding-left: 16px;
-    }
-    
-    .btn-ajout-manuel {
-        width: 100%;
-        margin-top: 10px;
     }
 }
 
@@ -277,12 +218,117 @@
 @media print {
     .budget-card {
         background: white;
-        color: black;
-        border: 2px solid #28a745;
+        border: 2px solid #333;
+        box-shadow: none;
     }
     
-    .btn-valider-achats,
-    .form-ajout-manuel {
+    .budget-card::before {
         display: none;
+    }
+    
+    .budget-total {
+        background: #f0f0f0;
+    }
+    
+    .budget-amount {
+        color: #000;
+    }
+    
+    .budget-note {
+        background: #f9f9f9;
+        color: #333;
+    }
+}
+
+/* ========== INPUT QUANTITÉ ========== */
+.quantite-input {
+    width: 80px;
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: var(--font-sm);
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.quantite-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.1);
+    outline: none;
+}
+
+.prix-estime {
+    color: var(--success);
+    font-weight: 700;
+}
+
+.prix-inconnu {
+    color: var(--text-muted);
+}
+
+/* ========== BOUTON VALIDER ========== */
+.btn-valider-achats {
+    display: block;
+    margin: var(--spacing-xl) auto 0;
+    padding: var(--spacing-lg) var(--spacing-2xl);
+    font-size: var(--font-lg);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--success) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+    width: 100%;
+    max-width: 400px;
+}
+
+.btn-valider-achats:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+}
+
+/* ========== FORM AJOUT MANUEL ========== */
+.form-ajout-manuel {
+    background: var(--bg-light);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-lg);
+    border: 1px dashed var(--border-color);
+    margin-top: var(--spacing-xl);
+}
+
+.form-row--align-end {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.form-row--align-end .form-group {
+    margin-bottom: 0;
+}
+
+/* ========== ÉTAT VIDE ========== */
+.empty-courses {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    color: var(--text-secondary);
+}
+
+.empty-courses-icon {
+    font-size: 4em;
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.4;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .budget-card {
+        padding: var(--spacing-lg);
+    }
+    
+    .budget-amount {
+        font-size: var(--font-xl);
     }
 }
