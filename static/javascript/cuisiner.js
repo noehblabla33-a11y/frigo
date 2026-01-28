@@ -1,117 +1,174 @@
 /**
  * cuisiner.js - Gestion du mode cuisine interactif
- * VERSION CORRIGÉE - Compatible avec préfixe rd-
+ * VERSION OPTIMISÉE - Timers précis résistants au throttling des onglets
+ * 
+ * OPTIMISATIONS :
+ * ✅ Utilisation de Date.now() au lieu de compteur décrémental
+ * ✅ Intervalle de 100ms pour fluidité (au lieu de 1000ms)
+ * ✅ Page Visibility API pour mise à jour au retour sur l'onglet
+ * ✅ Gestion précise des pauses avec timestamp
+ * ✅ Code factorisé et optimisé
  */
 
-// État des timers
+// ============================================
+// ÉTAT GLOBAL
+// ============================================
+
 const timers = {};
 const completedSteps = new Set();
 
+// ============================================
+// GESTION DES TIMERS - VERSION OPTIMISÉE
+// ============================================
+
 /**
  * Démarre un timer pour une étape
+ * Utilise Date.now() pour éviter les problèmes de throttling
  */
 function startTimer(etapeId, minutes) {
     // Arrêter le timer existant s'il y en a un
-    if (timers[etapeId] && timers[etapeId].interval) {
+    if (timers[etapeId]?.interval) {
         clearInterval(timers[etapeId].interval);
     }
     
     const totalSeconds = minutes * 60;
+    const endTime = Date.now() + (totalSeconds * 1000);
+    
     timers[etapeId] = {
-        remaining: totalSeconds,
+        endTime: endTime,
         total: totalSeconds,
         interval: null,
-        isPaused: false
+        isPaused: false,
+        pausedRemaining: null,
+        startTime: Date.now()
     };
     
-    // Masquer le bouton start, afficher pause
-    document.getElementById(`start-${etapeId}`).style.display = 'none';
-    document.getElementById(`pause-${etapeId}`).style.display = 'inline-block';
-    document.getElementById(`resume-${etapeId}`).style.display = 'none';
-    
-    // Mettre à jour le statut
+    // Mise à jour de l'interface
+    updateTimerButtons(etapeId, 'running');
     updateStepStatus(etapeId, 'progress');
     
-    // Démarrer l'interval
+    // Lancer la boucle de mise à jour
+    runTimerLoop(etapeId);
+    
+    // Mise à jour immédiate
+    updateTimerFromTimestamp(etapeId);
+}
+
+/**
+ * Boucle de mise à jour du timer
+ * Utilise un intervalle de 100ms pour plus de fluidité
+ */
+function runTimerLoop(etapeId) {
     timers[etapeId].interval = setInterval(() => {
-        if (timers[etapeId].remaining > 0) {
-            timers[etapeId].remaining--;
-            updateTimerDisplay(etapeId);
+        if (!timers[etapeId] || timers[etapeId].isPaused) {
+            return;
+        }
+        
+        const remaining = Math.max(0, Math.ceil((timers[etapeId].endTime - Date.now()) / 1000));
+        
+        if (remaining > 0) {
+            updateTimerDisplay(etapeId, remaining, timers[etapeId].total);
         } else {
             // Timer terminé
-            clearInterval(timers[etapeId].interval);
-            timers[etapeId].interval = null;
+            stopTimerLoop(etapeId);
+            updateTimerDisplay(etapeId, 0, timers[etapeId].total);
             timerFinished(etapeId);
         }
-    }, 1000);
+    }, 100); // 100ms pour fluidité et réactivité
+}
+
+/**
+ * Arrête la boucle d'un timer
+ */
+function stopTimerLoop(etapeId) {
+    if (timers[etapeId]?.interval) {
+        clearInterval(timers[etapeId].interval);
+        timers[etapeId].interval = null;
+    }
+}
+
+/**
+ * Met à jour le timer depuis le timestamp (appelé au retour sur l'onglet)
+ */
+function updateTimerFromTimestamp(etapeId) {
+    if (!timers[etapeId] || timers[etapeId].isPaused) {
+        return;
+    }
+    
+    const remaining = Math.max(0, Math.ceil((timers[etapeId].endTime - Date.now()) / 1000));
+    updateTimerDisplay(etapeId, remaining, timers[etapeId].total);
+    
+    // Vérifier si le timer est terminé
+    if (remaining === 0 && timers[etapeId].interval) {
+        stopTimerLoop(etapeId);
+        timerFinished(etapeId);
+    }
 }
 
 /**
  * Met en pause un timer
  */
 function pauseTimer(etapeId) {
-    if (timers[etapeId] && timers[etapeId].interval) {
-        clearInterval(timers[etapeId].interval);
-        timers[etapeId].interval = null;
-        timers[etapeId].isPaused = true;
-        
-        document.getElementById(`pause-${etapeId}`).style.display = 'none';
-        document.getElementById(`resume-${etapeId}`).style.display = 'inline-block';
+    if (!timers[etapeId]?.interval) {
+        return;
     }
+    
+    // Calculer et sauvegarder le temps restant
+    const remaining = Math.max(0, Math.ceil((timers[etapeId].endTime - Date.now()) / 1000));
+    timers[etapeId].pausedRemaining = remaining;
+    timers[etapeId].isPaused = true;
+    
+    // Arrêter la boucle
+    stopTimerLoop(etapeId);
+    
+    // Mise à jour de l'interface
+    updateTimerButtons(etapeId, 'paused');
 }
 
 /**
  * Reprend un timer en pause
  */
 function resumeTimer(etapeId) {
-    if (timers[etapeId] && timers[etapeId].isPaused) {
-        timers[etapeId].isPaused = false;
-        
-        document.getElementById(`pause-${etapeId}`).style.display = 'inline-block';
-        document.getElementById(`resume-${etapeId}`).style.display = 'none';
-        
-        timers[etapeId].interval = setInterval(() => {
-            if (timers[etapeId].remaining > 0) {
-                timers[etapeId].remaining--;
-                updateTimerDisplay(etapeId);
-            } else {
-                clearInterval(timers[etapeId].interval);
-                timers[etapeId].interval = null;
-                timerFinished(etapeId);
-            }
-        }, 1000);
+    if (!timers[etapeId]?.isPaused || timers[etapeId].pausedRemaining === null) {
+        return;
     }
+    
+    // Recalculer l'heure de fin basée sur le temps restant sauvegardé
+    timers[etapeId].endTime = Date.now() + (timers[etapeId].pausedRemaining * 1000);
+    timers[etapeId].isPaused = false;
+    timers[etapeId].pausedRemaining = null;
+    
+    // Mise à jour de l'interface
+    updateTimerButtons(etapeId, 'running');
+    
+    // Relancer la boucle
+    runTimerLoop(etapeId);
 }
 
 /**
  * Réinitialise un timer
  */
 function resetTimer(etapeId, minutes) {
-    if (timers[etapeId]) {
-        if (timers[etapeId].interval) {
-            clearInterval(timers[etapeId].interval);
-        }
-        timers[etapeId].interval = null;
-        timers[etapeId].remaining = minutes * 60;
-        timers[etapeId].isPaused = false;
-    }
+    // Arrêter le timer existant
+    stopTimerLoop(etapeId);
     
-    // Mettre à jour l'affichage
-    const timeDisplay = document.getElementById(`timer-time-${etapeId}`);
-    if (timeDisplay) {
-        timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:00`;
-    }
+    const totalSeconds = minutes * 60;
     
-    // Réinitialiser la barre de progression
-    const progressFill = document.getElementById(`progress-${etapeId}`);
-    if (progressFill) {
-        progressFill.style.width = '0%';
-    }
+    // Réinitialiser l'état
+    timers[etapeId] = {
+        endTime: null,
+        total: totalSeconds,
+        interval: null,
+        isPaused: false,
+        pausedRemaining: null,
+        startTime: null
+    };
     
-    // Réinitialiser les boutons
-    document.getElementById(`start-${etapeId}`).style.display = 'inline-block';
-    document.getElementById(`pause-${etapeId}`).style.display = 'none';
-    document.getElementById(`resume-${etapeId}`).style.display = 'none';
+    // Mise à jour de l'affichage
+    updateTimerDisplay(etapeId, totalSeconds, totalSeconds);
+    
+    // Réinitialiser l'interface
+    updateTimerButtons(etapeId, 'stopped');
     
     // Réinitialiser les classes visuelles
     const timerDisplay = document.getElementById(`timer-display-${etapeId}`);
@@ -128,12 +185,9 @@ function resetTimer(etapeId, minutes) {
 /**
  * Met à jour l'affichage du timer
  */
-function updateTimerDisplay(etapeId) {
-    const timer = timers[etapeId];
-    if (!timer) return;
-    
-    const minutes = Math.floor(timer.remaining / 60);
-    const seconds = timer.remaining % 60;
+function updateTimerDisplay(etapeId, remaining, total) {
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
     
     const timeDisplay = document.getElementById(`timer-time-${etapeId}`);
     if (timeDisplay) {
@@ -143,7 +197,7 @@ function updateTimerDisplay(etapeId) {
     // Mettre à jour la barre de progression
     const progressFill = document.getElementById(`progress-${etapeId}`);
     if (progressFill) {
-        const percentage = ((timer.total - timer.remaining) / timer.total) * 100;
+        const percentage = total > 0 ? ((total - remaining) / total) * 100 : 0;
         progressFill.style.width = `${percentage}%`;
     }
     
@@ -152,11 +206,42 @@ function updateTimerDisplay(etapeId) {
     if (timerDisplay) {
         timerDisplay.classList.remove('rd-timer-warning', 'rd-timer-critical');
         
-        if (timer.remaining <= 30) {
+        if (remaining <= 30) {
             timerDisplay.classList.add('rd-timer-critical');
-        } else if (timer.remaining <= 60) {
+        } else if (remaining <= 60) {
             timerDisplay.classList.add('rd-timer-warning');
         }
+    }
+}
+
+/**
+ * Met à jour les boutons du timer selon l'état
+ * @param {number} etapeId - ID de l'étape
+ * @param {string} state - 'stopped' | 'running' | 'paused'
+ */
+function updateTimerButtons(etapeId, state) {
+    const startBtn = document.getElementById(`start-${etapeId}`);
+    const pauseBtn = document.getElementById(`pause-${etapeId}`);
+    const resumeBtn = document.getElementById(`resume-${etapeId}`);
+    
+    if (!startBtn || !pauseBtn || !resumeBtn) return;
+    
+    // Masquer tous les boutons
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = 'none';
+    resumeBtn.style.display = 'none';
+    
+    // Afficher le bouton approprié
+    switch (state) {
+        case 'stopped':
+            startBtn.style.display = 'inline-block';
+            break;
+        case 'running':
+            pauseBtn.style.display = 'inline-block';
+            break;
+        case 'paused':
+            resumeBtn.style.display = 'inline-block';
+            break;
     }
 }
 
@@ -176,34 +261,29 @@ function timerFinished(etapeId) {
     }
     
     // Réinitialiser les boutons
-    document.getElementById(`start-${etapeId}`).style.display = 'inline-block';
-    document.getElementById(`pause-${etapeId}`).style.display = 'none';
-    document.getElementById(`resume-${etapeId}`).style.display = 'none';
+    updateTimerButtons(etapeId, 'stopped');
     
     // Notification
     showNotification('⏱️ Timer terminé !');
     
-    // Son de notification (si supporté)
-    try {
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Timer terminé !', {
-                body: 'Une étape de votre recette est prête.',
-                icon: '⏱️'
-            });
-        }
-    } catch (e) {
-        // Ignore si les notifications ne sont pas supportées
-    }
+    // Notification système (si autorisé)
+    sendSystemNotification('Timer terminé !', 'Une étape de votre recette est prête.');
+    
+    // Son de notification (optionnel - peut être ajouté plus tard)
+    // playNotificationSound();
 }
+
+// ============================================
+// GESTION DES ÉTAPES
+// ============================================
 
 /**
  * Marque une étape comme terminée
  */
 function completeStep(etapeId) {
     // Arrêter le timer s'il est actif
-    if (timers[etapeId] && timers[etapeId].interval) {
-        clearInterval(timers[etapeId].interval);
-        timers[etapeId].interval = null;
+    if (timers[etapeId]?.interval) {
+        stopTimerLoop(etapeId);
     }
     
     completedSteps.add(etapeId);
@@ -270,6 +350,7 @@ function updateGlobalProgress() {
     // Vérifier si toutes les étapes sont terminées
     if (completed === totalSteps && totalSteps > 0) {
         showNotification('🎉 Félicitations ! Toutes les étapes sont terminées !');
+        sendSystemNotification('Recette terminée !', 'Félicitations, vous avez terminé toutes les étapes !');
     }
 }
 
@@ -295,8 +376,12 @@ function scrollToNextStep(currentEtapeId) {
     }
 }
 
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
 /**
- * Affiche une notification temporaire
+ * Affiche une notification temporaire dans la page
  */
 function showNotification(message) {
     const notification = document.getElementById('cooking-notification');
@@ -310,13 +395,90 @@ function showNotification(message) {
     }, 4000);
 }
 
-// Initialisation au chargement
-document.addEventListener('DOMContentLoaded', () => {
-    // Demander la permission pour les notifications
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+/**
+ * Envoie une notification système (si autorisé)
+ */
+function sendSystemNotification(title, body) {
+    try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, {
+                body: body,
+                icon: '⏱️',
+                badge: '⏱️'
+            });
+        }
+    } catch (e) {
+        // Ignorer si les notifications ne sont pas supportées
+        console.log('Notifications système non supportées:', e);
     }
+}
+
+/**
+ * Demande la permission pour les notifications système
+ */
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('Notifications système activées');
+            }
+        });
+    }
+}
+
+// ============================================
+// PAGE VISIBILITY API - OPTIMISATION ONGLETS
+// ============================================
+
+/**
+ * Gère le retour sur l'onglet pour mettre à jour les timers
+ * Évite les problèmes de désynchronisation quand l'onglet est inactif
+ */
+function handleVisibilityChange() {
+    if (!document.hidden) {
+        // L'utilisateur revient sur l'onglet
+        console.log('Retour sur l\'onglet - mise à jour des timers');
+        
+        // Mettre à jour tous les timers actifs
+        Object.keys(timers).forEach(etapeId => {
+            if (timers[etapeId] && !timers[etapeId].isPaused && timers[etapeId].endTime) {
+                updateTimerFromTimestamp(parseInt(etapeId));
+            }
+        });
+    }
+}
+
+// ============================================
+// INITIALISATION
+// ============================================
+
+/**
+ * Initialisation au chargement de la page
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initialisation du mode cuisine optimisé');
     
-    // Initialiser la progression
+    // Demander la permission pour les notifications système
+    requestNotificationPermission();
+    
+    // Initialiser la progression globale
     updateGlobalProgress();
+    
+    // Écouter les changements de visibilité de l'onglet
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    console.log('Mode cuisine prêt ✅');
+});
+
+// ============================================
+// NETTOYAGE À LA FERMETURE
+// ============================================
+
+/**
+ * Nettoie les timers avant de quitter la page
+ */
+window.addEventListener('beforeunload', () => {
+    Object.keys(timers).forEach(etapeId => {
+        stopTimerLoop(parseInt(etapeId));
+    });
 });
