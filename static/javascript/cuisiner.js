@@ -40,7 +40,8 @@ function startTimer(etapeId, minutes) {
         interval: null,
         isPaused: false,
         pausedRemaining: null,
-        startTime: Date.now()
+        startTime: Date.now(),
+        warningSoundPlayed: false // Flag pour éviter de rejouer le son d'avertissement
     };
     
     // Mise à jour de l'interface
@@ -161,7 +162,8 @@ function resetTimer(etapeId, minutes) {
         interval: null,
         isPaused: false,
         pausedRemaining: null,
-        startTime: null
+        startTime: null,
+        warningSoundPlayed: false
     };
     
     // Mise à jour de l'affichage
@@ -206,9 +208,18 @@ function updateTimerDisplay(etapeId, remaining, total) {
     if (timerDisplay) {
         timerDisplay.classList.remove('rd-timer-warning', 'rd-timer-critical');
         
+        // Mode critique : <= 30 secondes
         if (remaining <= 30) {
             timerDisplay.classList.add('rd-timer-critical');
-        } else if (remaining <= 60) {
+            
+            // 🔊 Son d'avertissement à exactement 30 secondes (une seule fois)
+            if (remaining === 30 && !timers[etapeId].warningSoundPlayed) {
+                NotificationSound.playWarning();
+                timers[etapeId].warningSoundPlayed = true;
+            }
+        } 
+        // Mode avertissement : <= 60 secondes
+        else if (remaining <= 60) {
             timerDisplay.classList.add('rd-timer-warning');
         }
     }
@@ -269,8 +280,8 @@ function timerFinished(etapeId) {
     // Notification système (si autorisé)
     sendSystemNotification('Timer terminé !', 'Une étape de votre recette est prête.');
     
-    // Son de notification (optionnel - peut être ajouté plus tard)
-    // playNotificationSound();
+    // 🔊 JOUER LA MÉLODIE DE FIN
+    NotificationSound.playMelody();
 }
 
 // ============================================
@@ -351,6 +362,9 @@ function updateGlobalProgress() {
     if (completed === totalSteps && totalSteps > 0) {
         showNotification('🎉 Félicitations ! Toutes les étapes sont terminées !');
         sendSystemNotification('Recette terminée !', 'Félicitations, vous avez terminé toutes les étapes !');
+        
+        // 🎵 JOUER LE SON DE CÉLÉBRATION
+        NotificationSound.playCelebration();
     }
 }
 
@@ -375,6 +389,187 @@ function scrollToNextStep(currentEtapeId) {
         }
     }
 }
+
+// ============================================
+// GESTION DES SONS - OPTION 3
+// ============================================
+
+/**
+ * Gestionnaire de sons pour les notifications
+ */
+const NotificationSound = {
+    /**
+     * Joue un bip simple avec Web Audio API
+     */
+    playBeep() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Créer un oscillateur (générateur de son)
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Configuration du son
+            oscillator.frequency.value = 800; // Fréquence en Hz (800 = son aigu)
+            oscillator.type = 'sine'; // Onde sinusoïdale pour un son doux
+            
+            // Envelope du volume (fade out)
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            // Jouer le son
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+            
+        } catch (err) {
+            console.log('Web Audio API non supportée:', err);
+        }
+    },
+    
+    /**
+     * Joue un triple bip pour attirer l'attention
+     */
+    playTripleBeep() {
+        this.playBeep();
+        setTimeout(() => this.playBeep(), 200);
+        setTimeout(() => this.playBeep(), 400);
+    },
+    
+    /**
+     * Joue une mélodie agréable de fin (Do - Mi - Sol)
+     * Version sophistiquée avec harmoniques
+     */
+    playMelody() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Définition de la mélodie (fréquences en Hz)
+            const notes = [
+                { freq: 523.25, start: 0, duration: 0.15 },    // Do (C5)
+                { freq: 659.25, start: 0.15, duration: 0.15 }, // Mi (E5)
+                { freq: 783.99, start: 0.3, duration: 0.4 }    // Sol (G5) - plus long
+            ];
+            
+            notes.forEach(note => {
+                // Note principale
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = note.freq;
+                oscillator.type = 'sine';
+                
+                // Envelope du volume
+                const startTime = audioContext.currentTime + note.start;
+                const endTime = startTime + note.duration;
+                
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.02); // Attack
+                gainNode.gain.exponentialRampToValueAtTime(0.01, endTime); // Decay
+                
+                oscillator.start(startTime);
+                oscillator.stop(endTime);
+                
+                // Ajouter une harmonique pour enrichir le son
+                const harmonic = audioContext.createOscillator();
+                const harmonicGain = audioContext.createGain();
+                
+                harmonic.connect(harmonicGain);
+                harmonicGain.connect(audioContext.destination);
+                
+                harmonic.frequency.value = note.freq * 2; // Octave supérieure
+                harmonic.type = 'sine';
+                
+                harmonicGain.gain.setValueAtTime(0, startTime);
+                harmonicGain.gain.linearRampToValueAtTime(0.1, startTime + 0.02);
+                harmonicGain.gain.exponentialRampToValueAtTime(0.01, endTime);
+                
+                harmonic.start(startTime);
+                harmonic.stop(endTime);
+            });
+            
+        } catch (err) {
+            console.log('Mélodie non supportée:', err);
+            // Fallback vers un bip simple
+            this.playBeep();
+        }
+    },
+    
+    /**
+     * Joue une célébration sonore (pour toutes les étapes terminées)
+     */
+    playCelebration() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Arpège ascendant joyeux : Do - Mi - Sol - Do
+            const notes = [
+                { freq: 523.25, start: 0, duration: 0.12 },      // Do
+                { freq: 659.25, start: 0.12, duration: 0.12 },   // Mi
+                { freq: 783.99, start: 0.24, duration: 0.12 },   // Sol
+                { freq: 1046.50, start: 0.36, duration: 0.3 }    // Do (octave supérieure)
+            ];
+            
+            notes.forEach(note => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = note.freq;
+                oscillator.type = 'triangle'; // Son plus doux et chaleureux
+                
+                const startTime = audioContext.currentTime + note.start;
+                const endTime = startTime + note.duration;
+                
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.02);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, endTime);
+                
+                oscillator.start(startTime);
+                oscillator.stop(endTime);
+            });
+            
+        } catch (err) {
+            console.log('Célébration sonore non supportée:', err);
+            this.playMelody();
+        }
+    },
+    
+    /**
+     * Joue un son d'avertissement (30 secondes restantes)
+     */
+    playWarning() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Son plus grave pour l'avertissement
+            oscillator.frequency.value = 400;
+            oscillator.type = 'square';
+            
+            gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+            
+        } catch (err) {
+            console.log('Son d\'avertissement non supporté:', err);
+        }
+    }
+};
 
 // ============================================
 // NOTIFICATIONS
