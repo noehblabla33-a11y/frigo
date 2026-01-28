@@ -283,7 +283,8 @@ class Recette(db.Model):
     instructions = db.Column(db.Text)
     image = db.Column(db.String(200), nullable=True)
     type_recette = db.Column(db.String(50), nullable=True)
-    temps_preparation = db.Column(db.Integer, nullable=True)
+    temps_preparation = db.Column(db.Integer, nullable=True)  # En minutes
+    temps_cuisson = db.Column(db.Integer, nullable=True)      # ✅ NOUVEAU : En minutes
     
     # Relations avec suppression en cascade
     ingredients = db.relationship('IngredientRecette', backref='recette', 
@@ -294,146 +295,176 @@ class Recette(db.Model):
     planifications = db.relationship('RecettePlanifiee', backref='recette_ref', 
                                     cascade='all, delete-orphan')
     
-    def calculer_cout(self) -> float:
-        """Calcule le coût estimé de la recette."""
-        cout_total = 0
-        for ing_rec in self.ingredients:
-            cout_total += ing_rec.ingredient.calculer_prix(ing_rec.quantite)
-        return round(cout_total, 2)
-
-    def calculer_nutrition(self) -> dict:
-        """Calcule les valeurs nutritionnelles totales de la recette."""
-        nutrition = {
-            'calories': 0, 'proteines': 0, 'glucides': 0,
-            'lipides': 0, 'fibres': 0, 'sucres': 0, 'sel': 0
-        }
-        
-        for ing_rec in self.ingredients:
-            ing_nutrition = ing_rec.ingredient.get_nutrition_for_quantity(ing_rec.quantite)
-            for key in nutrition.keys():
-                nutrition[key] += ing_nutrition[key]
-        
-        return {k: round(v, 1) for k, v in nutrition.items()}
-
-    def calculer_disponibilite_ingredients(self) -> dict:
-        """Calcule le pourcentage d'ingrédients disponibles dans le frigo."""
-        if not self.ingredients:
-            return {
-                'pourcentage': 0,
-                'ingredients_disponibles': [],
-                'ingredients_manquants': [],
-                'realisable': False,
-                'score': 0
-            }
-        
-        total_ingredients = len(self.ingredients)
-        disponibles = []
-        manquants = []
-        
-        for ing_rec in self.ingredients:
-            stock = StockFrigo.query.filter_by(ingredient_id=ing_rec.ingredient_id).first()
-            quantite_disponible = stock.quantite if stock else 0
-            
-            if quantite_disponible >= ing_rec.quantite:
-                disponibles.append({
-                    'ingredient': ing_rec.ingredient,
-                    'quantite_requise': ing_rec.quantite,
-                    'quantite_disponible': quantite_disponible
-                })
-            else:
-                manquants.append({
-                    'ingredient': ing_rec.ingredient,
-                    'quantite_requise': ing_rec.quantite,
-                    'quantite_disponible': quantite_disponible,
-                    'quantite_manquante': ing_rec.quantite - quantite_disponible
-                })
-        
-        pourcentage = (len(disponibles) / total_ingredients * 100) if total_ingredients > 0 else 0
-        
-        return {
-            'pourcentage': round(pourcentage, 1),
-            'ingredients_disponibles': disponibles,
-            'ingredients_manquants': manquants,
-            'realisable': len(manquants) == 0,
-            'score': len(disponibles)
-        }
-
-    # ============================================
-    # ✅ NOUVELLE MÉTHODE : Score saisonnier
-    # ============================================
-
-    def calculer_score_saisonnier(self, saison: str = None) -> dict:
+    def temps_total(self) -> int:
         """
-        Calcule le score saisonnier de la recette.
-        
-        Args:
-            saison: Saison de référence (défaut: saison actuelle)
+        Calcule le temps total de la recette (préparation + cuisson).
         
         Returns:
-            Dict avec score et détails des ingrédients
+            Temps total en minutes, ou None si aucun temps n'est défini
+        """
+        temps_prep = self.temps_preparation or 0
+        temps_cuiss = self.temps_cuisson or 0
+        
+        if temps_prep == 0 and temps_cuiss == 0:
+            return None
+        
+        return temps_prep + temps_cuiss
+    
+    # Le reste des méthodes reste identique...
+    def calculer_cout(self) -> float:
+        """Calcule le coût estimé de la recette."""
+        cout = 0.0
+        for ing_rec in self.ingredients:
+            ing = ing_rec.ingredient
+            if ing.prix_unitaire and ing.prix_unitaire > 0:
+                if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
+                    cout += ing_rec.quantite * ing.poids_piece * ing.prix_unitaire
+                else:
+                    cout += ing_rec.quantite * ing.prix_unitaire
+        return round(cout, 2)
+    
+    def calculer_disponibilite_ingredients(self) -> dict:
+        """
+        Vérifie si tous les ingrédients sont disponibles dans le frigo.
+        
+        Returns:
+            {
+                'realisable': bool,
+                'pourcentage_disponibilite': float,
+                'ingredients_manquants': list[IngredientRecette],
+                'ingredients_disponibles': list[IngredientRecette]
+            }
+        """
+        if not self.ingredients:
+            return {
+                'realisable': True,
+                'pourcentage_disponibilite': 100.0,
+                'ingredients_manquants': [],
+                'ingredients_disponibles': []
+            }
+        
+        manquants = []
+        disponibles = []
+        
+        for ing_rec in self.ingredients:
+            stock = ing_rec.ingredient.stock
+            quantite_dispo = stock.quantite if stock else 0
+            
+            if quantite_dispo >= ing_rec.quantite:
+                disponibles.append(ing_rec)
+            else:
+                quantite_manquante = ing_rec.quantite - quantite_dispo
+                ing_rec.quantite_manquante = quantite_manquante
+                manquants.append(ing_rec)
+        
+        total = len(self.ingredients)
+        nb_dispo = len(disponibles)
+        pourcentage = (nb_dispo / total * 100) if total > 0 else 0
+        
+        return {
+            'realisable': len(manquants) == 0,
+            'pourcentage_disponibilite': round(pourcentage, 1),
+            'ingredients_manquants': manquants,
+            'ingredients_disponibles': disponibles
+        }
+    
+    def calculer_score_saisonnier(self) -> dict:
+        """
+        Calcule le score de saisonnalité de la recette.
+        
+        Returns:
+            {
+                'score': float (0-100),
+                'saison_optimale': str,
+                'details': dict
+            }
         """
         from utils.saisons import get_saison_actuelle
         
-        if saison is None:
-            saison = get_saison_actuelle()
-        
         if not self.ingredients:
-            return {
-                'score': 0,
-                'ingredients_saison': [],
-                'ingredients_hors_saison': [],
-                'ingredients_toute_annee': []
-            }
+            return {'score': 100.0, 'saison_optimale': None, 'details': {}}
         
-        ingredients_saison = []
-        ingredients_hors_saison = []
-        ingredients_toute_annee = []
+        saison_actuelle = get_saison_actuelle()
+        nb_ingredients = len(self.ingredients)
+        nb_de_saison = 0
         
         for ing_rec in self.ingredients:
-            ingredient = ing_rec.ingredient
-            saisons_ing = ingredient.get_saisons()
-            
-            if not saisons_ing:
-                ingredients_toute_annee.append(ingredient)
-            elif saison in saisons_ing:
-                ingredients_saison.append(ingredient)
-            else:
-                ingredients_hors_saison.append(ingredient)
+            if ing_rec.ingredient.est_de_saison(saison_actuelle):
+                nb_de_saison += 1
         
-        total = len(self.ingredients)
-        positifs = len(ingredients_saison) + len(ingredients_toute_annee)
-        score = round((positifs / total) * 100, 1) if total > 0 else 0
+        score = (nb_de_saison / nb_ingredients * 100) if nb_ingredients > 0 else 0
         
         return {
-            'score': score,
-            'ingredients_saison': ingredients_saison,
-            'ingredients_hors_saison': ingredients_hors_saison,
-            'ingredients_toute_annee': ingredients_toute_annee
+            'score': round(score, 1),
+            'saison_optimale': saison_actuelle,
+            'details': {
+                'total_ingredients': nb_ingredients,
+                'ingredients_de_saison': nb_de_saison
+            }
         }
-
+    
+    def calculer_nutrition(self) -> dict:
+        """
+        Calcule les valeurs nutritionnelles totales.
+        
+        Returns:
+            Dict avec calories, proteines, glucides, lipides, fibres, sucres, sel
+        """
+        nutrition = {
+            'calories': 0.0,
+            'proteines': 0.0,
+            'glucides': 0.0,
+            'lipides': 0.0,
+            'fibres': 0.0,
+            'sucres': 0.0,
+            'sel': 0.0
+        }
+        
+        for ing_rec in self.ingredients:
+            ing = ing_rec.ingredient
+            quantite_g = ing_rec.quantite
+            
+            if ing.unite == 'pièce' and ing.poids_piece:
+                quantite_g = ing_rec.quantite * ing.poids_piece
+            elif ing.unite == 'ml':
+                quantite_g = ing_rec.quantite
+            
+            ratio = quantite_g / 100.0
+            
+            if ing.calories: nutrition['calories'] += ing.calories * ratio
+            if ing.proteines: nutrition['proteines'] += ing.proteines * ratio
+            if ing.glucides: nutrition['glucides'] += ing.glucides * ratio
+            if ing.lipides: nutrition['lipides'] += ing.lipides * ratio
+            if ing.fibres: nutrition['fibres'] += ing.fibres * ratio
+            if ing.sucres: nutrition['sucres'] += ing.sucres * ratio
+            if ing.sel: nutrition['sel'] += ing.sel * ratio
+        
+        return {k: round(v, 1) for k, v in nutrition.items()}
+    
     def to_dict(self, include_ingredients=False, include_etapes=False, 
                 include_nutrition=False, include_cout=False, 
                 include_disponibilite=False, include_saison=False):
-        """Convertit la recette en dictionnaire pour JSON"""
+        """
+        Convertit la recette en dictionnaire pour JSON.
+        """
         data = {
             'id': self.id,
             'nom': self.nom,
             'instructions': self.instructions,
             'image': self.image,
             'type_recette': self.type_recette,
-            'temps_preparation': self.temps_preparation
+            'temps_preparation': self.temps_preparation,
+            'temps_cuisson': self.temps_cuisson,  # ✅ NOUVEAU
+            'temps_total': self.temps_total()      # ✅ NOUVEAU
         }
         
         if include_ingredients:
             data['ingredients'] = [
                 {
-                    'ingredient_id': ing_rec.ingredient_id,
-                    'ingredient_nom': ing_rec.ingredient.nom,
+                    'id': ing_rec.ingredient.id,
+                    'nom': ing_rec.ingredient.nom,
                     'quantite': ing_rec.quantite,
-                    'unite': ing_rec.ingredient.unite,
-                    'prix_unitaire': ing_rec.ingredient.prix_unitaire,
-                    'poids_piece': ing_rec.ingredient.poids_piece,
-                    'est_de_saison': ing_rec.ingredient.est_de_saison()
+                    'unite': ing_rec.ingredient.unite
                 }
                 for ing_rec in self.ingredients
             ]
@@ -459,7 +490,6 @@ class Recette(db.Model):
         if include_disponibilite:
             data['disponibilite'] = self.calculer_disponibilite_ingredients()
         
-        # ✅ NOUVEAU : Score saisonnier
         if include_saison:
             data['saison'] = self.calculer_score_saisonnier()
         

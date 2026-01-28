@@ -332,6 +332,7 @@ def parse_recette_form(form_data: dict) -> dict:
         'instructions': clean_string_or_none(form_data.get('instructions')),
         'type_recette': clean_string_or_none(form_data.get('type_recette')),
         'temps_preparation': parse_int_or_none(form_data.get('temps_preparation')),
+        'temps_cuisson': parse_int_or_none(form_data.get('temps_cuisson'))
     }
 
 

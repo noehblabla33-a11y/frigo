@@ -26,12 +26,39 @@
             </select>
         </div>
         
-        <div class="form-group">
-            <label>Temps de préparation (minutes)</label>
-            <input type="number" name="temps_preparation" 
-                   value="{{ recette.temps_preparation if recette.temps_preparation else '' }}"
-                   placeholder="Ex: 30">
+        {# ✅ NOUVEAU : Temps séparés (préparation + cuisson) #}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label>⏱️ Temps de préparation (minutes)</label>
+                <input type="number" 
+                       name="temps_preparation" 
+                       value="{{ recette.temps_preparation if recette.temps_preparation else '' }}"
+                       placeholder="Ex: 20"
+                       min="0">
+                <small style="color: #6c757d; font-size: 0.85em; display: block; margin-top: 5px;">
+                    Temps actif de préparation
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label>🔥 Temps de cuisson (minutes)</label>
+                <input type="number" 
+                       name="temps_cuisson" 
+                       value="{{ recette.temps_cuisson if recette.temps_cuisson else '' }}"
+                       placeholder="Ex: 30"
+                       min="0">
+                <small style="color: #6c757d; font-size: 0.85em; display: block; margin-top: 5px;">
+                    Temps de cuisson (four, plaque, etc.)
+                </small>
+            </div>
         </div>
+        
+        {# Affichage du temps total (si défini) #}
+        {% if recette.temps_total() %}
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: 600;">
+            ⏰ Temps total actuel : {{ recette.temps_total() }} minutes
+        </div>
+        {% endif %}
         
         <div class="form-group">
             <label>Image de la recette</label>
@@ -93,14 +120,13 @@
                         <button type="button" 
                                 class="btn-remove-ingredient" 
                                 onclick="removeIngredient({{ loop.index0 }})"
-                                {% if loop.length == 1 %}style="display: none;"{% endif %}>
+                                {% if loop.first %}style="display: none;"{% endif %}>
                             ✖
                         </button>
                     </div>
                 </div>
                 {% endfor %}
                 {% else %}
-                <!-- Si pas d'ingrédients, afficher une ligne vide -->
                 <div class="ingredient-row" data-ingredient-row="0">
                     <div class="form-group" style="flex: 2;">
                         <select name="ingredient_0" class="ingredient-select searchable-select" required>
@@ -169,34 +195,31 @@
                                    name="etape_duree_{{ loop.index0 }}" 
                                    value="{{ etape.duree_minutes if etape.duree_minutes else '' }}"
                                    placeholder="⏱️ Minutes (opt.)"
-                                   min="0"
-                                   title="Durée en minutes pour le minuteur (optionnel)">
+                                   min="0">
                         </div>
                     </div>
                     <button type="button" 
                             class="btn-remove-etape" 
                             onclick="removeEtape({{ loop.index0 }})"
-                            {% if loop.length == 1 %}style="display: none;"{% endif %}>
+                            {% if loop.first %}style="display: none;"{% endif %}>
                         ✖
                     </button>
                 </div>
                 {% endfor %}
                 {% else %}
-                <!-- Si pas d'étapes, afficher une ligne vide -->
                 <div class="etape-row" data-etape="0">
                     <div class="etape-number">1</div>
                     <div class="etape-inputs">
                         <div class="form-group" style="flex: 3; margin-bottom: 0;">
                             <textarea name="etape_desc_0" 
-                                    placeholder="Ex: Préchauffer le four à 180°C"
+                                    placeholder="Décrivez cette étape..."
                                     rows="2"></textarea>
                         </div>
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
                             <input type="number" 
                                    name="etape_duree_0" 
                                    placeholder="⏱️ Minutes (opt.)"
-                                   min="0"
-                                   title="Durée en minutes pour le minuteur (optionnel)">
+                                   min="0">
                         </div>
                     </div>
                     <button type="button" 
@@ -214,43 +237,52 @@
             </button>
         </div>
         
-        <div style="display: flex; gap: 10px;">
-            <button type="submit" class="btn btn-success">Enregistrer les modifications</button>
-            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-secondary">Annuler</a>
+        <div class="form-actions">
+            <a href="{{ url_for('recettes.detail', id=recette.id) }}" class="btn btn-secondary">
+                Annuler
+            </a>
+            <button type="submit" class="btn btn-primary">
+                ✓ Enregistrer les modifications
+            </button>
         </div>
     </form>
 </div>
 
-<!-- Aperçu nutritionnel -->
-{% if recette.ingredients %}
-<div class="card">
-    <h3>📊 Aperçu nutritionnel</h3>
-    {% set nutrition = recette.calculer_nutrition() %}
-    {% if nutrition.calories > 0 %}
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px;">
-        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <div style="font-size: 2em; font-weight: bold; color: #667eea;">{{ nutrition.calories|int }}</div>
-            <div style="font-size: 0.9em; color: #6c757d;">Calories (kcal)</div>
+{# Informations nutritionnelles (si disponibles) #}
+{% set nutrition = recette.calculer_nutrition() %}
+{% if nutrition.calories or nutrition.proteines or nutrition.glucides or nutrition.lipides %}
+<div class="card" style="margin-top: 20px;">
+    <h3>📊 Valeurs nutritionnelles estimées</h3>
+    <div class="nutrition-grid">
+        {% if nutrition.calories %}
+        <div class="nutrition-item">
+            <span class="nutrition-label">Calories</span>
+            <span class="nutrition-value">{{ nutrition.calories|round(1) }} kcal</span>
         </div>
-        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <div style="font-size: 2em; font-weight: bold; color: #28a745;">{{ nutrition.proteines|round(1) }}</div>
-            <div style="font-size: 0.9em; color: #6c757d;">Protéines (g)</div>
+        {% endif %}
+        {% if nutrition.proteines %}
+        <div class="nutrition-item">
+            <span class="nutrition-label">Protéines</span>
+            <span class="nutrition-value">{{ nutrition.proteines|round(1) }} g</span>
         </div>
-        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <div style="font-size: 2em; font-weight: bold; color: #ffc107;">{{ nutrition.glucides|round(1) }}</div>
-            <div style="font-size: 0.9em; color: #6c757d;">Glucides (g)</div>
+        {% endif %}
+        {% if nutrition.glucides %}
+        <div class="nutrition-item">
+            <span class="nutrition-label">Glucides</span>
+            <span class="nutrition-value">{{ nutrition.glucides|round(1) }} g</span>
         </div>
-        <div style="text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <div style="font-size: 2em; font-weight: bold; color: #17a2b8;">{{ nutrition.lipides|round(1) }}</div>
-            <div style="font-size: 0.9em; color: #6c757d;">Lipides (g)</div>
+        {% endif %}
+        {% if nutrition.lipides %}
+        <div class="nutrition-item">
+            <span class="nutrition-label">Lipides</span>
+            <span class="nutrition-value">{{ nutrition.lipides|round(1) }} g</span>
         </div>
+        {% endif %}
     </div>
-    {% else %}
-    <p style="color: #6c757d;">
-        Les informations nutritionnelles ne sont pas disponibles.
+    <p style="color: #6c757d; font-size: 0.85em; margin-top: 15px;">
+        💡 Ces valeurs sont calculées automatiquement à partir des ingrédients. 
         Ajoutez les valeurs nutritionnelles aux ingrédients.
     </p>
-    {% endif %}
 </div>
 {% endif %}
 {% endblock %}
@@ -338,39 +370,32 @@
                 </button>
             </div>
         `;
+        
         container.appendChild(div);
         
+        const select = div.querySelector('.ingredient-select');
+        select.addEventListener('change', function() {
+            updateUniteDisplay(this);
+        });
+        
         ingredientCount++;
-        updateRemoveIngredientsButtons();
-        
-        // Configurer le nouveau select
-        const newSelect = div.querySelector('.ingredient-select');
-        if (newSelect) {
-            newSelect.addEventListener('change', function() {
-                updateUniteDisplay(this);
-            });
-        }
-        
-        // Réinitialiser SelectSearch si disponible
-        if (typeof initSelectSearch === 'function') {
-            initSelectSearch();
-        }
+        updateRemoveButtons();
     };
     
     window.removeIngredient = function(index) {
         const row = document.querySelector(`.ingredient-row[data-ingredient-row="${index}"]`);
         if (row) {
             row.remove();
-            updateRemoveIngredientsButtons();
         }
+        updateRemoveButtons();
     };
     
-    function updateRemoveIngredientsButtons() {
+    function updateRemoveButtons() {
         const rows = document.querySelectorAll('.ingredient-row');
-        rows.forEach((row) => {
+        rows.forEach((row, index) => {
             const btn = row.querySelector('.btn-remove-ingredient');
             if (btn) {
-                btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
+                btn.style.display = rows.length > 1 ? 'block' : 'none';
             }
         });
     }
@@ -381,73 +406,56 @@
     
     window.ajouterEtape = function() {
         const container = document.getElementById('etapes-container');
-        if (!container) {
-            console.error('Container etapes-container non trouvé');
-            return;
-        }
-        
-        const currentIndex = etapeCount;
-        const displayNumber = document.querySelectorAll('.etape-row').length + 1;
+        if (!container) return;
         
         const div = document.createElement('div');
         div.className = 'etape-row';
-        div.dataset.etape = currentIndex;
-        
+        div.dataset.etape = etapeCount;
         div.innerHTML = `
-            <div class="etape-number">${displayNumber}</div>
+            <div class="etape-number">${etapeCount + 1}</div>
             <div class="etape-inputs">
                 <div class="form-group" style="flex: 3; margin-bottom: 0;">
-                    <textarea name="etape_desc_${currentIndex}" 
-                              placeholder="Décrivez cette étape..."
-                              rows="2"></textarea>
+                    <textarea name="etape_desc_${etapeCount}" 
+                            placeholder="Décrivez cette étape..."
+                            rows="2"></textarea>
                 </div>
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <input type="number" 
-                           name="etape_duree_${currentIndex}" 
+                           name="etape_duree_${etapeCount}" 
                            placeholder="⏱️ Minutes (opt.)"
-                           min="0"
-                           title="Durée en minutes pour le minuteur (optionnel)">
+                           min="0">
                 </div>
             </div>
             <button type="button" 
                     class="btn-remove-etape" 
-                    onclick="removeEtape(${currentIndex})">
+                    onclick="removeEtape(${etapeCount})">
                 ✖
             </button>
         `;
         
         container.appendChild(div);
         etapeCount++;
-        updateRemoveEtapesButtons();
-        
-        console.log('Étape ajoutée, index:', currentIndex, 'total:', etapeCount);
+        updateEtapeNumbers();
     };
     
     window.removeEtape = function(index) {
         const row = document.querySelector(`.etape-row[data-etape="${index}"]`);
         if (row) {
             row.remove();
-            updateRemoveEtapesButtons();
-            renumberEtapes();
         }
+        updateEtapeNumbers();
     };
     
-    function updateRemoveEtapesButtons() {
+    function updateEtapeNumbers() {
         const rows = document.querySelectorAll('.etape-row');
-        rows.forEach((row) => {
-            const btn = row.querySelector('.btn-remove-etape');
-            if (btn) {
-                btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
-            }
-        });
-    }
-    
-    function renumberEtapes() {
-        const rows = document.querySelectorAll('.etape-row');
-        rows.forEach((row, visualIndex) => {
+        rows.forEach((row, index) => {
             const numberDiv = row.querySelector('.etape-number');
             if (numberDiv) {
-                numberDiv.textContent = visualIndex + 1;
+                numberDiv.textContent = index + 1;
+            }
+            const btn = row.querySelector('.btn-remove-etape');
+            if (btn) {
+                btn.style.display = rows.length > 1 ? 'block' : 'none';
             }
         });
     }
@@ -462,13 +470,11 @@
             select.addEventListener('change', function() {
                 updateUniteDisplay(this);
             });
+            updateUniteDisplay(select);
         });
         
-        // Mettre à jour les boutons de suppression
-        updateRemoveIngredientsButtons();
-        updateRemoveEtapesButtons();
-        
-        console.log('Formulaire initialisé - Ingrédients:', ingredientCount, '- Étapes:', etapeCount);
+        updateRemoveButtons();
+        updateEtapeNumbers();
     });
 })();
 </script>

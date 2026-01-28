@@ -22,8 +22,35 @@
             <span class="rd-type-badge">{{ recette.type_recette }}</span>
         </p>
         {% endif %}
-        {% if recette.temps_preparation %}
-        <p class="rd-meta">⏱️ Temps de préparation : <strong>{{ recette.temps_preparation }} minutes</strong></p>
+        {% if recette.temps_preparation or recette.temps_cuisson %}
+            <div class="rd-temps-container" style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+                {% if recette.temps_preparation %}
+                <div class="rd-meta-card" style="background: #f0f7ff; padding: 10px 15px; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <div style="font-size: 0.85em; color: #6c757d; margin-bottom: 4px;">Préparation</div>
+                    <div style="font-size: 1.1em; font-weight: 600; color: #0066cc;">
+                        ⏱️ {{ recette.temps_preparation }} min
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if recette.temps_cuisson %}
+                <div class="rd-meta-card" style="background: #fff3e0; padding: 10px 15px; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <div style="font-size: 0.85em; color: #6c757d; margin-bottom: 4px;">Cuisson</div>
+                    <div style="font-size: 1.1em; font-weight: 600; color: #f57c00;">
+                        🔥 {{ recette.temps_cuisson }} min
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if recette.temps_total() %}
+                <div class="rd-meta-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 10px 15px; border-radius: 8px; flex: 1; min-width: 150px; color: white;">
+                    <div style="font-size: 0.85em; opacity: 0.9; margin-bottom: 4px;">Temps total</div>
+                    <div style="font-size: 1.1em; font-weight: 700;">
+                        ⏰ {{ recette.temps_total() }} min
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         {% endif %}
         {% if cout_estime > 0 %}
         <p class="rd-meta rd-cost">💰 Coût estimé : <strong>{{ cout_estime }}€</strong></p>

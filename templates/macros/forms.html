@@ -945,3 +945,71 @@ function updateSaisonsCount() {
 }
 </script>
 {% endmacro %}
+
+
+{% macro temps_recette_grid(temps_prep='', temps_cuisson='') %}
+<div class="info-grid" style="grid-template-columns: 1fr 1fr;">
+    <div>
+        <label class="form-label-premium">
+            ⏱️ Temps de préparation (minutes)
+        </label>
+        <input type="number" 
+               name="temps_preparation" 
+               id="temps_preparation"
+               class="input-premium"
+               value="{{ temps_prep }}"
+               placeholder="Ex: 20"
+               min="0"
+               step="1">
+        <div class="helper-text">Temps actif de préparation (découper, mélanger, etc.)</div>
+    </div>
+    
+    <div>
+        <label class="form-label-premium">
+            🔥 Temps de cuisson (minutes)
+        </label>
+        <input type="number" 
+               name="temps_cuisson" 
+               id="temps_cuisson"
+               class="input-premium"
+               value="{{ temps_cuisson }}"
+               placeholder="Ex: 30"
+               min="0"
+               step="1">
+        <div class="helper-text">Temps de cuisson (four, plaque, etc.)</div>
+    </div>
+</div>
+{# Affichage optionnel du temps total si JS activé #}
+<div class="temps-total-preview" id="temps-total-preview" style="display: none; margin-top: 12px; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px; text-align: center; font-weight: 600;">
+    ⏰ Temps total : <span id="temps-total-value">0</span> minutes
+</div>
+
+<script>
+// Calcul automatique du temps total (optionnel)
+(function() {
+    const prepInput = document.getElementById('temps_preparation');
+    const cuissonInput = document.getElementById('temps_cuisson');
+    const totalPreview = document.getElementById('temps-total-preview');
+    const totalValue = document.getElementById('temps-total-value');
+    
+    if (!prepInput || !cuissonInput) return;
+    
+    function updateTotal() {
+        const prep = parseInt(prepInput.value) || 0;
+        const cuisson = parseInt(cuissonInput.value) || 0;
+        const total = prep + cuisson;
+        
+        if (total > 0) {
+            totalValue.textContent = total;
+            totalPreview.style.display = 'block';
+        } else {
+            totalPreview.style.display = 'none';
+        }
+    }
+    
+    prepInput.addEventListener('input', updateTotal);
+    cuissonInput.addEventListener('input', updateTotal);
+    updateTotal(); // Initial
+})();
+</script>
+{% endmacro %}

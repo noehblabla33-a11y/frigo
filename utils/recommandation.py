@@ -117,29 +117,41 @@ def score_cout(recette, cout_max: float = None) -> tuple[float, dict]:
     return round(score, 1), {'cout': cout, 'cout_max': cout_max, 'sans_prix': False}
 
 
-def score_temps(recette, temps_max: int = None) -> tuple[float, dict]:
+def score_temps(recette, temps_max: int = 120) -> tuple:
     """
-    Calcule le score de temps (inversé : rapide = meilleur score).
+    Score basé sur le temps total de préparation (préparation + cuisson).
+    Plus c'est rapide, meilleur est le score.
     
     Args:
-        temps_max: Temps maximum de référence pour normalisation (minutes)
+        recette: Instance de Recette
+        temps_max: Temps maximum attendu en minutes (pour normalisation)
     
     Returns:
         tuple: (score 0-100, métadonnées)
     """
-    temps = recette.temps_preparation or 0
+    # Utiliser la nouvelle méthode temps_total()
+    temps_total = recette.temps_total()
     
-    if temps <= 0:
-        # Pas de temps renseigné -> score neutre
-        return 50.0, {'temps': 0, 'temps_max': temps_max, 'sans_temps': True}
+    if temps_total is None or temps_total <= 0:
+        # Pas de temps défini = on suppose que c'est rapide
+        return 80.0, {
+            'temps_total': None,
+            'temps_preparation': recette.temps_preparation,
+            'temps_cuisson': recette.temps_cuisson
+        }
     
-    if temps_max is None or temps_max <= 0:
-        temps_max = 120  # 2h par défaut
+    # Normaliser le score (temps court = score élevé)
+    # 0 min = 100, temps_max = 20
+    if temps_total >= temps_max:
+        score = 20.0
+    else:
+        score = 100 - (temps_total / temps_max * 80)
     
-    # Score inversé : temps court = score élevé
-    score = max(0, 100 * (1 - temps / temps_max))
-    
-    return round(score, 1), {'temps': temps, 'temps_max': temps_max, 'sans_temps': False}
+    return round(score, 1), {
+        'temps_total': temps_total,
+        'temps_preparation': recette.temps_preparation,
+        'temps_cuisson': recette.temps_cuisson
+    }
 
 
 def score_nutrition_equilibre(recette) -> tuple[float, dict]:

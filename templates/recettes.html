@@ -94,45 +94,53 @@
         <div class="modal-body">
         {% from "macros/forms.html" import premium_section, info_grid, input_premium, select_premium, textarea_premium, image_upload_premium, ingredients_list_premium, etapes_list_premium, submit_hero %}
             <form method="POST" enctype="multipart/form-data">
-                <!-- COPIER TOUT LE FORMULAIRE ICI -->
-
                 {# SECTION 1 : Informations générales #}
-                {% call premium_section(1, "Informations générales", "Nom, type et photo de votre recette") %}
-                    
-                    {% call info_grid(3) %}
-                        {{ input_premium('nom', label='Nom de la recette', 
-                                        placeholder='Ex: Tarte aux pommes maison', required=true) }}
-                        
-                        {% set type_options = [
-                            ('Entrée', '🥗 Entrée'),
-                            ('Plat', '🍽️ Plat'),
-                            ('Dessert', '🍰 Dessert')
-                        ] %}
-                        {{ select_premium('type', label='Type', options=type_options, 
-                                        placeholder='Choisir...') }}
-                        
-                        {{ input_premium('temps_preparation', label='Temps (min)', type='number',
-                                        placeholder='30', min=1) }}
-                    {% endcall %}
-                    
-                    {{ image_upload_premium('image') }}
-                    
-                    {{ textarea_premium('description', label='Description',
-                                    placeholder='Décrivez votre recette en quelques mots...', rows=3,
-                                    help_text='Une petite description donnera envie de la cuisiner !') }}
-                    
-                {% endcall %}
-                
+{% call premium_section(1, "Informations générales", "Nom, type et photo de votre recette") %}
+    
+    {% call info_grid(2) %}
+        {{ input_premium('nom', label='Nom de la recette', 
+                        placeholder='Ex: Tarte aux pommes maison', required=true) }}
+        
+        <div>
+            <label class="form-label-premium">Type de recette</label>
+            <select name="type_recette" class="input-premium searchable-select">
+                <option value="">Choisir un type (optionnel)</option>
+                {% for type in types_recettes %}
+                <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    {% endcall %}
+    
+    {# Temps séparés (préparation + cuisson) #}
+    {% call info_grid(2) %}
+        {{ input_premium('temps_preparation', label='⏱️ Temps de préparation (min)', 
+                        type='number',
+                        placeholder='Ex: 20', 
+                        min=0,
+                        help_text='Temps actif de préparation') }}
+        
+        {{ input_premium('temps_cuisson', label='🔥 Temps de cuisson (min)', 
+                        type='number',
+                        placeholder='Ex: 30', 
+                        min=0,
+                        help_text='Temps de cuisson (four, plaque, etc.)') }}
+    {% endcall %}
+    
+    {{ image_upload_premium('image') }}
+    
+{% endcall %}
+
                 {# SECTION 2 : Ingrédients #}
                 {% call premium_section(2, "Ingrédients", "Liste des ingrédients nécessaires") %}
                     {{ ingredients_list_premium(all_ingredients=ingredients) }}
                 {% endcall %}
-                
+
                 {# SECTION 3 : Préparation #}
                 {% call premium_section(3, "Préparation", "Étapes détaillées de la recette") %}
                     {{ etapes_list_premium() }}
                 {% endcall %}
-                
+
                 {# BOUTON SUBMIT #}
                 {{ submit_hero('Créer ma recette', '✓') }}
             </form>
@@ -188,10 +196,17 @@
                         </td>
                         <td>{{ recette.ingredients|length }} ing.</td>
                         <td>
-                            {% if recette.temps_preparation %}
-                            {{ recette.temps_preparation }} min
+                            {% if recette.temps_preparation or recette.temps_cuisson %}
+                                <div style="display: flex; flex-direction: column; gap: 4px; font-size: 0.9em;">
+                                    {% if recette.temps_preparation %}
+                                    <span style="color: #0066cc;">⏱️ {{ recette.temps_preparation }} min</span>
+                                    {% endif %}
+                                    {% if recette.temps_cuisson %}
+                                    <span style="color: #f57c00;">🔥 {{ recette.temps_cuisson }} min</span>
+                                    {% endif %}
+                                </div>
                             {% else %}
-                            <span style="color: #adb5bd;">-</span>
+                                -
                             {% endif %}
                         </td>
                         <td>
