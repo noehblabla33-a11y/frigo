@@ -19,9 +19,9 @@ from utils.stock import (
     retirer_du_stock, 
     definir_stock, 
     supprimer_du_frigo,
-    get_stocks_avec_ingredients,
     get_quantite_disponible
 )
+from utils.queries_optimized import get_stocks_with_ingredients
 
 frigo_bp = Blueprint('frigo', __name__)
 
@@ -114,7 +114,7 @@ def liste():
         items_per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
         
         # Récupère TOUS les stocks pour calculer la valeur totale
-        tous_les_stocks = get_stocks_avec_ingredients(order_by='nom')
+        tous_les_stocks = get_stocks_with_ingredients(order_by='nom')
         
         # ✅ CORRIGÉ: Calculer la valeur totale avec la méthode corrigée
         valeur_totale_globale = calculer_valeur_totale_stock(tous_les_stocks)

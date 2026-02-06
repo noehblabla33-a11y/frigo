@@ -194,25 +194,24 @@ def invalidate_courses_cache():
 def get_categories_count_cached():
     """
     Retourne le comptage des ingrédients par catégorie (caché 5 min).
+
+    Retour:
+        Dict {categorie: count}
     """
-    from sqlalchemy import func
-    from models.models import db, Ingredient
-    
-    result = db.session.query(
-        Ingredient.categorie,
-        func.count(Ingredient.id)
-    ).group_by(Ingredient.categorie).all()
-    
-    return {cat or 'Autres': count for cat, count in result}
+    from utils.queries_optimized import get_categories_count
+    return get_categories_count()
 
 
 @cache.memoize(timeout=300)
 def get_all_ingredients_cached():
     """
     Retourne tous les ingrédients ordonnés par nom (caché 5 min).
+
+    Retour:
+        Liste d'Ingredient
     """
-    from models.models import Ingredient
-    return Ingredient.query.order_by(Ingredient.nom).all()
+    from utils.queries_optimized import get_all_ingredients
+    return get_all_ingredients(with_stock=False, with_saisons=False)
 
 
 @cache.memoize(timeout=60)

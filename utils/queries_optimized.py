@@ -1,41 +1,11 @@
-"""
-utils/queries_optimized.py
-Requêtes optimisées pour éviter les problèmes N+1
-
-✅ OPTIMISATION TECHNIQUE - Correction des requêtes N+1
-- Fonctions centralisées avec eager loading systématique
-- Helpers pour les requêtes courantes
-- Documentation des bonnes pratiques
-
-PROBLÈME N+1 EXPLIQUÉ:
-    Sans eager loading, accéder à une relation génère une requête par item :
-    
-    # MAUVAIS (N+1 requêtes)
-    stocks = StockFrigo.query.all()  # 1 requête
-    for stock in stocks:
-        print(stock.ingredient.nom)  # N requêtes supplémentaires!
-    
-    # BON (2 requêtes max)
-    stocks = StockFrigo.query.options(
-        joinedload(StockFrigo.ingredient)
-    ).all()
-    for stock in stocks:
-        print(stock.ingredient.nom)  # Pas de requête supplémentaire
-
-USAGE:
-    from utils.queries_optimized import (
-        get_stocks_with_ingredients,
-        get_recettes_with_all_relations,
-        get_courses_with_ingredients
-    )
-"""
 from sqlalchemy.orm import joinedload, selectinload, contains_eager
 from sqlalchemy import func, desc, and_, or_
 from models.models import (
     db, Ingredient, StockFrigo, Recette, IngredientRecette,
     RecettePlanifiee, ListeCourses, EtapeRecette, IngredientSaison
 )
-
+from datetime import datetime, timedelta
+from typing import List, Dict, Optional
 
 # ============================================
 # STOCK / FRIGO
@@ -239,6 +209,22 @@ def get_recettes_with_all_relations(limit=None):
     
     return query.all()
 
+def get_recettes_avec_ingredient(ingredient_id: int) -> List[Recette]:
+    """
+    Retourne les recettes contenant un ingrédient donné.
+
+    Paramètres:
+        ingredient_id: ID de l'ingrédient
+
+    Retour:
+        Liste de Recette
+    """
+    return Recette.query.options(
+        selectinload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
+    ).join(IngredientRecette)\
+     .filter(IngredientRecette.ingredient_id == ingredient_id)\
+     .order_by(Recette.nom)\
+     .all()
 
 def get_recette_with_details(recette_id):
     """
@@ -366,15 +352,82 @@ def get_planifications_historique(limit=50):
 
 def get_courses_non_achetees():
     """
-    Récupère la liste de courses non achetée.
-    
-    Returns:
-        Liste de ListeCourses avec ingredient préchargé
-    """
-    return ListeCourses.query.options(
-        joinedload(ListeCourses.ingredient).joinedload(Ingredient.saisons)
-    ).filter_by(achete=False).order_by(ListeCourses.id).all()
+    Récupère la liste de courses non achetée, en excluant les items orphelins.
 
+    Retour:
+        Liste de ListeCourses avec ingredient et saisons préchargés
+    """
+    return ListeCourses.query\
+        .join(Ingredient, ListeCourses.ingredient_id == Ingredient.id)\
+        .options(joinedload(ListeCourses.ingredient).joinedload(Ingredient.saisons))\
+        .filter(ListeCourses.achete == False)\
+        .order_by(ListeCourses.id)\
+        .all()
+
+
+def nettoyer_courses_orphelines() -> int:
+    """
+    Supprime les items de la liste de courses dont l'ingrédient n'existe plus.
+
+    Retour:
+        int: Nombre d'items supprimés
+    """
+    orphelins = ListeCourses.query\
+        .outerjoin(Ingredient, ListeCourses.ingredient_id == Ingredient.id)\
+        .filter(Ingredient.id == None)\
+        .all()
+
+    count = len(orphelins)
+    for item in orphelins:
+        db.session.delete(item)
+
+    if count > 0:
+        db.session.commit()
+
+    return count
+
+def get_historique_courses(limit: int = 10) -> List[ListeCourses]:
+    """
+    Retourne l'historique des courses achetées.
+
+    Paramètres:
+        limit: Nombre maximum d'items à retourner
+
+    Retour:
+        Liste de ListeCourses triée par id décroissant
+    """
+    return ListeCourses.query\
+        .join(Ingredient, ListeCourses.ingredient_id == Ingredient.id)\
+        .options(joinedload(ListeCourses.ingredient))\
+        .filter(ListeCourses.achete == True)\
+        .order_by(desc(ListeCourses.id))\
+        .limit(limit)\
+        .all()
+
+
+def get_preparations_periode(date_debut: datetime, date_fin: datetime = None) -> List[RecettePlanifiee]:
+    """
+    Retourne les préparations sur une période donnée.
+
+    Paramètres:
+        date_debut: Date de début
+        date_fin: Date de fin (défaut: maintenant)
+
+    Retour:
+        Liste de RecettePlanifiee
+    """
+    if date_fin is None:
+        date_fin = datetime.utcnow()
+
+    return RecettePlanifiee.query.options(
+        joinedload(RecettePlanifiee.recette_ref)
+            .selectinload(Recette.ingredients)
+            .joinedload(IngredientRecette.ingredient)
+    ).filter(
+        RecettePlanifiee.preparee == True,
+        RecettePlanifiee.date_preparation >= date_debut,
+        RecettePlanifiee.date_preparation <= date_fin
+    ).order_by(RecettePlanifiee.date_preparation).all()
 
 def get_courses_by_category():
     """
@@ -395,24 +448,102 @@ def get_courses_by_category():
     return by_category
 
 
-def get_course_by_ingredient(ingredient_id):
+def get_course_by_ingredient(ingredient_id: int, achete: bool = False) -> Optional[ListeCourses]:
     """
-    Récupère l'item de course pour un ingrédient.
-    
-    Args:
+    Recherche un item de courses par ingrédient.
+
+    Paramètres:
         ingredient_id: ID de l'ingrédient
-    
-    Returns:
-        ListeCourses ou None
+        achete: Statut d'achat (défaut: False)
+
+    Retour:
+        ListeCourses avec ingrédient préchargé ou None
     """
-    return ListeCourses.query.options(
-        joinedload(ListeCourses.ingredient)
-    ).filter_by(ingredient_id=ingredient_id, achete=False).first()
+    return ListeCourses.query\
+        .options(joinedload(ListeCourses.ingredient))\
+        .filter_by(ingredient_id=ingredient_id, achete=achete)\
+        .first()
 
 
 # ============================================
 # STATISTIQUES (REQUÊTES AGRÉGÉES)
 # ============================================
+
+def get_top_recettes(limit: int = 10) -> List[Dict]:
+    """
+    Retourne les recettes les plus préparées.
+
+    Paramètres:
+        limit: Nombre de recettes à retourner
+
+    Retour:
+        Liste de dicts {recette: Recette, nb_preparations: int}
+    """
+    results = db.session.query(
+        Recette,
+        func.count(RecettePlanifiee.id).label('nb_preparations')
+    ).join(RecettePlanifiee, Recette.id == RecettePlanifiee.recette_id)\
+     .filter(RecettePlanifiee.preparee == True)\
+     .group_by(Recette.id)\
+     .order_by(desc('nb_preparations'))\
+     .limit(limit)\
+     .all()
+
+    return [{'recette': r, 'nb_preparations': count} for r, count in results]
+
+
+def get_ingredients_plus_utilises(limit: int = 10) -> List[Dict]:
+    """
+    Retourne les ingrédients les plus utilisés dans les recettes préparées.
+
+    Paramètres:
+        limit: Nombre d'ingrédients à retourner
+
+    Retour:
+        Liste de dicts {ingredient: Ingredient, count: int}
+    """
+    results = db.session.query(
+        Ingredient,
+        func.count(IngredientRecette.id).label('usage_count')
+    ).select_from(RecettePlanifiee)\
+     .join(Recette, RecettePlanifiee.recette_id == Recette.id)\
+     .join(IngredientRecette, Recette.id == IngredientRecette.recette_id)\
+     .join(Ingredient, IngredientRecette.ingredient_id == Ingredient.id)\
+     .filter(RecettePlanifiee.preparee == True)\
+     .group_by(Ingredient.id)\
+     .order_by(desc('usage_count'))\
+     .limit(limit)\
+     .all()
+
+    return [{'ingredient': ing, 'count': count} for ing, count in results]
+
+
+def get_stats_periode(jours: int = 30) -> Dict:
+    """
+    Calcule les statistiques sur une période donnée.
+
+    Paramètres:
+        jours: Nombre de jours en arrière
+
+    Retour:
+        Dict avec nb_recettes, cout_total, cout_moyen, periode_jours
+    """
+    date_limite = datetime.utcnow() - timedelta(days=jours)
+
+    nb_recettes = RecettePlanifiee.query.filter(
+        RecettePlanifiee.preparee == True,
+        RecettePlanifiee.date_preparation >= date_limite
+    ).count()
+
+    preparations = get_preparations_periode(date_limite)
+    cout_total = sum(p.recette_ref.calculer_cout() for p in preparations)
+
+    return {
+        'nb_recettes': nb_recettes,
+        'cout_total': round(cout_total, 2),
+        'cout_moyen': round(cout_total / nb_recettes, 2) if nb_recettes > 0 else 0,
+        'periode_jours': jours
+    }
 
 def get_categories_count():
     """
