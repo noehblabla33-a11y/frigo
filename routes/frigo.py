@@ -29,27 +29,17 @@ frigo_bp = Blueprint('frigo', __name__)
 def calculer_valeur_totale_stock(stocks):
     """
     Calcule la valeur totale du stock.
-    
-    ✅ CORRIGÉ: Pour les pièces, le prix est stocké en €/g
-    Donc valeur = quantité × poids_piece × prix_unitaire
-    
-    Args:
+
+    Paramètres:
         stocks: Liste de StockFrigo avec ingrédients préchargés
-    
-    Returns:
+
+    Retour:
         float: Valeur totale en euros
     """
-    total = 0
-    for stock in stocks:
-        ing = stock.ingredient
-        if ing.prix_unitaire and ing.prix_unitaire > 0:
-            if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
-                # Pour les pièces : quantité × poids_piece × prix_par_gramme
-                total += stock.quantite * ing.poids_piece * ing.prix_unitaire
-            else:
-                # Pour g/ml : calcul direct
-                total += stock.quantite * ing.prix_unitaire
-    return round(total, 2)
+    return round(sum(
+        stock.ingredient.calculer_prix(stock.quantite)
+        for stock in stocks
+    ), 2)
 
 
 @frigo_bp.route('/', methods=['GET', 'POST'])

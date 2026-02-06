@@ -91,41 +91,29 @@ class DashboardData:
     date_mise_a_jour: datetime
 
 
-# ============================================
-# FONCTIONS DE CALCUL
-# ============================================
-
 def calculer_stats_frigo() -> StatsFrigo:
     """
     Calcule les statistiques du frigo.
-    
-    Returns:
+
+    Retour:
         StatsFrigo avec nb_items, valeur_totale, categories
     """
     stocks = StockFrigo.query.options(
         joinedload(StockFrigo.ingredient)
     ).all()
-    
-    nb_items = len(stocks)
-    valeur_totale = 0.0
+
+    valeur_totale = sum(
+        stock.ingredient.calculer_prix(stock.quantite)
+        for stock in stocks
+    )
+
     categories = {}
-    
     for stock in stocks:
-        ing = stock.ingredient
-        
-        # Calcul de la valeur
-        if ing.prix_unitaire and ing.prix_unitaire > 0:
-            if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
-                valeur_totale += stock.quantite * ing.poids_piece * ing.prix_unitaire
-            else:
-                valeur_totale += stock.quantite * ing.prix_unitaire
-        
-        # Comptage par catégorie
-        cat = ing.categorie or 'Autres'
+        cat = stock.ingredient.categorie or 'Autres'
         categories[cat] = categories.get(cat, 0) + 1
-    
+
     return StatsFrigo(
-        nb_items=nb_items,
+        nb_items=len(stocks),
         valeur_totale=round(valeur_totale, 2),
         categories=categories
     )
@@ -134,27 +122,22 @@ def calculer_stats_frigo() -> StatsFrigo:
 def calculer_stats_courses() -> StatsCourses:
     """
     Calcule les statistiques de la liste de courses.
-    
-    Returns:
+
+    Retour:
         StatsCourses avec nb_items et cout_estime
     """
     items = ListeCourses.query.options(
         joinedload(ListeCourses.ingredient)
     ).filter_by(achete=False).all()
-    
-    nb_items = len(items)
-    cout_estime = 0.0
-    
-    for item in items:
-        ing = item.ingredient
-        if ing and ing.prix_unitaire and ing.prix_unitaire > 0:
-            if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
-                cout_estime += item.quantite * ing.poids_piece * ing.prix_unitaire
-            else:
-                cout_estime += item.quantite * ing.prix_unitaire
-    
+
+    cout_estime = sum(
+        item.ingredient.calculer_prix(item.quantite)
+        for item in items
+        if item.ingredient
+    )
+
     return StatsCourses(
-        nb_items=nb_items,
+        nb_items=len(items),
         cout_estime=round(cout_estime, 2)
     )
 

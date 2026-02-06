@@ -219,24 +219,21 @@ def get_all_ingredients_cached():
 def get_stock_value_cached():
     """
     Calcule la valeur totale du stock (caché 1 min).
+
+    Retour:
+        float: Valeur totale en euros
     """
     from sqlalchemy.orm import joinedload
     from models.models import StockFrigo
-    
+
     stocks = StockFrigo.query.options(
         joinedload(StockFrigo.ingredient)
     ).all()
-    
-    total = 0.0
-    for stock in stocks:
-        ing = stock.ingredient
-        if ing.prix_unitaire and ing.prix_unitaire > 0:
-            if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
-                total += stock.quantite * ing.poids_piece * ing.prix_unitaire
-            else:
-                total += stock.quantite * ing.prix_unitaire
-    
-    return round(total, 2)
+
+    return round(sum(
+        stock.ingredient.calculer_prix(stock.quantite)
+        for stock in stocks
+    ), 2)
 
 
 @cache.memoize(timeout=120)

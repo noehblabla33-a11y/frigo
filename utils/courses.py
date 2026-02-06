@@ -83,10 +83,7 @@ def ajouter_ingredients_manquants_courses(recette_id: int) -> dict:
                 db.session.add(nouvelle_course)
                 ajoutes += 1
             
-            # Calculer le coût estimé
-            # prix_unitaire est en €/unité native
-            prix_unitaire = ing_rec.ingredient.prix_unitaire or 0
-            cout_total += quantite_manquante * prix_unitaire
+            cout_total += ing_rec.ingredient.calculer_prix(quantite_manquante)
     
     return {
         'ajoutes': ajoutes,

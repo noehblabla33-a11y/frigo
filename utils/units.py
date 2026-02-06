@@ -139,41 +139,18 @@ def calculer_prix_affichage_piece(ingredient) -> float:
 def calculer_valeur_stock(ingredient, quantite: float) -> float:
     """
     Calcule la valeur d'un stock pour un ingrédient.
-    
-    ⚠️ ATTENTION : Pour les pièces, la quantité est en nombre de pièces,
-    mais le prix est stocké en €/g. Il faut donc :
-    - Convertir la quantité en grammes (quantité × poids_piece)
-    - Multiplier par le prix en €/g
-    
-    OU de manière équivalente :
-    - quantité × prix_unitaire × poids_piece
-    
-    Args:
+
+    Paramètres:
         ingredient: L'objet Ingredient
         quantite: La quantité dans l'unité native
-    
-    Returns:
+
+    Retour:
         float: La valeur en euros
     """
     if not ingredient or quantite <= 0:
         return 0
-    
-    prix = ingredient.prix_unitaire
-    if not prix or prix <= 0:
-        return 0
-    
-    if ingredient.unite == 'pièce':
-        # Pour les pièces : quantité est en pièces, prix est en €/g
-        # Valeur = nb_pieces × poids_piece × prix_par_gramme
-        poids_piece = getattr(ingredient, 'poids_piece', None)
-        if poids_piece and poids_piece > 0:
-            return round(quantite * poids_piece * prix, 2)
-        else:
-            # Fallback si pas de poids_piece (ne devrait pas arriver)
-            return round(quantite * prix, 2)
-    else:
-        # Pour g/ml : calcul direct
-        return round(quantite * prix, 2)
+
+    return ingredient.calculer_prix(quantite)
 
 
 def get_prix_unitaire_affichage(ingredient) -> tuple:

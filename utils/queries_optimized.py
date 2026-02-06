@@ -434,32 +434,22 @@ def get_categories_count():
 def get_stock_stats():
     """
     Calcule les statistiques du stock.
-    
-    Returns:
+
+    Retour:
         Dict avec nb_items, valeur_totale, par_categorie
-    
-    Requêtes: 2
     """
     stocks = get_stocks_with_ingredients()
-    
-    total_value = 0
+
+    total_value = sum(
+        stock.ingredient.calculer_prix(stock.quantite)
+        for stock in stocks
+    )
+
     by_category = {}
-    
     for stock in stocks:
-        ing = stock.ingredient
-        
-        # Calculer la valeur
-        if ing.prix_unitaire and ing.prix_unitaire > 0:
-            if ing.unite == 'pièce' and ing.poids_piece:
-                value = stock.quantite * ing.poids_piece * ing.prix_unitaire
-            else:
-                value = stock.quantite * ing.prix_unitaire
-            total_value += value
-        
-        # Compter par catégorie
-        cat = ing.categorie or 'Autres'
+        cat = stock.ingredient.categorie or 'Autres'
         by_category[cat] = by_category.get(cat, 0) + 1
-    
+
     return {
         'nb_items': len(stocks),
         'valeur_totale': round(total_value, 2),

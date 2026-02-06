@@ -127,14 +127,23 @@ class Ingredient(db.Model):
         }
 
     def calculer_prix(self, quantite_native: float) -> float:
-        """Calcule le prix pour une quantité donnée."""
+        """
+        Calcule le prix pour une quantité donnée en unité native.
+
+        Paramètres:
+            quantite_native: Quantité dans l'unité native de l'ingrédient
+
+        Retour:
+            float: Prix en euros, arrondi à 2 décimales
+        """
         if quantite_native <= 0 or not self.prix_unitaire or self.prix_unitaire <= 0:
-            return 0
+            return 0.0
+
+        if self.unite == 'pièce' and self.poids_piece and self.poids_piece > 0:
+            return round(quantite_native * self.poids_piece * self.prix_unitaire, 2)
+
         return round(quantite_native * self.prix_unitaire, 2)
 
-    # ============================================
-    # ✅ MÉTHODES POUR LES SAISONS
-    # ============================================
 
     def get_saisons(self) -> list:
         """
@@ -309,19 +318,20 @@ class Recette(db.Model):
             return None
         
         return temps_prep + temps_cuiss
-    
-    # Le reste des méthodes reste identique...
+
+
     def calculer_cout(self) -> float:
-        """Calcule le coût estimé de la recette."""
-        cout = 0.0
-        for ing_rec in self.ingredients:
-            ing = ing_rec.ingredient
-            if ing.prix_unitaire and ing.prix_unitaire > 0:
-                if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
-                    cout += ing_rec.quantite * ing.poids_piece * ing.prix_unitaire
-                else:
-                    cout += ing_rec.quantite * ing.prix_unitaire
-        return round(cout, 2)
+        """
+        Calcule le coût estimé de la recette via Ingredient.calculer_prix().
+
+        Retour:
+            float: Coût total en euros, arrondi à 2 décimales
+        """
+        return round(sum(
+            ing_rec.ingredient.calculer_prix(ing_rec.quantite)
+            for ing_rec in self.ingredients
+        ), 2)
+    
     
     def calculer_disponibilite_ingredients(self) -> dict:
         """

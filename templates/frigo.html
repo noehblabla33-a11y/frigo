@@ -86,12 +86,9 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if stock.ingredient.prix_unitaire %}
-                                {% if stock.ingredient.unite == 'pièce' and stock.ingredient.poids_piece and stock.ingredient.poids_piece > 0 %}
-                                    {{ "%.2f"|format(stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire) }}€
-                                {% else %}
-                                    {{ "%.2f"|format(stock.quantite * stock.ingredient.prix_unitaire) }}€
-                                {% endif %}
+                            {% set valeur = stock.ingredient.calculer_prix(stock.quantite) %}
+                            {% if valeur > 0 %}
+                                {{ "%.2f"|format(valeur) }}€
                             {% else %}
                                 -
                             {% endif %}
@@ -116,16 +113,9 @@
                         <td colspan="3" style="font-weight: bold; color: #28a745;">
                             {% if valeur_totale is defined and valeur_totale > 0 %}
                                 {{ "%.2f"|format(valeur_totale) }}€
-                                {# Calculer la valeur de la page courante #}
                                 {% set valeur_page = namespace(total=0) %}
                                 {% for stock in stocks %}
-                                    {% if stock.ingredient.prix_unitaire %}
-                                        {% if stock.ingredient.unite == 'pièce' and stock.ingredient.poids_piece and stock.ingredient.poids_piece > 0 %}
-                                            {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.poids_piece * stock.ingredient.prix_unitaire) %}
-                                        {% else %}
-                                            {% set valeur_page.total = valeur_page.total + (stock.quantite * stock.ingredient.prix_unitaire) %}
-                                        {% endif %}
-                                    {% endif %}
+                                    {% set valeur_page.total = valeur_page.total + stock.ingredient.calculer_prix(stock.quantite) %}
                                 {% endfor %}
                                 <span style="font-size: 0.75em; font-weight: normal; color: #6c757d;">
                                     ({{ "%.2f"|format(valeur_page.total) }}€ sur cette page)

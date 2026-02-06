@@ -28,29 +28,17 @@ class BudgetResult:
 def calculer_prix_item(item) -> float:
     """
     Calcule le prix total d'un item de la liste de courses.
-    
-    ⚠️ ATTENTION : Pour les pièces, le prix est stocké en €/g !
-    Il faut donc multiplier par poids_piece pour obtenir le prix correct.
-    
-    Args:
+
+    Paramètres:
         item: Un objet ListeCourses avec ingredient préchargé
-    
-    Returns:
+
+    Retour:
         float: Le prix total pour cet item
     """
     if not item or not item.ingredient:
         return 0
-    
-    ing = item.ingredient
-    if not ing.prix_unitaire or ing.prix_unitaire <= 0:
-        return 0
-    
-    if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
-        # Pour les pièces : quantité × poids_piece × prix_par_gramme
-        return round(item.quantite * ing.poids_piece * ing.prix_unitaire, 2)
-    else:
-        # Pour g/ml : calcul direct
-        return round(item.quantite * ing.prix_unitaire, 2)
+
+    return item.ingredient.calculer_prix(item.quantite)
 
 
 def calculer_budget_courses(items, include_details: bool = False) -> BudgetResult:
@@ -114,25 +102,17 @@ def calculer_budget_courses(items, include_details: bool = False) -> BudgetResul
 def calculer_cout_recette(recette) -> float:
     """
     Calcule le coût total d'une recette.
-    
-    Args:
+
+    Paramètres:
         recette: Un objet Recette avec ingredients préchargés
-    
-    Returns:
+
+    Retour:
         float: Le coût total de la recette
     """
     if not recette or not recette.ingredients:
         return 0
-    
-    cout_total = 0
-    for ing_rec in recette.ingredients:
-        ing = ing_rec.ingredient
-        if not ing.prix_unitaire or ing.prix_unitaire <= 0:
-            continue
-            
-        if ing.unite == 'pièce' and ing.poids_piece and ing.poids_piece > 0:
-            cout_total += ing_rec.quantite * ing.poids_piece * ing.prix_unitaire
-        else:
-            cout_total += ing_rec.quantite * ing.prix_unitaire
-    
-    return round(cout_total, 2)
+
+    return round(sum(
+        ing_rec.ingredient.calculer_prix(ing_rec.quantite)
+        for ing_rec in recette.ingredients
+    ), 2)
