@@ -22,7 +22,7 @@ class Config:
     # SÉCURITÉ
     # ============================================
     # ✅ CHARGÉ DEPUIS .env avec fallback sécurisé
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'ma_clef'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'une_petite_clef'
     
     # ============================================
     # BASE DE DONNÉES
