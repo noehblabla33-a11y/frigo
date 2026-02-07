@@ -3,12 +3,14 @@ from sqlalchemy.orm import joinedload
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
 from constants import TYPES_RECETTES, valider_type_recette
 from utils.pagination import paginate_query
-from utils.files import save_uploaded_file, delete_file
+from utils.files import delete_file
 from utils.courses import ajouter_ingredients_manquants_courses
-from utils.forms import parse_float, parse_int_or_none, clean_string_or_none,parse_ingredients_list, parse_etapes_list, parse_recette_form
+from utils.forms import parse_recette_form
 from utils.validators import validate_unique_recette, validate_type_recette
 from utils.recommandation import (MoteurRecommandation, get_historique_recettes_ids, get_cout_max_recettes, get_temps_max_recettes)
 from utils.saisons import get_saison_actuelle
+from utils.recette_service import creer_recette, modifier_recette
+from utils.database import db_transaction_with_flash
 from constants import SAISONS
 import os
 
@@ -18,56 +20,25 @@ recettes_bp = Blueprint('recettes', __name__)
 @recettes_bp.route('/', methods=['GET', 'POST'])
 def liste():
     if request.method == 'POST':
-        # Parser avec parse_recette_form
         try:
             recette_data = parse_recette_form(request.form)
         except ValueError as e:
             flash(str(e), 'danger')
             return redirect(url_for('recettes.liste'))
-        
-        # ✅ Validation du type - utiliser recette_data['type_recette']
+
         if not validate_type_recette(recette_data['type_recette'], TYPES_RECETTES):
             return redirect(url_for('recettes.liste'))
-
-        # ✅ Validation du nom - utiliser recette_data['nom']
         if not validate_unique_recette(recette_data['nom']):
             return redirect(url_for('recettes.liste'))
-        
-        # Créer la recette avec toutes les données
-        recette = Recette(**recette_data)
-        
-        # Gestion du fichier avec fonction factorisée
-        if 'image' in request.files:
-            file = request.files['image']
-            filepath = save_uploaded_file(file, prefix=f'rec_{recette.nom}')
-            if filepath:
-                recette.image = filepath
-        
-        db.session.add(recette)
-        db.session.commit()
-        
-        # Ajouter les ingrédients
-        for ing_id, quantite in parse_ingredients_list(request.form):
-            ing_recette = IngredientRecette(
-                recette_id=recette.id,
-                ingredient_id=ing_id,
-                quantite=quantite
-            )
-            db.session.add(ing_recette)
-        
-        # Ajouter les étapes avec durée optionnelle
-        for ordre, (description, duree_minutes) in enumerate(parse_etapes_list(request.form), start=1):
-            etape = EtapeRecette(
-                recette_id=recette.id,
-                ordre=ordre,
-                description=description,
-                duree_minutes=duree_minutes
-            )
-            db.session.add(etape)
-        
-        db.session.commit()
-        flash(f'Recette "{recette.nom}" créée !', 'success')
-        return redirect(url_for('recettes.detail', id=recette.id))
+
+        with db_transaction_with_flash(
+            success_message=None,
+            error_message='Erreur lors de la création de la recette.'
+        ):
+            recette = creer_recette(request.form, request.files)
+            flash(f'Recette "{recette.nom}" créée !', 'success')
+
+        return redirect(url_for('recettes.liste'))
     
     # ============================================
     # AFFICHAGE DE LA LISTE
@@ -173,66 +144,23 @@ def modifier(id):
     ).get_or_404(id)
     
     if request.method == 'POST':
-        # ✅ UTILISATION DE parse_recette_form pour parser tous les champs
         try:
             recette_data = parse_recette_form(request.form)
         except ValueError as e:
             flash(str(e), 'danger')
             return redirect(url_for('recettes.modifier', id=id))
-        
-        # Validation du type de recette
+
         if not validate_type_recette(recette_data['type_recette'], TYPES_RECETTES):
             return redirect(url_for('recettes.modifier', id=id))
-        
-        # ✅ Mettre à jour tous les champs de la recette
-        recette.nom = recette_data['nom']
-        recette.instructions = recette_data['instructions']
-        recette.type_recette = recette_data['type_recette']
-        recette.temps_preparation = recette_data['temps_preparation']
-        recette.temps_cuisson = recette_data['temps_cuisson']  # ✅ NOUVEAU
-        
-        # Gestion de l'image
-        if 'image' in request.files:
-            file = request.files['image']
-            if file and file.filename:
-                # Supprimer l'ancienne image si elle existe
-                if recette.image:
-                    delete_file(recette.image)
-                
-                # Sauvegarder la nouvelle
-                filepath = save_uploaded_file(file, prefix=f'rec_{recette.nom}')
-                if filepath:
-                    recette.image = filepath
-        
-        # Supprimer les anciens ingrédients
-        IngredientRecette.query.filter_by(recette_id=recette.id).delete()
-        
-        # Ajouter les nouveaux ingrédients
-        for ing_id, quantite in parse_ingredients_list(request.form):
-            ing_recette = IngredientRecette(
-                recette_id=recette.id,
-                ingredient_id=ing_id,
-                quantite=quantite
-            )
-            db.session.add(ing_recette)
-        
-        # Supprimer les anciennes étapes
-        EtapeRecette.query.filter_by(recette_id=recette.id).delete()
-        
-        # Ajouter les nouvelles étapes
-        for ordre, (description, duree_minutes) in enumerate(parse_etapes_list(request.form), start=1):
-            etape = EtapeRecette(
-                recette_id=recette.id,
-                ordre=ordre,
-                description=description,
-                duree_minutes=duree_minutes
-            )
-            db.session.add(etape)
-        
-        db.session.commit()
-        flash(f'Recette "{recette.nom}" modifiée !', 'success')
+
+        with db_transaction_with_flash(
+            success_message=f'Recette "{recette.nom}" modifiée !',
+            error_message='Erreur lors de la modification de la recette.'
+        ):
+            modifier_recette(recette, request.form, request.files)
+
         return redirect(url_for('recettes.detail', id=recette.id))
-    
+        
     # GET - Formulaire de modification
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
     
@@ -246,26 +174,30 @@ def modifier(id):
 
 @recettes_bp.route('/supprimer/<int:id>')
 def supprimer(id):
+    """
+    Supprime une recette et ses planifications associées.
+
+    Paramètres:
+        id: ID de la recette
+    """
     recette = Recette.query.get_or_404(id)
     nom = recette.nom
-    
-    planifications = RecettePlanifiee.query.filter_by(recette_id=id).all()
-    
-    if planifications:
-        nb_planifications = len(planifications)
-        flash(f'Attention : Cette recette a {nb_planifications} planification(s) associée(s). '
-              f'Elles seront également supprimées.', 'info')
-        
-        for plan in planifications:
-            db.session.delete(plan)
-    
-    # ✅ Supprimer l'image avec fonction factorisée
-    if recette.image:
-        delete_file(recette.image)
-    
-    db.session.delete(recette)
-    db.session.commit()
-    flash(f'Recette "{nom}" supprimée !', 'success')
+
+    with db_transaction_with_flash(
+        success_message=f'Recette "{nom}" supprimée !',
+        error_message=f'Erreur lors de la suppression de "{nom}"'
+    ):
+        planifications = RecettePlanifiee.query.filter_by(recette_id=id).all()
+        if planifications:
+            flash(f'{len(planifications)} planification(s) associée(s) supprimée(s).', 'info')
+            for plan in planifications:
+                db.session.delete(plan)
+
+        if recette.image:
+            delete_file(recette.image)
+
+        db.session.delete(recette)
+
     return redirect(url_for('recettes.liste'))
 
 

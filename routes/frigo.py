@@ -1,13 +1,3 @@
-"""
-routes/frigo.py (VERSION CORRIGÉE)
-Gestion du stock du frigo
-
-CHANGEMENTS:
-- Utilise utils/stock.py pour les opérations sur le stock
-- Code plus concis et maintenable
-- ✅ CORRIGÉ: Utilise ingredient.calculer_prix() pour une gestion correcte des unités
-- ✅ CORRIGÉ: Précharge la relation stock pour tous_ingredients
-"""
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from sqlalchemy.orm import joinedload
 from models.models import db, Ingredient, StockFrigo
@@ -17,8 +7,7 @@ from utils.forms import parse_float, parse_positive_float
 from utils.stock import (
     ajouter_au_stock, 
     retirer_du_stock, 
-    definir_stock, 
-    supprimer_du_frigo,
+    definir_stock,
     get_quantite_disponible
 )
 from utils.queries_optimized import get_stocks_with_ingredients
@@ -42,6 +31,45 @@ def calculer_valeur_totale_stock(stocks):
     ), 2)
 
 
+def _appliquer_action_stock(ingredient_id, action, quantite):
+    """
+    Applique une action sur le stock d'un ingrédient.
+
+    Paramètres:
+        ingredient_id: ID de l'ingrédient
+        action: 'add', 'remove' ou 'set'
+        quantite: Quantité concernée
+
+    Retour:
+        str: Message de succès
+    """
+    ingredient = Ingredient.query.get_or_404(ingredient_id)
+
+    if action == 'add':
+        stock, nouvelle_quantite = ajouter_au_stock(int(ingredient_id), quantite)
+        if nouvelle_quantite == quantite:
+            return f'✓ {ingredient.nom} ajouté au frigo : {quantite} {ingredient.unite}'
+        return (
+            f'✓ {quantite} {ingredient.unite} de {ingredient.nom} ajouté(s) ! '
+            f'Total : {nouvelle_quantite} {ingredient.unite}'
+        )
+
+    elif action == 'remove':
+        stock, nouvelle_quantite = retirer_du_stock(int(ingredient_id), quantite)
+        if stock is None:
+            raise ValueError(f'{ingredient.nom} n\'est pas dans le frigo !')
+        if nouvelle_quantite <= 0:
+            raise ValueError(f'⚠️ Stock de {ingredient.nom} épuisé !')
+        return (
+            f'✓ {quantite} {ingredient.unite} de {ingredient.nom} retiré(s) ! '
+            f'Reste : {nouvelle_quantite} {ingredient.unite}'
+        )
+
+    else:
+        definir_stock(int(ingredient_id), quantite)
+        return f'✓ Stock de {ingredient.nom} défini à {quantite} {ingredient.unite}'
+
+
 @frigo_bp.route('/', methods=['GET', 'POST'])
 def liste():
     """
@@ -57,51 +85,17 @@ def liste():
                 return redirect(url_for('frigo.liste'))
 
             quantite = parse_positive_float(request.form.get('quantite'))
-            
-            # Récupérer l'ingrédient
-            ingredient = Ingredient.query.get_or_404(ingredient_id)
-            
-            try:
-                if action == 'add':
-                    stock, nouvelle_quantite = ajouter_au_stock(int(ingredient_id), quantite)
-                    if nouvelle_quantite == quantite:
-                        message_success = f'✓ {ingredient.nom} ajouté au frigo : {quantite} {ingredient.unite}'
-                    else:
-                        message_success = (
-                            f'✓ {quantite} {ingredient.unite} de {ingredient.nom} ajouté(s) ! '
-                            f'Total : {nouvelle_quantite} {ingredient.unite}'
-                        )
-                
-                elif action == 'remove':
-                    stock, nouvelle_quantite = retirer_du_stock(int(ingredient_id), quantite)
-                    if stock is None:
-                        flash(f'{ingredient.nom} n\'est pas dans le frigo !', 'warning')
-                        return redirect(url_for('frigo.liste'))
-                    message_success = (
-                        f'✓ {quantite} {ingredient.unite} de {ingredient.nom} retiré(s) ! '
-                        f'Reste : {nouvelle_quantite} {ingredient.unite}'
-                    )
-                
-                else:  # action == 'set'
-                    stock, nouvelle_quantite = definir_stock(int(ingredient_id), quantite)
-                    message_success = f'✓ Stock de {ingredient.nom} défini à {quantite} {ingredient.unite}'
-                
-                # Avertissement si stock épuisé
-                if nouvelle_quantite <= 0:
-                    flash(f'⚠️ Stock de {ingredient.nom} épuisé !', 'warning')
-                    return redirect(url_for('frigo.liste'))
-                
-                db.session.commit()
-                flash(message_success, 'success')
-                
-            except Exception as e:
-                db.session.rollback()
-                current_app.logger.error(f'Erreur stock: {str(e)}')
-                flash('Erreur lors de la mise à jour du stock.', 'danger')
-        
-        except ValueError as e:
-            flash(str(e), 'danger')
-        
+
+            with db_transaction_with_flash(
+                success_message=None,
+                error_message='Erreur lors de la mise à jour du stock.'
+            ):
+                message = _appliquer_action_stock(ingredient_id, action, quantite)
+                flash(message, 'success')
+
+        except (ValueError, TypeError) as e:
+            flash(str(e), 'warning')
+
         return redirect(url_for('frigo.liste'))
     
     # ============================================
@@ -179,66 +173,20 @@ def liste():
 @frigo_bp.route('/supprimer/<int:stock_id>')
 def supprimer(stock_id):
     """
-    Supprime un stock du frigo (par ID de stock)
-    """
-    try:
-        stock = StockFrigo.query.get_or_404(stock_id)
-        nom = stock.ingredient.nom
-        
-        db.session.delete(stock)
-        db.session.commit()
-        
-        flash(f'✓ {nom} retiré du frigo !', 'success')
-        current_app.logger.info(f'Stock supprimé: {nom}')
-    
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f'Erreur dans frigo.supprimer: {str(e)}')
-        flash('Erreur lors de la suppression.', 'danger')
-    
-    return redirect(url_for('frigo.liste'))
+    Supprime un stock du frigo par son ID.
 
+    Paramètres:
+        stock_id: ID de l'entrée StockFrigo
+    """
+    stock = StockFrigo.query.get_or_404(stock_id)
+    nom = stock.ingredient.nom
 
-@frigo_bp.route('/retirer/<int:id>')
-def retirer(id):
-    """
-    Retire complètement un ingrédient du frigo (par ID d'ingrédient)
-    """
-    ingredient = Ingredient.query.get_or_404(id)
-    nom = ingredient.nom
-    
     with db_transaction_with_flash(
-        success_message=f'✓ {nom} retiré du frigo.',
-        error_message=f'Erreur lors du retrait de {nom}'
+        success_message=f'✓ {nom} retiré du frigo !',
+        error_message=f'Erreur lors de la suppression de {nom}'
     ):
-        if not supprimer_du_frigo(id):
-            flash(f'{nom} n\'est pas dans le frigo !', 'warning')
-    
-    return redirect(url_for('frigo.liste'))
+        db.session.delete(stock)
 
-
-@frigo_bp.route('/vider/<int:id>')
-def vider(id):
-    """
-    Vider complètement un article du frigo (par stock_id)
-    Note: Cette route utilise l'ID du stock, pas de l'ingrédient
-    """
-    try:
-        stock = StockFrigo.query.get_or_404(id)
-        nom = stock.ingredient.nom
-        
-        with db_transaction_with_flash(
-            success_message=f'✓ {nom} retiré du frigo !',
-            error_message='Erreur lors de la suppression'
-        ):
-            db.session.delete(stock)
-        
-        current_app.logger.info(f'Stock vidé: {nom}')
-    
-    except Exception as e:
-        current_app.logger.error(f'Erreur dans frigo.vider: {str(e)}')
-        flash('Erreur lors de la suppression.', 'danger')
-    
     return redirect(url_for('frigo.liste'))
 
 
@@ -263,44 +211,32 @@ def vider_tout():
 @frigo_bp.route('/update-quantite/<int:stock_id>', methods=['POST'])
 def update_quantite(stock_id):
     """
-    API pour mise à jour rapide de la quantité (AJAX)
+    API AJAX pour mise à jour rapide de la quantité.
+
+    Paramètres:
+        stock_id: ID de l'entrée StockFrigo
     """
     try:
         data = request.get_json()
         nouvelle_quantite = float(data.get('quantite', 0))
-        
+
         if nouvelle_quantite < 0:
-            return jsonify({
-                'success': False,
-                'message': 'La quantité ne peut pas être négative'
-            }), 400
-        
+            return jsonify({'success': False, 'message': 'La quantité ne peut pas être négative'}), 400
+
         stock = StockFrigo.query.get_or_404(stock_id)
-        
-        if nouvelle_quantite == 0:
-            # Supprimer le stock si quantité = 0
-            db.session.delete(stock)
-            db.session.commit()
-            return jsonify({
-                'success': True,
-                'message': 'Stock supprimé',
-                'quantite': 0,
-                'deleted': True
-            })
-        
-        stock.quantite = nouvelle_quantite
+        result = definir_stock(stock.ingredient_id, nouvelle_quantite)
+
         db.session.commit()
-        
+
+        deleted = result is None
         return jsonify({
             'success': True,
-            'quantite': stock.quantite,
-            'message': 'Quantité mise à jour'
+            'quantite': 0 if deleted else result.quantite,
+            'deleted': deleted,
+            'message': 'Stock supprimé' if deleted else 'Quantité mise à jour'
         })
-    
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Erreur update_quantite: {str(e)}')
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+        return jsonify({'success': False, 'message': str(e)}), 500
