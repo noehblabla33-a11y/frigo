@@ -6,7 +6,7 @@
 from flask import Blueprint, render_template, jsonify
 from sqlalchemy import func, desc, case
 from sqlalchemy.orm import joinedload, contains_eager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 
 from models import db, RecettePlanifiee, Recette, Ingredient, IngredientRecette
@@ -45,7 +45,7 @@ def calculer_couts_periodiques():
     """
     
     # Date de référence
-    aujourd_hui = datetime.utcnow()
+    aujourd_hui = datetime.now(timezone.utc)
     debut_periode = aujourd_hui - timedelta(days=90)  # 3 derniers mois
     
     # ========================================
@@ -189,8 +189,8 @@ def liste():
     """
     
     # Dates de référence
-    debut_mois = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    debut_semaine = datetime.utcnow() - timedelta(days=datetime.utcnow().weekday())
+    debut_mois = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    debut_semaine = datetime.now(timezone.utc) - timedelta(days=datetime.now(timezone.utc).weekday())
     debut_semaine = debut_semaine.replace(hour=0, minute=0, second=0, microsecond=0)
     
     # ========================================
@@ -279,7 +279,7 @@ def liste():
     mois_labels = []
     mois_values = []
     for i in range(5, -1, -1):
-        date = datetime.utcnow() - timedelta(days=30*i)
+        date = datetime.now(timezone.utc) - timedelta(days=30*i)
         mois_key = date.strftime('%Y-%m')
         mois_label = date.strftime('%b %Y')
         mois_labels.append(mois_label)
@@ -335,7 +335,7 @@ def couts_par_mois():
     API pour les coûts par mois (pour debugging)
     """
     
-    aujourd_hui = datetime.utcnow()
+    aujourd_hui = datetime.now(timezone.utc)
     debut_periode = aujourd_hui - timedelta(days=365)
     
     stats_mois = db.session.query(

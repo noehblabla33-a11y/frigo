@@ -1,23 +1,16 @@
 """
 models/models.py
 Modèles de données pour l'application Frigo
-
-SYSTÈME D'UNITÉS REFACTORÉ :
-- Les quantités sont stockées dans l'unité NATIVE de l'ingrédient
-- Pour un œuf (unite='pièce'), on stocke 2 (pas 120g)
-- Pour de la farine (unite='g'), on stocke 500
-- Pour du lait (unite='ml'), on stocke 250
-
-✅ NOUVEAU : Système de saisons pour les ingrédients
-- Un ingrédient peut être associé à plusieurs saisons
-- Les ingrédients sans saison sont disponibles toute l'année
 """
 
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
 
 db = SQLAlchemy()
 
+def _utc_now():
+    """Helper pour datetime UTC aware (remplace datetime.utcnow déprécié)."""
+    return datetime.now(timezone.utc)
 
 # ============================================
 # SAISONS DES INGRÉDIENTS
@@ -256,9 +249,9 @@ class StockFrigo(db.Model):
     ingredient_id = db.Column(db.Integer, db.ForeignKey('ingredient.id'), 
                              nullable=False, unique=True, index=True)
     quantite = db.Column(db.Float, default=0)
-    date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
-    date_modification = db.Column(db.DateTime, default=datetime.utcnow, 
-                                 onupdate=datetime.utcnow)
+    date_ajout = db.Column(db.DateTime, default=_utc_now)
+    date_modification = db.Column(db.DateTime, default=_utc_now, 
+                                 onupdate=_utc_now)
 
     def to_dict(self, include_ingredient=False):
         """Convertit le stock en dictionnaire pour JSON"""
@@ -558,7 +551,7 @@ class RecettePlanifiee(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     recette_id = db.Column(db.Integer, db.ForeignKey('recette.id', ondelete='CASCADE'), 
                           nullable=False, index=True)
-    date_planification = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    date_planification = db.Column(db.DateTime, default=_utc_now, index=True)
     date_preparation = db.Column(db.DateTime, nullable=True)
     preparee = db.Column(db.Boolean, default=False, index=True)
 

@@ -9,7 +9,7 @@ du tableau de bord de la page d'accueil.
 """
 from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func, desc
 from sqlalchemy.orm import joinedload
 
@@ -182,7 +182,7 @@ def calculer_stats_activite() -> StatsActivite:
     Returns:
         StatsActivite avec stats semaine/mois et dernière recette
     """
-    maintenant = datetime.utcnow()
+    maintenant = datetime.now(timezone.utc)
     debut_semaine = maintenant - timedelta(days=maintenant.weekday())
     debut_semaine = debut_semaine.replace(hour=0, minute=0, second=0, microsecond=0)
     debut_mois = maintenant.replace(day=1, hour=0, minute=0, second=0, microsecond=0)

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from sqlalchemy.orm import joinedload
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
-from constants import TYPES_RECETTES, valider_type_recette
+from constants import TYPES_RECETTES
 from utils.pagination import paginate_query
 from utils.files import delete_file
 from utils.courses import ajouter_ingredients_manquants_courses

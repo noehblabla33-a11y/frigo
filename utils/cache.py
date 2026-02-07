@@ -24,6 +24,7 @@ USAGE:
 from functools import wraps
 from flask import current_app
 from flask_caching import Cache
+from datetime import datetime, timedelta, timezone
 
 # Instance globale du cache
 cache = Cache()
@@ -257,7 +258,7 @@ def get_historique_stats_cached():
     from datetime import datetime, timedelta
     from models.models import db, RecettePlanifiee, Recette, IngredientRecette, Ingredient
     
-    maintenant = datetime.utcnow()
+    maintenant = datetime.now(timezone.utc)
     debut_mois = maintenant.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     debut_semaine = maintenant - timedelta(days=maintenant.weekday())
     

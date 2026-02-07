@@ -4,7 +4,7 @@ from models.models import (
     db, Ingredient, StockFrigo, Recette, IngredientRecette,
     RecettePlanifiee, ListeCourses, EtapeRecette, IngredientSaison
 )
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 
 # ============================================
@@ -417,7 +417,7 @@ def get_preparations_periode(date_debut: datetime, date_fin: datetime = None) ->
         Liste de RecettePlanifiee
     """
     if date_fin is None:
-        date_fin = datetime.utcnow()
+        date_fin = datetime.now(timezone.utc)
 
     return RecettePlanifiee.query.options(
         joinedload(RecettePlanifiee.recette_ref)
@@ -528,7 +528,7 @@ def get_stats_periode(jours: int = 30) -> Dict:
     Retour:
         Dict avec nb_recettes, cout_total, cout_moyen, periode_jours
     """
-    date_limite = datetime.utcnow() - timedelta(days=jours)
+    date_limite = datetime.now(timezone.utc) - timedelta(days=jours)
 
     nb_recettes = RecettePlanifiee.query.filter(
         RecettePlanifiee.preparee == True,

@@ -45,21 +45,6 @@ CATEGORIES_EMOJIS = {nom: emoji for nom, emoji in CATEGORIES}
 CATEGORIES_NOMS = [nom for nom, _ in CATEGORIES]
 
 
-def valider_categorie(categorie: str) -> bool:
-    """
-    Valide qu'une catégorie est dans la liste des catégories autorisées.
-    
-    Args:
-        categorie: Catégorie à valider
-    
-    Returns:
-        True si valide ou None/vide, False sinon
-    """
-    if not categorie:
-        return True  # Catégorie optionnelle
-    return categorie in CATEGORIES_NOMS
-
-
 # ============================================
 # TYPES DE RECETTES
 # ============================================
@@ -78,21 +63,6 @@ TYPES_RECETTES = [
     'Boisson',
     'Autre',
 ]
-
-
-def valider_type_recette(type_recette: str) -> bool:
-    """
-    Valide qu'un type de recette est dans la liste autorisée.
-    
-    Args:
-        type_recette: Type à valider
-    
-    Returns:
-        True si valide ou None/vide, False sinon
-    """
-    if not type_recette:
-        return True  # Type optionnel
-    return type_recette in TYPES_RECETTES
 
 
 # ============================================

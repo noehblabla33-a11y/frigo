@@ -44,7 +44,7 @@ def create_app(config_name=None):
     # INITIALISATION DES EXTENSIONS
     # ============================================
     db.init_app(app)
-    migrate = Migrate(app, db)
+    Migrate(app, db)
     init_cache(app)
     Compress(app)
     
