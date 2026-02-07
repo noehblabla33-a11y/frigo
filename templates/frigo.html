@@ -2,11 +2,6 @@
 {% from "macros/pagination.html" import render_pagination %}
 {% block title %}Mon Frigo{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/frigo.css') }}">
-<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/pagination.css') }}">
-{% endblock %}
-
 {% block content %}
 <script>document.body.dataset.page = 'frigo';</script>
 

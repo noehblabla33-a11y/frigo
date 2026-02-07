@@ -4,12 +4,7 @@
 {% block title %}Mes recettes{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/collapsable.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/list-grid-view.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/search-filters.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes-form-premium.css') }}">
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/recettes-form-premium.css') }}">
 {% endblock %}
 
 {% block content %}

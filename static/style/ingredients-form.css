@@ -1,0 +1,63 @@
+/* ============================================ */
+/* FICHIER: static/style/ingredients-form.css  */
+/* Styles spécifiques au formulaire ingrédient */
+/* ============================================ */
+
+/* ========== SAISONS ========== */
+.saisons-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+@media (min-width: 768px) {
+    .saisons-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.saison-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border: 2px solid var(--border-light, #e9ecef);
+    border-radius: var(--border-radius-xl, 8px);
+    cursor: pointer;
+    transition: all var(--transition-normal, 0.2s ease);
+    background: var(--bg-white, #fff);
+}
+
+.saison-checkbox:hover {
+    border-color: var(--primary, #4CAF50);
+    background: #f8fff8;
+}
+
+.saison-checkbox.selected {
+    border-color: var(--primary, #4CAF50);
+    background: #e8f5e9;
+}
+
+.saison-checkbox input {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+.saison-checkbox .saison-emoji {
+    font-size: 1.3em;
+    margin-right: 8px;
+}
+
+.saison-checkbox .saison-nom {
+    font-weight: 500;
+}
+
+.saison-info {
+    color: var(--text-secondary, #6c757d);
+    font-size: var(--font-sm, 0.9em);
+    margin-top: 8px;
+    padding: 10px;
+    background: var(--bg-light, #f8f9fa);
+    border-radius: var(--border-radius-lg, 6px);
+}

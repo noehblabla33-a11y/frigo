@@ -6,14 +6,7 @@
     <title>{% block title %}Mon Frigo{% endblock %}</title>
     
     <!-- CSS de base - avec versioning pour forcer le rechargement si modifié -->
-    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/base.css') }}">
-    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/components.css') }}">
-    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/list-grid-view.css') }}">
     <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/style.css') }}">
-    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/collapsable.css') }}">
-    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/search-filters.css') }}">
-    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/forms.css') }}">
-    <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/select-search.css') }}">
     <link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/modal.css') }}">
     
     <!-- CSS supplémentaires spécifiques aux pages -->
@@ -37,13 +30,7 @@
             <a href="{{ url_for('ingredients.liste') }}">📦 Ingrédients</a>
             <a href="{{ url_for('frigo.liste') }}">❄️ Mon Frigo</a>
             <a href="{{ url_for('recettes.liste') }}">📖 Recettes</a>
-            <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}" 
-               style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
-                      color: white; 
-                      font-weight: 600;
-                      box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);">
-                🥘 Cuisiner avec mon frigo
-            </a>
+            <a href="{{ url_for('recettes.cuisiner_avec_frigo') }}">🥘 Cuisiner avec mon frigo</a>
             <a href="{{ url_for('courses.liste') }}">🛒 Courses</a>
             <a href="{{ url_for('historique.liste') }}">📊 Historique</a>
         </nav>

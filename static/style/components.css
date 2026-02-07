@@ -459,3 +459,16 @@ input[type="radio"] {
         justify-content: center;
     }
 }
+
+/* ========== CLASSES UTILITAIRES ========== */
+.text-muted { color: var(--text-secondary); }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.font-bold { font-weight: 700; }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-xl { margin-bottom: var(--spacing-xl); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mt-xl { margin-top: var(--spacing-xl); }
+.flex-wrap-gap { display: flex; gap: 15px; flex-wrap: wrap; }

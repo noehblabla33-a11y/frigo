@@ -13,13 +13,8 @@
 {% block title %}Catalogue des ingrédients{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='style/pagination.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/collapsable.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/ingredients.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/search-filters.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/forms.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/recettes-form-premium.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', filename='style/ingredients-form.css') }}">
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/recettes-form-premium.css') }}">
+<link rel="stylesheet" href="{{ versioned_url_for('static', filename='style/ingredients-form.css') }}">
 {% endblock %}
 
 {% block content %}
