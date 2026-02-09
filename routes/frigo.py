@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from sqlalchemy.orm import joinedload
 from models.models import db, Ingredient, StockFrigo
-from utils.database import db_transaction_with_flash
-from utils.pagination import paginate_query
+from utils.database import db_transaction_with_flash, paginate_query
 from utils.forms import parse_float, parse_positive_float
 from utils.stock import (
     ajouter_au_stock, 
@@ -10,7 +9,7 @@ from utils.stock import (
     definir_stock,
     get_quantite_disponible
 )
-from utils.queries_optimized import get_stocks_with_ingredients
+from utils.queries import get_stocks_with_ingredients
 
 frigo_bp = Blueprint('frigo', __name__)
 

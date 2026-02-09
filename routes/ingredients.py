@@ -1,25 +1,18 @@
 """
-routes/ingredients.py (VERSION AVEC SAISONS)
+routes/ingredients.py
 Gestion du catalogue d'ingrédients
-
-CHANGEMENTS:
-- Utilise utils/validators.py pour les validations
-- Utilise utils/queries.py pour le comptage des catégories
-- Utilise systématiquement utils/files.py pour les images
-- ✅ NOUVEAU: Gestion des saisons
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from models.models import db, Ingredient, IngredientSaison
-from utils.pagination import paginate_query
 from utils.files import save_uploaded_file, delete_file
-from utils.database import db_transaction_with_flash
+from utils.database import db_transaction_with_flash, paginate_query
 from utils.forms import (
     parse_float, parse_float_or_none, clean_string, 
-    clean_string_or_none, parse_nutrition_values
+    clean_string_or_none, parse_nutrition_values,
+    validate_unique_ingredient, validate_categorie
 )
 from utils.saisons import get_saison_actuelle, get_ingredients_de_saison
-from constants import CATEGORIES, SAISONS, SAISONS_VALIDES
-from utils.validators import validate_unique_ingredient, validate_categorie
+from constants import CATEGORIES, SAISONS_NOMS, SAISONS_VALIDES
 from utils.queries import get_categories_count
 
 ingredients_bp = Blueprint('ingredients', __name__)

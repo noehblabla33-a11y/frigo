@@ -18,7 +18,7 @@ from utils.recommandation import (
     get_temps_max_recettes
 )
 from utils.saisons import get_saison_actuelle
-from constants import TYPES_RECETTES, SAISONS
+from constants import TYPES_RECETTES, SAISONS_NOMS
 
 recommandations_bp = Blueprint('recommandations', __name__)
 

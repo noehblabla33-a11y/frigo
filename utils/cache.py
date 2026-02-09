@@ -199,7 +199,7 @@ def get_categories_count_cached():
     Retour:
         Dict {categorie: count}
     """
-    from utils.queries_optimized import get_categories_count
+    from utils.queries import get_categories_count
     return get_categories_count()
 
 
@@ -211,7 +211,7 @@ def get_all_ingredients_cached():
     Retour:
         Liste d'Ingredient
     """
-    from utils.queries_optimized import get_all_ingredients
+    from utils.queries import get_all_ingredients
     return get_all_ingredients(with_stock=False, with_saisons=False)
 
 

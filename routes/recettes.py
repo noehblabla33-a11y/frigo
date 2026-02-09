@@ -2,16 +2,14 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from sqlalchemy.orm import joinedload
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
 from constants import TYPES_RECETTES
-from utils.pagination import paginate_query
 from utils.files import delete_file
 from utils.courses import ajouter_ingredients_manquants_courses
-from utils.forms import parse_recette_form
-from utils.validators import validate_unique_recette, validate_type_recette
+from utils.forms import parse_recette_form, validate_unique_recette, validate_type_recette
 from utils.recommandation import (MoteurRecommandation, get_historique_recettes_ids, get_cout_max_recettes, get_temps_max_recettes)
 from utils.saisons import get_saison_actuelle
 from utils.recette_service import creer_recette, modifier_recette
-from utils.database import db_transaction_with_flash
-from constants import SAISONS
+from utils.database import db_transaction_with_flash, paginate_query
+from constants import SAISONS_NOMS
 import os
 
 recettes_bp = Blueprint('recettes', __name__)

@@ -17,11 +17,11 @@ from routes import (
     main_bp, historique_bp, ingredients_bp, api_bp, recommandations_bp
 )
 from config import get_config
-from utils.units import formater_quantite, formater_prix_unitaire
-from utils.saisons import get_saison_actuelle, get_contexte_saison
+from utils.calculs import formater_quantite, formater_prix_unitaire
+from utils.saisons import get_saison_actuelle, get_contexte_saison, formater_saison, formater_liste_saisons
 from utils.cache import cache, init_cache
 from utils.errors import init_error_handlers
-from constants import formater_saison, formater_liste_saisons, SAISONS_EMOJIS, SAISONS_NOMS
+from constants import SAISONS_EMOJIS, SAISONS_NOMS
 import os
 
 

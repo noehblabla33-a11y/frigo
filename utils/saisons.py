@@ -16,39 +16,6 @@ from models.models import db, Ingredient, Recette
 
 
 # ============================================
-# CONSTANTES
-# ============================================
-
-# Dates de début de chaque saison (jour, mois)
-# Basées sur les dates astronomiques approximatives
-DATES_SAISONS = {
-    'printemps': (20, 3),   # 20 mars
-    'ete': (21, 6),         # 21 juin
-    'automne': (22, 9),     # 22 septembre
-    'hiver': (21, 12),      # 21 décembre
-}
-
-# Ordre des saisons pour les calculs
-ORDRE_SAISONS = ['printemps', 'ete', 'automne', 'hiver']
-
-# Emojis pour l'affichage
-SAISONS_EMOJIS = {
-    'printemps': '🌸',
-    'ete': '☀️',
-    'automne': '🍂',
-    'hiver': '❄️',
-}
-
-# Noms complets pour l'affichage
-SAISONS_NOMS = {
-    'printemps': 'Printemps',
-    'ete': 'Été',
-    'automne': 'Automne',
-    'hiver': 'Hiver',
-}
-
-
-# ============================================
 # FONCTIONS DE BASE
 # ============================================
 
@@ -440,3 +407,75 @@ def get_contexte_saison() -> Dict:
         'saisons_noms': SAISONS_NOMS,
         'saisons_emojis': SAISONS_EMOJIS,
     }
+
+
+def formater_saison(saison: str, avec_emoji: bool = True) -> str:
+    """
+    Formate une saison pour l'affichage.
+    
+    Args:
+        saison: Code de la saison
+        avec_emoji: Inclure l'emoji
+    
+    Returns:
+        Chaîne formatée (ex: "🌸 Printemps")
+    """
+    nom = get_saison_nom(saison)
+    if avec_emoji:
+        emoji = get_saison_emoji(saison)
+        return f"{emoji} {nom}" if emoji else nom
+    return nom
+
+
+def formater_liste_saisons(saisons: list, avec_emoji: bool = True) -> str:
+    """
+    Formate une liste de saisons pour l'affichage.
+    
+    Args:
+        saisons: Liste de codes de saisons
+        avec_emoji: Inclure les emojis
+    
+    Returns:
+        Chaîne formatée (ex: "🌸 Printemps, ☀️ Été") ou "Toute l'année"
+    """
+    if not saisons:
+        return "Toute l'année"
+    
+    # Trier dans l'ordre naturel des saisons
+    ordre = {s: i for i, s in enumerate(SAISONS_VALIDES)}
+    saisons_triees = sorted(saisons, key=lambda s: ordre.get(s, 99))
+    
+    # Si toutes les saisons, simplifier
+    if len(saisons_triees) == 4:
+        return "Toute l'année"
+    
+    return ", ".join(formater_saison(s, avec_emoji) for s in saisons_triees)
+
+
+def get_saison_emoji(saison: str) -> str:
+    """
+    Retourne l'emoji pour une saison donnée.
+    
+    Args:
+        saison: Code de la saison
+    
+    Returns:
+        Emoji correspondant ou chaîne vide
+    """
+    return SAISONS_EMOJIS.get(saison, '')
+
+
+def get_saison_nom(saison: str) -> str:
+    """
+    Retourne le nom complet d'une saison.
+    
+    Args:
+        saison: Code de la saison
+    
+    Returns:
+        Nom complet ou le code si non trouvé
+    """
+    return SAISONS_NOMS.get(saison, saison.capitalize() if saison else '')
+
+
+
