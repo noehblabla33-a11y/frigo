@@ -45,7 +45,7 @@ class DevelopmentConfig(Config):
     """Configuration pour le développement local."""
     DEBUG = True
     TESTING = False
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False
 
     @classmethod
     def init_app(cls, app):
