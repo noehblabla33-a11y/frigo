@@ -18,7 +18,7 @@ from utils.recommandation import (
     get_temps_max_recettes
 )
 from utils.saisons import get_saison_actuelle
-from constants import TYPES_RECETTES, SAISONS_NOMS
+from constants import TYPES_RECETTES, SAISONS_NOMS, SAISONS_VALIDES
 
 recommandations_bp = Blueprint('recommandations', __name__)
 
@@ -98,7 +98,7 @@ def index():
         criteres_config=moteur.get_config(),
         saison=saison,
         saison_actuelle=get_saison_actuelle(),
-        saisons=SAISONS,
+        saisons=SAISONS_VALIDES,
         types_recettes=TYPES_RECETTES,
         type_filter=type_filter,
         realisable_only=realisable_only,

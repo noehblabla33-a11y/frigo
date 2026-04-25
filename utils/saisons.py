@@ -13,6 +13,7 @@ from datetime import date, datetime
 from typing import List, Optional, Dict, Tuple
 from sqlalchemy import func
 from models.models import db, Ingredient, Recette
+from constants import SAISONS_NOMS, SAISONS_EMOJIS, SAISONS_VALIDES as ORDRE_SAISONS
 
 
 # ============================================

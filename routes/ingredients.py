@@ -180,7 +180,7 @@ def liste():
         categorie_filter=categorie_filter,
         stock_filter=stock_filter,
         saison_filter=saison_filter,
-        saisons=SAISONS,
+        saisons=SAISONS_VALIDES,
         saison_actuelle=saison_actuelle
     )
 
@@ -254,7 +254,7 @@ def modifier(id):
         'ingredient_modifier.html', 
         ingredient=ingredient,
         categories=CATEGORIES,
-        saisons=SAISONS,
+        saisons=SAISONS_VALIDES,
         saisons_ingredient=ingredient.get_saisons()
     )
 
@@ -299,7 +299,7 @@ def de_saison():
         'ingredients_saison.html',
         ingredients=ingredients,
         saison=saison,
-        saisons=SAISONS,
+        saisons=SAISONS_VALIDES,
         categories=CATEGORIES,
         categorie_filter=categorie,
         saison_actuelle=get_saison_actuelle()

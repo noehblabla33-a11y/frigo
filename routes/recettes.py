@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from sqlalchemy.orm import joinedload
 from models.models import db, Recette, Ingredient, IngredientRecette, RecettePlanifiee, EtapeRecette, StockFrigo, ListeCourses
-from constants import TYPES_RECETTES
+from constants import TYPES_RECETTES, SAISONS_NOMS, SAISONS_VALIDES, SAISONS_EMOJIS
 from utils.files import delete_file
 from utils.courses import ajouter_ingredients_manquants_courses
 from utils.forms import parse_recette_form, validate_unique_recette, validate_type_recette
@@ -9,7 +9,6 @@ from utils.recommandation import (MoteurRecommandation, get_historique_recettes_
 from utils.saisons import get_saison_actuelle
 from utils.recette_service import creer_recette, modifier_recette
 from utils.database import db_transaction_with_flash, paginate_query
-from constants import SAISONS_NOMS
 import os
 
 recettes_bp = Blueprint('recettes', __name__)
@@ -273,7 +272,7 @@ def cuisiner_avec_frigo():
         # Filtres
         saison=saison,
         saison_actuelle=get_saison_actuelle(),
-        saisons=SAISONS,
+        saisons=SAISONS_EMOJIS.items(),
         types_recettes=TYPES_RECETTES,
         type_filter=type_filter,
         realisable_only=realisable_only,
