@@ -1,54 +1,35 @@
 /**
- * static/javascript/recettes.js
- * Gestion des formulaires de recettes (ingrédients et étapes)
- * 
- * SYSTÈME D'UNITÉS SIMPLIFIÉ :
- * Les quantités sont saisies dans l'unité native de l'ingrédient.
- * 
- * NOMS DES CHAMPS (correspondant à parse_etapes_list et parse_ingredients_list) :
- * - Ingrédients : ingredient_X, quantite_X
- * - Étapes : etape_desc_X, etape_duree_X
+ * Gestion des formulaires de recettes (ingrédients et étapes).
+ * Noms de champs : ingredient_X, quantite_X, etape_desc_X, etape_duree_X
  */
 
 (function() {
     'use strict';
 
-    // Compteurs globaux (seront initialisés par le template si nécessaire)
     window.ingredientCount = window.ingredientCount || 1;
     window.etapeCount = window.etapeCount || 1;
 
-    // =============================================
-    // GESTION DES INGRÉDIENTS
-    // =============================================
+    // -----------------------------------------------
+    // INGRÉDIENTS
+    // -----------------------------------------------
 
     /**
-     * Met à jour l'affichage de l'unité quand on change d'ingrédient
+     * Met à jour le badge d'unité quand on change d'ingrédient.
      */
     function updateUniteDisplay(selectElement) {
-        const row = selectElement.closest('.ingredient-row');
+        const row = selectElement.closest('.ingredient-item-premium');
         if (!row) return;
-        
-        const uniteDisplay = row.querySelector('.unite-display');
+
+        const uniteBadge = row.querySelector('.unite-badge');
         const quantiteInput = row.querySelector('input[name^="quantite_"]');
-        
-        if (!uniteDisplay) return;
-        
         const selectedOption = selectElement.options[selectElement.selectedIndex];
-        
-        if (!selectedOption || !selectedOption.value) {
-            uniteDisplay.value = 'g';
-            if (quantiteInput) {
-                quantiteInput.step = '1';
-                quantiteInput.placeholder = 'Quantité';
-            }
-            return;
-        }
-        
-        // Récupérer l'unité depuis l'attribut data
-        const unite = selectedOption.dataset.unite || 'g';
-        uniteDisplay.value = unite;
-        
-        // Ajuster le step selon l'unité
+
+        const unite = (selectedOption && selectedOption.value)
+            ? (selectedOption.dataset.unite || 'g')
+            : 'g';
+
+        if (uniteBadge) uniteBadge.textContent = unite;
+
         if (quantiteInput) {
             if (unite === 'pièce') {
                 quantiteInput.step = '0.5';
@@ -61,80 +42,61 @@
     }
 
     /**
-     * Ajoute une nouvelle ligne d'ingrédient
+     * Ajoute un nouvel ingrédient avec le style premium.
      */
     function ajouterIngredient() {
         const container = document.getElementById('ingredients-container');
         if (!container) return;
-        
-        // Récupérer les options depuis le premier select
+
         const firstSelect = container.querySelector('.ingredient-select');
         if (!firstSelect) return;
-        
+
         const optionsHTML = firstSelect.innerHTML;
-        
+        const index = window.ingredientCount;
+
         const div = document.createElement('div');
-        div.className = 'ingredient-row';
-        div.dataset.ingredientRow = window.ingredientCount;
-        
+        div.className = 'ingredient-item-premium dynamic-item';
+        div.dataset.index = index;
+
         div.innerHTML = `
-            <div class="form-group" style="flex: 2;">
-                <select name="ingredient_${window.ingredientCount}" class="ingredient-select searchable-select" required>
+            <div class="ingredient-drag-handle">⋮⋮</div>
+            <div class="form-group" style="flex: 2; margin: 0;">
+                <select name="ingredient_${index}" class="input-premium ingredient-select searchable-select" required>
                     ${optionsHTML}
                 </select>
             </div>
-            
-            <div class="form-group" style="flex: 1;">
-                <input type="number" 
-                       step="1" 
-                       name="quantite_${window.ingredientCount}" 
-                       placeholder="Quantité"
-                       required>
+            <div class="form-group" style="flex: 1; margin: 0;">
+                <input type="number" step="1" name="quantite_${index}"
+                       class="input-premium" placeholder="Quantité" required>
             </div>
-            
-            <div class="form-group" style="flex: 0.5;">
-                <input type="text" 
-                       class="unite-display" 
-                       value="g" 
-                       readonly 
-                       style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
-            </div>
-            
-            <div class="form-group" style="flex: 0;">
-                <button type="button" 
-                        class="btn-remove-ingredient" 
-                        onclick="removeIngredient(${window.ingredientCount})">
-                    ✖
-                </button>
-            </div>
+            <div class="unite-badge">g</div>
+            <button type="button" class="btn-delete-modern btn-remove-ingredient"
+                    onclick="removeIngredient(${index})">🗑️</button>
         `;
-        
+
         container.appendChild(div);
         window.ingredientCount++;
-        
-        // Configurer le nouveau select
+
         const newSelect = div.querySelector('.ingredient-select');
         if (newSelect) {
+            newSelect.value = '';
             newSelect.addEventListener('change', function() {
                 updateUniteDisplay(this);
             });
-            // Réinitialiser la sélection
-            newSelect.value = '';
         }
-        
-        // Initialiser SelectSearch si disponible
+
         if (typeof initSelectSearch === 'function') {
             initSelectSearch();
         }
-        
+
         updateRemoveIngredientsButtons();
     }
 
     /**
-     * Supprime une ligne d'ingrédient
+     * Supprime un ingrédient par son index.
      */
     function removeIngredient(index) {
-        const row = document.querySelector(`.ingredient-row[data-ingredient-row="${index}"]`);
+        const row = document.querySelector(`.ingredient-item-premium[data-index="${index}"]`);
         if (row) {
             row.remove();
             updateRemoveIngredientsButtons();
@@ -142,88 +104,71 @@
     }
 
     /**
-     * Met à jour l'affichage des boutons de suppression d'ingrédients
+     * Masque le bouton supprimer quand il ne reste qu'un ingrédient.
      */
     function updateRemoveIngredientsButtons() {
-        const rows = document.querySelectorAll('.ingredient-row');
+        const rows = document.querySelectorAll('.ingredient-item-premium');
         rows.forEach((row) => {
             const btn = row.querySelector('.btn-remove-ingredient');
-            if (btn) {
-                btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
-            }
+            if (btn) btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
         });
     }
 
     /**
-     * Initialise les selects d'ingrédients existants
+     * Attache les listeners de changement d'unité sur les selects existants.
      */
     function initIngredientSelects() {
         document.querySelectorAll('.ingredient-select').forEach(select => {
             select.addEventListener('change', function() {
                 updateUniteDisplay(this);
             });
-            
-            // Initialiser l'affichage si un ingrédient est déjà sélectionné
-            if (select.value) {
-                updateUniteDisplay(select);
-            }
+            if (select.value) updateUniteDisplay(select);
         });
     }
 
-    // =============================================
-    // GESTION DES ÉTAPES
-    // =============================================
+    // -----------------------------------------------
+    // ÉTAPES
+    // -----------------------------------------------
 
     /**
-     * Ajoute une nouvelle étape
-     * IMPORTANT: Les noms de champs doivent correspondre à parse_etapes_list :
-     * - etape_desc_X pour la description
-     * - etape_duree_X pour la durée
+     * Ajoute une nouvelle étape avec le style premium.
      */
     function ajouterEtape() {
         const container = document.getElementById('etapes-container');
         if (!container) return;
-        
-        const currentCount = window.etapeCount;
-        
+
+        const index = window.etapeCount;
+        const numeroAffichage = container.querySelectorAll('.etape-item-premium').length + 1;
+
         const div = document.createElement('div');
-        div.className = 'etape-row';
-        div.dataset.etape = currentCount;
-        
-        // Structure cohérente avec le template recette_modifier.html
+        div.className = 'etape-item-premium dynamic-item';
+        div.dataset.index = index;
+
         div.innerHTML = `
-            <div class="etape-number">${currentCount + 1}</div>
-            <div class="etape-inputs">
-                <div class="form-group" style="flex: 3; margin-bottom: 0;">
-                    <textarea name="etape_desc_${currentCount}" 
-                              placeholder="Décrivez cette étape..."
-                              rows="2"></textarea>
-                </div>
-                <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                    <input type="number" 
-                           name="etape_duree_${currentCount}" 
-                           placeholder="⏱️ Minutes (opt.)"
-                           min="0"
-                           title="Durée en minutes pour le minuteur (optionnel)">
+            <div class="etape-numero-premium">${numeroAffichage}</div>
+            <div class="etape-content-premium">
+                <textarea name="etape_desc_${index}" class="input-premium"
+                          placeholder="Décrivez cette étape en détail..." rows="3"></textarea>
+                <div class="timer-input-group">
+                    <span class="timer-icon">⏱️</span>
+                    <input type="number" name="etape_duree_${index}" placeholder="0" min="0">
+                    <span class="timer-label">minutes</span>
                 </div>
             </div>
-            <button type="button" 
-                    class="btn-remove-etape" 
-                    onclick="removeEtape(${currentCount})">
-                ✖
-            </button>
+            <button type="button" class="btn-delete-modern btn-remove-etape"
+                    onclick="removeEtape(${index})">🗑️</button>
         `;
-        
+
         container.appendChild(div);
         window.etapeCount++;
         updateRemoveEtapesButtons();
     }
 
     /**
-     * Supprime une étape
+     * Supprime une étape par son index.
      */
     function removeEtape(index) {
-        const row = document.querySelector(`.etape-row[data-etape="${index}"]`);
+        const row = document.querySelector(`.etape-item-premium[data-index="${index}"]`);
         if (row) {
             row.remove();
             updateRemoveEtapesButtons();
@@ -232,48 +177,36 @@
     }
 
     /**
-     * Met à jour l'affichage des boutons de suppression des étapes
+     * Masque le bouton supprimer quand il ne reste qu'une étape.
      */
     function updateRemoveEtapesButtons() {
-        const rows = document.querySelectorAll('.etape-row');
+        const rows = document.querySelectorAll('.etape-item-premium');
         rows.forEach((row) => {
             const btn = row.querySelector('.btn-remove-etape');
-            if (btn) {
-                btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
-            }
+            if (btn) btn.style.display = rows.length > 1 ? 'inline-block' : 'none';
         });
     }
 
     /**
-     * Renumérote les étapes après suppression (affichage uniquement)
-     * Note: Les noms des champs ne sont PAS renommés car parse_etapes_list
-     * parcourt séquentiellement et s'arrête au premier index manquant.
-     * Mais cela fonctionne car les champs existants gardent leurs indices.
+     * Renumérote visuellement les étapes (les noms de champs ne changent pas).
      */
     function renumberEtapes() {
-        const rows = document.querySelectorAll('.etape-row');
-        rows.forEach((row, visualIndex) => {
-            const numberSpan = row.querySelector('.etape-number');
-            if (numberSpan) {
-                numberSpan.textContent = visualIndex + 1;
-            }
+        document.querySelectorAll('.etape-item-premium').forEach((row, i) => {
+            const numero = row.querySelector('.etape-numero-premium');
+            if (numero) numero.textContent = i + 1;
         });
     }
 
-    // =============================================
+    // -----------------------------------------------
     // INITIALISATION
-    // =============================================
+    // -----------------------------------------------
 
     function initRecettesForm() {
-        // Initialiser les selects d'ingrédients
         initIngredientSelects();
-        
-        // Mettre à jour les boutons de suppression
         updateRemoveIngredientsButtons();
         updateRemoveEtapesButtons();
     }
 
-    // Exposer les fonctions globalement
     window.ajouterIngredient = ajouterIngredient;
     window.removeIngredient = removeIngredient;
     window.ajouterEtape = ajouterEtape;
@@ -283,7 +216,6 @@
     window.updateRemoveEtapesButtons = updateRemoveEtapesButtons;
     window.renumberEtapes = renumberEtapes;
 
-    // Initialisation au chargement du DOM
     document.addEventListener('DOMContentLoaded', initRecettesForm);
 
 })();
