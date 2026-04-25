@@ -3,6 +3,32 @@ from utils.files import save_uploaded_file, delete_file
 from utils.forms import parse_recette_form, parse_ingredients_list, parse_etapes_list
 
 
+def sauvegarder_sous_recettes(recette: Recette, form_data: dict):
+    """
+    Met à jour les sous-recettes liées à une recette depuis les données du formulaire.
+
+    Args:
+        recette: Instance de la recette à mettre à jour
+        form_data: Données du formulaire (request.form)
+    """
+    ids_bruts = form_data.getlist('sous_recette_id')
+    ids_valides = []
+    for val in ids_bruts:
+        try:
+            sid = int(val)
+            if sid != recette.id:
+                ids_valides.append(sid)
+        except (ValueError, TypeError):
+            pass
+
+    recette.sous_recettes.clear()
+
+    for sid in ids_valides:
+        sous = Recette.query.get(sid)
+        if sous:
+            recette.sous_recettes.append(sous)
+
+
 def sauvegarder_ingredients(recette_id: int, form_data: dict):
     """
     Remplace les ingrédients d'une recette depuis les données du formulaire.
@@ -83,6 +109,7 @@ def creer_recette(form_data: dict, files: dict) -> Recette:
     gerer_image_recette(recette, files)
     sauvegarder_ingredients(recette.id, form_data)
     sauvegarder_etapes(recette.id, form_data)
+    sauvegarder_sous_recettes(recette, form_data)
 
     return recette
 
@@ -107,3 +134,4 @@ def modifier_recette(recette: Recette, form_data: dict, files: dict):
     gerer_image_recette(recette, files)
     sauvegarder_ingredients(recette.id, form_data)
     sauvegarder_etapes(recette.id, form_data)
+    sauvegarder_sous_recettes(recette, form_data)

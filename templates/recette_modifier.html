@@ -172,6 +172,36 @@
             </button>
         </div>
         
+        <!-- Recettes liées (sous-recettes) -->
+        <div class="form-group">
+            <label>Recettes liées (sous-recettes)</label>
+            <p style="color: #6c757d; font-size: 0.9em; margin-bottom: 15px;">
+                Liez des recettes dont les ingrédients seront automatiquement inclus dans la liste de courses.
+            </p>
+
+            <div id="sous-recettes-container">
+                {% for sr in recette.sous_recettes %}
+                <div class="sous-recette-row" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <input type="hidden" name="sous_recette_id" value="{{ sr.id }}">
+                    <span style="flex: 1; padding: 8px 12px; background: #f0f7ff; border: 1px solid #b8d4f0; border-radius: 6px; font-weight: 500;">
+                        🔗 {{ sr.nom }}
+                    </span>
+                    <button type="button" onclick="this.closest('.sous-recette-row').remove()" class="btn-remove-ingredient">✖</button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <select id="sous-recette-select" class="searchable-select" style="flex: 1;">
+                    <option value="">Sélectionner une recette à lier...</option>
+                    {% for r in toutes_recettes %}
+                    <option value="{{ r.id }}">{{ r.nom }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" onclick="ajouterSousRecette()" class="btn">+ Lier</button>
+            </div>
+        </div>
+
         <!-- Étapes de préparation -->
         <div class="form-group">
             <label>Étapes de préparation</label>
@@ -464,6 +494,37 @@
     // INITIALISATION
     // =============================================
     
+    // =============================================
+    // GESTION DES SOUS-RECETTES
+    // =============================================
+
+    window.ajouterSousRecette = function() {
+        const select = document.getElementById('sous-recette-select');
+        const id = select.value;
+        const nom = select.options[select.selectedIndex]?.text;
+        if (!id) return;
+
+        // Éviter les doublons
+        const existants = document.querySelectorAll('#sous-recettes-container input[name="sous_recette_id"]');
+        for (const inp of existants) {
+            if (inp.value === id) return;
+        }
+
+        const container = document.getElementById('sous-recettes-container');
+        const row = document.createElement('div');
+        row.className = 'sous-recette-row';
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;';
+        row.innerHTML = `
+            <input type="hidden" name="sous_recette_id" value="${id}">
+            <span style="flex:1;padding:8px 12px;background:#f0f7ff;border:1px solid #b8d4f0;border-radius:6px;font-weight:500;">
+                🔗 ${nom}
+            </span>
+            <button type="button" onclick="this.closest('.sous-recette-row').remove()" class="btn-remove-ingredient">✖</button>
+        `;
+        container.appendChild(row);
+        select.value = '';
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         // Initialiser les selects d'ingrédients existants
         document.querySelectorAll('.ingredient-select').forEach(select => {

@@ -18,6 +18,20 @@ du coût pouvait créer des confusions d'affichage.
 from models.models import db, Recette, IngredientRecette, StockFrigo, ListeCourses
 
 
+def _get_tous_ingredients(recette: Recette, visited: set = None) -> list:
+    """Collecte récursivement tous les IngredientRecette d'une recette et ses sous-recettes."""
+    if visited is None:
+        visited = set()
+    if recette.id in visited:
+        return []
+    visited.add(recette.id)
+
+    result = list(recette.ingredients)
+    for sous_recette in recette.sous_recettes:
+        result.extend(_get_tous_ingredients(sous_recette, visited))
+    return result
+
+
 def ajouter_ingredients_manquants_courses(recette_id: int) -> dict:
     """
     Ajoute les ingrédients manquants d'une recette à la liste de courses.
@@ -49,8 +63,8 @@ def ajouter_ingredients_manquants_courses(recette_id: int) -> dict:
     ajoutes = 0
     maj = 0
     cout_total = 0.0
-    
-    for ing_rec in recette.ingredients:
+
+    for ing_rec in _get_tous_ingredients(recette):
         ingredient_id = ing_rec.ingredient_id
         quantite_requise = ing_rec.quantite  # Quantité en unité native
         
@@ -112,8 +126,8 @@ def retirer_ingredients_courses(recette_id: int) -> dict:
     
     supprimes = 0
     reduits = 0
-    
-    for ing_rec in recette.ingredients:
+
+    for ing_rec in _get_tous_ingredients(recette):
         ingredient_id = ing_rec.ingredient_id
         quantite_recette = ing_rec.quantite
         
@@ -157,8 +171,8 @@ def deduire_ingredients_frigo(recette_id: int) -> int:
         return 0
     
     nb_deduits = 0
-    
-    for ing_rec in recette.ingredients:
+
+    for ing_rec in _get_tous_ingredients(recette):
         ingredient_id = ing_rec.ingredient_id
         quantite_a_deduire = ing_rec.quantite
         

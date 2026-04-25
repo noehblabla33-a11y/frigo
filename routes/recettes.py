@@ -62,6 +62,8 @@ def liste():
 
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
 
+    toutes_recettes = Recette.query.order_by(Recette.nom).all()
+
     return render_template('recettes.html',
                          recettes=pagination['items'],
                          pagination=pagination,
@@ -69,7 +71,8 @@ def liste():
                          types_recettes=TYPES_RECETTES,
                          search_query=search_query,
                          type_filter=type_filter,
-                         ingredient_filter=ingredient_filter)
+                         ingredient_filter=ingredient_filter,
+                         toutes_recettes=toutes_recettes)
 
 
 @recettes_bp.route('/<int:id>')
@@ -144,12 +147,14 @@ def modifier(id):
         return redirect(url_for('recettes.detail', id=recette.id))
 
     ingredients = Ingredient.query.order_by(Ingredient.nom).all()
+    toutes_recettes = Recette.query.filter(Recette.id != id).order_by(Recette.nom).all()
 
     return render_template(
         'recette_modifier.html',
         recette=recette,
         ingredients=ingredients,
-        types_recettes=TYPES_RECETTES
+        types_recettes=TYPES_RECETTES,
+        toutes_recettes=toutes_recettes
     )
 
 

@@ -131,8 +131,22 @@
                     {{ ingredients_list_premium(all_ingredients=ingredients) }}
                 {% endcall %}
 
-                {# SECTION 3 : Préparation #}
-                {% call premium_section(3, "Préparation", "Étapes détaillées de la recette") %}
+                {# SECTION 3 : Recettes liées #}
+                {% call premium_section(3, "Recettes liées", "Lier des sous-recettes dont les ingrédients seront inclus dans la liste de courses") %}
+                    <div id="sous-recettes-container-modal" style="margin-bottom: 10px;"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="sous-recette-select-modal" class="input-premium searchable-select" style="flex: 1;">
+                            <option value="">Sélectionner une recette à lier...</option>
+                            {% for r in toutes_recettes %}
+                            <option value="{{ r.id }}">{{ r.nom }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" onclick="ajouterSousRecetteModal()" class="btn">+ Lier</button>
+                    </div>
+                {% endcall %}
+
+                {# SECTION 4 : Préparation #}
+                {% call premium_section(4, "Préparation", "Étapes détaillées de la recette") %}
                     {{ etapes_list_premium() }}
                 {% endcall %}
 
@@ -312,6 +326,35 @@
     // INITIALISATION
     // ============================================
     
+    // ============================================
+    // GESTION DES SOUS-RECETTES (MODAL CRÉATION)
+    // ============================================
+
+    window.ajouterSousRecetteModal = function() {
+        const select = document.getElementById('sous-recette-select-modal');
+        const id = select.value;
+        const nom = select.options[select.selectedIndex]?.text;
+        if (!id) return;
+
+        const container = document.getElementById('sous-recettes-container-modal');
+        const existants = container.querySelectorAll('input[name="sous_recette_id"]');
+        for (const inp of existants) {
+            if (inp.value === id) return;
+        }
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;';
+        row.innerHTML = `
+            <input type="hidden" name="sous_recette_id" value="${id}">
+            <span style="flex:1;padding:8px 12px;background:#f0f7ff;border:1px solid #b8d4f0;border-radius:6px;font-weight:500;">
+                🔗 ${nom}
+            </span>
+            <button type="button" onclick="this.closest('div').remove()" style="background:none;border:1px solid #dc3545;color:#dc3545;border-radius:4px;padding:4px 8px;cursor:pointer;">✖</button>
+        `;
+        container.appendChild(row);
+        select.value = '';
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         // Initialiser la liste d'ingrédients avec DynamicList
         const ingredientsList = new DynamicList('ingredients-container', {

@@ -233,6 +233,13 @@ class StockFrigo(db.Model):
         return f'<StockFrigo {self.ingredient.nom}: {self.quantite}>'
 
 
+recette_sub_recette = db.Table(
+    'recette_sub_recette',
+    db.Column('recette_id', db.Integer, db.ForeignKey('recette.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('sous_recette_id', db.Integer, db.ForeignKey('recette.id', ondelete='CASCADE'), primary_key=True)
+)
+
+
 class Recette(db.Model):
     """Modèle pour les recettes."""
     id = db.Column(db.Integer, primary_key=True)
@@ -251,6 +258,27 @@ class Recette(db.Model):
     planifications = db.relationship('RecettePlanifiee', backref='recette_ref',
                                     cascade='all, delete-orphan')
 
+    sous_recettes = db.relationship(
+        'Recette',
+        secondary=recette_sub_recette,
+        primaryjoin='Recette.id == recette_sub_recette.c.recette_id',
+        secondaryjoin='Recette.id == recette_sub_recette.c.sous_recette_id',
+        backref=db.backref('utilisee_dans', lazy='select')
+    )
+
+    def get_tous_ingredients_recursif(self, visited=None):
+        """Retourne tous les IngredientRecette de la recette et ses sous-recettes (récursif)."""
+        if visited is None:
+            visited = set()
+        if self.id in visited:
+            return []
+        visited.add(self.id)
+
+        result = list(self.ingredients)
+        for sous_recette in self.sous_recettes:
+            result.extend(sous_recette.get_tous_ingredients_recursif(visited))
+        return result
+
     def temps_total(self) -> int:
         """
         Calcule le temps total de la recette (préparation + cuisson).
@@ -268,24 +296,26 @@ class Recette(db.Model):
 
     def calculer_cout(self) -> float:
         """
-        Calcule le coût estimé de la recette.
+        Calcule le coût estimé de la recette, sous-recettes incluses.
 
         Returns:
             Coût total en euros, arrondi à 2 décimales
         """
         return round(sum(
             ing_rec.ingredient.calculer_prix(ing_rec.quantite)
-            for ing_rec in self.ingredients
+            for ing_rec in self.get_tous_ingredients_recursif()
         ), 2)
 
     def calculer_disponibilite_ingredients(self) -> dict:
         """
-        Vérifie si tous les ingrédients sont disponibles dans le frigo.
+        Vérifie si tous les ingrédients sont disponibles dans le frigo, sous-recettes incluses.
 
         Returns:
             Dict avec realisable, pourcentage_disponibilite, ingredients_manquants, ingredients_disponibles
         """
-        if not self.ingredients:
+        tous_ingredients = self.get_tous_ingredients_recursif()
+
+        if not tous_ingredients:
             return {
                 'realisable': True,
                 'pourcentage_disponibilite': 100.0,
@@ -296,7 +326,7 @@ class Recette(db.Model):
         manquants = []
         disponibles = []
 
-        for ing_rec in self.ingredients:
+        for ing_rec in tous_ingredients:
             stock = ing_rec.ingredient.stock
             quantite_dispo = stock.quantite if stock else 0
 
@@ -307,7 +337,7 @@ class Recette(db.Model):
                 ing_rec.quantite_manquante = quantite_manquante
                 manquants.append(ing_rec)
 
-        total = len(self.ingredients)
+        total = len(tous_ingredients)
         nb_dispo = len(disponibles)
         pourcentage = (nb_dispo / total * 100) if total > 0 else 0
 
@@ -351,7 +381,7 @@ class Recette(db.Model):
 
     def calculer_nutrition(self) -> dict:
         """
-        Calcule les valeurs nutritionnelles totales.
+        Calcule les valeurs nutritionnelles totales, sous-recettes incluses.
 
         Returns:
             Dict avec calories, proteines, glucides, lipides, fibres, sucres, sel
@@ -366,7 +396,7 @@ class Recette(db.Model):
             'sel': 0.0
         }
 
-        for ing_rec in self.ingredients:
+        for ing_rec in self.get_tous_ingredients_recursif():
             ing = ing_rec.ingredient
             quantite_g = ing_rec.quantite
 

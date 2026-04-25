@@ -68,34 +68,86 @@
 </div>
 
 <!-- Ingrédients -->
-<div class="card">
-    <h3>🥗 Ingrédients nécessaires</h3>
-    <div class="rd-ingredients-grid">
-        {% for ing_rec in recette.ingredients %}
-        <div class="rd-ingredient-card">
-            <div class="rd-ingredient-image">
-                {% if ing_rec.ingredient.image %}
-                <img src="{{ url_for('static', filename=ing_rec.ingredient.image|image_path) }}" 
-                     alt="{{ ing_rec.ingredient.nom }}"
-                     loading="lazy">
-                {% else %}
-                <span class="rd-ingredient-placeholder">📦</span>
-                {% endif %}
+<div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+
+    {# Bloc ingrédients principaux #}
+    <div class="card" style="flex: 1; min-width: 280px;">
+        <h3>🥗 Ingrédients principaux</h3>
+        {% if recette.ingredients %}
+        <div class="rd-ingredients-grid">
+            {% for ing_rec in recette.ingredients %}
+            <div class="rd-ingredient-card">
+                <div class="rd-ingredient-image">
+                    {% if ing_rec.ingredient.image %}
+                    <img src="{{ url_for('static', filename=ing_rec.ingredient.image|image_path) }}"
+                         alt="{{ ing_rec.ingredient.nom }}"
+                         loading="lazy">
+                    {% else %}
+                    <span class="rd-ingredient-placeholder">📦</span>
+                    {% endif %}
+                </div>
+                <div class="rd-ingredient-info">
+                    <h4>{{ ing_rec.ingredient.nom }}</h4>
+                    <p class="rd-ingredient-qty">{{ ing_rec.quantite|quantite_lisible(ing_rec.ingredient) }}</p>
+                    {% set stock = ing_rec.ingredient.stock %}
+                    {% set quantite_dispo = stock.quantite if stock else 0 %}
+                    {% if quantite_dispo >= ing_rec.quantite %}
+                    <span class="rd-badge rd-badge-success">✓ Disponible</span>
+                    {% else %}
+                    <span class="rd-badge rd-badge-danger">✗ Manquant</span>
+                    {% endif %}
+                </div>
             </div>
-            <div class="rd-ingredient-info">
-                <h4>{{ ing_rec.ingredient.nom }}</h4>
-                <p class="rd-ingredient-qty">{{ ing_rec.quantite|quantite_lisible(ing_rec.ingredient) }}</p>
-                {% set stock = ing_rec.ingredient.stock %}
-                {% set quantite_dispo = stock.quantite if stock else 0 %}
-                {% if quantite_dispo >= ing_rec.quantite %}
-                <span class="rd-badge rd-badge-success">✓ Disponible</span>
-                {% else %}
-                <span class="rd-badge rd-badge-danger">✗ Manquant</span>
-                {% endif %}
-            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
+        {% else %}
+        <p style="color: #6c757d;">Aucun ingrédient renseigné.</p>
+        {% endif %}
     </div>
+
+    {# Blocs sous-recettes (un par recette liée) #}
+    {% for sr in recette.sous_recettes %}
+    <div class="card" style="flex: 1; min-width: 280px; border-left: 3px solid #667eea;">
+        <h3 style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            🔗 {{ sr.nom }}
+            <a href="{{ url_for('recettes.detail', id=sr.id) }}"
+               style="font-size: 0.75em; font-weight: 500; color: #667eea; background: #f0f0ff; border: 1px solid #c5c8f0; border-radius: 20px; padding: 3px 10px; text-decoration: none; white-space: nowrap;">
+                Voir la recette →
+            </a>
+        </h3>
+        {% if sr.ingredients %}
+        <div class="rd-ingredients-grid">
+            {% for ing_rec in sr.ingredients %}
+            <div class="rd-ingredient-card">
+                <div class="rd-ingredient-image">
+                    {% if ing_rec.ingredient.image %}
+                    <img src="{{ url_for('static', filename=ing_rec.ingredient.image|image_path) }}"
+                         alt="{{ ing_rec.ingredient.nom }}"
+                         loading="lazy">
+                    {% else %}
+                    <span class="rd-ingredient-placeholder">📦</span>
+                    {% endif %}
+                </div>
+                <div class="rd-ingredient-info">
+                    <h4>{{ ing_rec.ingredient.nom }}</h4>
+                    <p class="rd-ingredient-qty">{{ ing_rec.quantite|quantite_lisible(ing_rec.ingredient) }}</p>
+                    {% set stock = ing_rec.ingredient.stock %}
+                    {% set quantite_dispo = stock.quantite if stock else 0 %}
+                    {% if quantite_dispo >= ing_rec.quantite %}
+                    <span class="rd-badge rd-badge-success">✓ Disponible</span>
+                    {% else %}
+                    <span class="rd-badge rd-badge-danger">✗ Manquant</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: #6c757d;">Aucun ingrédient dans cette sous-recette.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
 </div>
 
 <!-- Informations nutritionnelles -->
