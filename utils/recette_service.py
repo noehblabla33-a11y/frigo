@@ -1,6 +1,7 @@
-from models.models import db, Recette, IngredientRecette, EtapeRecette
+from models.models import db, Recette, IngredientRecette, EtapeRecette, Ingredient
 from utils.files import save_uploaded_file, delete_file
 from utils.forms import parse_recette_form, parse_ingredients_list, parse_etapes_list
+from constants import ML_PAR_CS, CATEGORIE_HUILES, G_PAR_PINCEE, CATEGORIES_PINCEES
 
 
 def sauvegarder_sous_recettes(recette: Recette, form_data: dict):
@@ -40,6 +41,11 @@ def sauvegarder_ingredients(recette_id: int, form_data: dict):
     IngredientRecette.query.filter_by(recette_id=recette_id).delete()
 
     for ing_id, quantite in parse_ingredients_list(form_data):
+        ing = Ingredient.query.get(ing_id)
+        if ing and ing.categorie == CATEGORIE_HUILES:
+            quantite = quantite * ML_PAR_CS
+        elif ing and ing.categorie in CATEGORIES_PINCEES:
+            quantite = quantite * G_PAR_PINCEE
         db.session.add(IngredientRecette(
             recette_id=recette_id,
             ingredient_id=ing_id,

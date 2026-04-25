@@ -70,12 +70,23 @@
 <!-- Ingrédients -->
 <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
 
-    {# Bloc ingrédients principaux #}
+    {# Séparer assaisonnements et ingrédients classiques #}
+    {% set huiles_recette = recette.ingredients | selectattr('ingredient.categorie', 'equalto', 'Huiles') | list %}
+    {% set epices_recette = recette.ingredients | selectattr('ingredient.categorie', 'equalto', 'Épices') | list %}
+    {% set condiments_recette = recette.ingredients | selectattr('ingredient.categorie', 'equalto', 'Condiments') | list %}
+    {% set pincees_recette = epices_recette + condiments_recette %}
+    {% set autres_ingredients = recette.ingredients
+        | rejectattr('ingredient.categorie', 'equalto', 'Huiles')
+        | rejectattr('ingredient.categorie', 'equalto', 'Épices')
+        | rejectattr('ingredient.categorie', 'equalto', 'Condiments')
+        | list %}
+
+    {# Bloc ingrédients principaux (sans les huiles) #}
     <div class="card" style="flex: 1; min-width: 280px;">
         <h3>🥗 Ingrédients principaux</h3>
-        {% if recette.ingredients %}
+        {% if autres_ingredients %}
         <div class="rd-ingredients-grid">
-            {% for ing_rec in recette.ingredients %}
+            {% for ing_rec in autres_ingredients %}
             <div class="rd-ingredient-card">
                 <div class="rd-ingredient-image">
                     {% if ing_rec.ingredient.image %}
@@ -102,6 +113,75 @@
         </div>
         {% else %}
         <p style="color: #6c757d;">Aucun ingrédient renseigné.</p>
+        {% endif %}
+
+        {# Zone assaisonnements (huiles + épices + condiments) #}
+        {% if huiles_recette or pincees_recette %}
+        <div class="rd-assaison-zone">
+
+            {% if huiles_recette %}
+            <div class="rd-assaison-section">
+                <div class="rd-assaison-label">🫒 Huiles</div>
+                <div class="rd-huiles-grid">
+                    {% for ing_rec in huiles_recette %}
+                    {% set val = ing_rec.quantite / 15 %}
+                    {% set affiche = val|int if val == val|int else val|round(1) %}
+                    {% set stock = ing_rec.ingredient.stock %}
+                    {% set dispo = stock.quantite if stock else 0 %}
+                    <div class="rd-huile-card">
+                        <div class="rd-huile-image">
+                            {% if ing_rec.ingredient.image %}
+                            <img src="{{ url_for('static', filename=ing_rec.ingredient.image|image_path) }}"
+                                 alt="{{ ing_rec.ingredient.nom }}" loading="lazy">
+                            {% else %}<span class="rd-huile-placeholder">🫒</span>{% endif %}
+                        </div>
+                        <div class="rd-huile-qty">{{ affiche }} cs</div>
+                        <div class="rd-huile-nom">{{ ing_rec.ingredient.nom }}</div>
+                        {% if dispo >= ing_rec.quantite %}
+                        <span class="rd-badge rd-badge-success" style="font-size:0.7em;">✓</span>
+                        {% else %}
+                        <span class="rd-badge rd-badge-danger" style="font-size:0.7em;">✗</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if huiles_recette and pincees_recette %}
+            <div class="rd-assaison-separator"></div>
+            {% endif %}
+
+            {% if pincees_recette %}
+            <div class="rd-assaison-section">
+                <div class="rd-assaison-label">🌶️ Épices & Condiments</div>
+                <div class="rd-huiles-grid">
+                    {% for ing_rec in pincees_recette %}
+                    {% set val = ing_rec.quantite / 0.5 %}
+                    {% set affiche = val|int if val == val|int else val|round(1) %}
+                    {% set stock = ing_rec.ingredient.stock %}
+                    {% set dispo = stock.quantite if stock else 0 %}
+                    <div class="rd-huile-card">
+                        <div class="rd-huile-image">
+                            {% if ing_rec.ingredient.image %}
+                            <img src="{{ url_for('static', filename=ing_rec.ingredient.image|image_path) }}"
+                                 alt="{{ ing_rec.ingredient.nom }}" loading="lazy">
+                            {% else %}<span class="rd-huile-placeholder">🌶️</span>{% endif %}
+                        </div>
+                        <div class="rd-huile-qty">{{ affiche }} pincée{{ 's' if affiche > 1 else '' }}</div>
+                        <div class="rd-huile-nom">{{ ing_rec.ingredient.nom }}</div>
+                        {% if dispo >= ing_rec.quantite %}
+                        <span class="rd-badge rd-badge-success" style="font-size:0.7em;">✓</span>
+                        {% else %}
+                        <span class="rd-badge rd-badge-danger" style="font-size:0.7em;">✗</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
         {% endif %}
     </div>
 

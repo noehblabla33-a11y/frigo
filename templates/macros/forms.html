@@ -346,8 +346,9 @@
         <select name="ingredient_{{ index }}" class="ingredient-select searchable-select" required>
             <option value="">Sélectionner...</option>
             {% for ing in ingredients %}
-            <option value="{{ ing.id }}" 
+            <option value="{{ ing.id }}"
                     data-unite="{{ ing.unite }}"
+                    data-categorie="{{ ing.categorie }}"
                     {% if data and data.ingredient_id == ing.id %}selected{% endif %}>
                 {{ ing.nom }}
             </option>
@@ -629,8 +630,9 @@
         <select name="ingredient_{{ index }}" class="input-premium ingredient-select searchable-select" required>
             <option value="">Sélectionner un ingrédient</option>
             {% for ing in ingredients %}
-            <option value="{{ ing.id }}" 
+            <option value="{{ ing.id }}"
                     data-unite="{{ ing.unite }}"
+                    data-categorie="{{ ing.categorie }}"
                     {% if data and data.ingredient_id == ing.id %}selected{% endif %}>
                 {{ ing.nom }}
             </option>
@@ -648,7 +650,12 @@
                required>
     </div>
     
-    <div class="unite-badge">{{ data.unite if data else 'g' }}</div>
+    <div class="unite-badge">
+        {%- if data and data.categorie == 'Huiles' -%}cs
+        {%- elif data -%}{{ data.unite }}
+        {%- else -%}g
+        {%- endif -%}
+    </div>
     
     <button type="button" class="btn-delete-modern btn-remove" style="{% if index == 0 %}display: none;{% endif %}">
         🗑️

@@ -286,7 +286,7 @@
                     <select name="ingredient_${index}" class="ingredient-select searchable-select" required>
                         <option value="">Sélectionner...</option>
                         {% for ing in ingredients %}
-                        <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">{{ ing.nom }}</option>
+                        <option value="{{ ing.id }}" data-unite="{{ ing.unite }}" data-categorie="{{ ing.categorie }}">{{ ing.nom }}</option>
                         {% endfor %}
                     </select>
                 </div>

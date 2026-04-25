@@ -27,6 +27,12 @@ CATEGORIES_EMOJIS = {nom: emoji for nom, emoji in CATEGORIES}
 
 CATEGORIES_NOMS = [nom for nom, _ in CATEGORIES]
 
+ML_PAR_CS = 15
+CATEGORIE_HUILES = 'Huiles'
+
+G_PAR_PINCEE = 0.5
+CATEGORIES_PINCEES = ['Épices', 'Condiments']
+
 
 TYPES_RECETTES = [
     'Entrée',

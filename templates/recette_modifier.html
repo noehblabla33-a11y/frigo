@@ -90,8 +90,9 @@
                         <select name="ingredient_{{ loop.index0 }}" class="ingredient-select searchable-select" required>
                             <option value="">Sélectionner...</option>
                             {% for ing in ingredients %}
-                            <option value="{{ ing.id }}" 
+                            <option value="{{ ing.id }}"
                                     data-unite="{{ ing.unite }}"
+                                    data-categorie="{{ ing.categorie }}"
                                     {% if ing.id == ing_rec.ingredient_id %}selected{% endif %}>
                                 {{ ing.nom }}
                             </option>
@@ -100,19 +101,35 @@
                     </div>
                     
                     <div class="form-group" style="flex: 1;">
-                        <input type="number" 
-                               step="1" 
-                               name="quantite_{{ loop.index0 }}" 
-                               value="{{ ing_rec.quantite|int if ing_rec.quantite == ing_rec.quantite|int else ing_rec.quantite }}"
-                               placeholder="Quantité"
-                               required>
+                        {% if ing_rec.ingredient.categorie == 'Huiles' %}
+                            {% set affiche = ing_rec.quantite / 15 %}
+                            <input type="number" step="0.5" name="quantite_{{ loop.index0 }}"
+                                   value="{{ affiche|int if affiche == affiche|int else affiche|round(1) }}"
+                                   placeholder="Ex: 2" required>
+                        {% elif ing_rec.ingredient.categorie in ['Épices', 'Condiments'] %}
+                            {% set affiche = ing_rec.quantite / 0.5 %}
+                            <input type="number" step="1" name="quantite_{{ loop.index0 }}"
+                                   value="{{ affiche|int if affiche == affiche|int else affiche|round(1) }}"
+                                   placeholder="Ex: 2" required>
+                        {% else %}
+                            <input type="number" step="1" name="quantite_{{ loop.index0 }}"
+                                   value="{{ ing_rec.quantite|int if ing_rec.quantite == ing_rec.quantite|int else ing_rec.quantite }}"
+                                   placeholder="Quantité" required>
+                        {% endif %}
                     </div>
-                    
+
                     <div class="form-group" style="flex: 0.5;">
-                        <input type="text" 
-                               class="unite-display" 
-                               value="{{ ing_rec.ingredient.unite }}" 
-                               readonly 
+                        {% if ing_rec.ingredient.categorie == 'Huiles' %}
+                            {% set unite_affiche = 'cs' %}
+                        {% elif ing_rec.ingredient.categorie in ['Épices', 'Condiments'] %}
+                            {% set unite_affiche = 'pincée' %}
+                        {% else %}
+                            {% set unite_affiche = ing_rec.ingredient.unite %}
+                        {% endif %}
+                        <input type="text"
+                               class="unite-display"
+                               value="{{ unite_affiche }}"
+                               readonly
                                style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
                     </div>
                     
@@ -342,18 +359,45 @@
     // GESTION DES INGRÉDIENTS
     // =============================================
     
+    const CATEGORIES_PINCEES_MOD = ['Épices', 'Condiments'];
+
     function updateUniteDisplay(selectElement) {
         const row = selectElement.closest('.ingredient-row');
         if (!row) return;
-        
-        const uniteDisplay = row.querySelector('.unite-display');
+
+        const uniteDisplay  = row.querySelector('.unite-display');
+        const quantiteInput = row.querySelector('input[name^="quantite_"]');
         if (!uniteDisplay) return;
-        
+
         const selectedOption = selectElement.options[selectElement.selectedIndex];
-        if (selectedOption && selectedOption.value) {
-            uniteDisplay.value = selectedOption.dataset.unite || 'g';
-        } else {
+        if (!selectedOption || !selectedOption.value) {
             uniteDisplay.value = 'g';
+            return;
+        }
+
+        const unite     = selectedOption.dataset.unite     || 'g';
+        const categorie = selectedOption.dataset.categorie || '';
+        const isHuile   = categorie === 'Huiles';
+        const isPincee  = CATEGORIES_PINCEES_MOD.includes(categorie);
+
+        if (isHuile)       uniteDisplay.value = 'cs';
+        else if (isPincee) uniteDisplay.value = 'pincée';
+        else               uniteDisplay.value = unite;
+
+        if (quantiteInput) {
+            if (isHuile) {
+                quantiteInput.step = '0.5';
+                quantiteInput.placeholder = 'Ex: 2';
+            } else if (isPincee) {
+                quantiteInput.step = '1';
+                quantiteInput.placeholder = 'Ex: 2';
+            } else if (unite === 'pièce') {
+                quantiteInput.step = '0.5';
+                quantiteInput.placeholder = 'Ex: 2';
+            } else {
+                quantiteInput.step = '1';
+                quantiteInput.placeholder = unite === 'ml' ? 'Ex: 250' : 'Ex: 200';
+            }
         }
     }
     
@@ -369,26 +413,26 @@
                 <select name="ingredient_${ingredientCount}" class="ingredient-select searchable-select" required>
                     <option value="">Sélectionner...</option>
                     {% for ing in ingredients %}
-                    <option value="{{ ing.id }}" data-unite="{{ ing.unite }}">
+                    <option value="{{ ing.id }}" data-unite="{{ ing.unite }}" data-categorie="{{ ing.categorie }}">
                         {{ ing.nom }}
                     </option>
                     {% endfor %}
                 </select>
             </div>
-            
+
             <div class="form-group" style="flex: 1;">
-                <input type="number" 
-                       step="1" 
-                       name="quantite_${ingredientCount}" 
+                <input type="number"
+                       step="1"
+                       name="quantite_${ingredientCount}"
                        placeholder="Quantité"
                        required>
             </div>
-            
+
             <div class="form-group" style="flex: 0.5;">
-                <input type="text" 
-                       class="unite-display" 
-                       value="g" 
-                       readonly 
+                <input type="text"
+                       class="unite-display"
+                       value="g"
+                       readonly
                        style="background: #f0f0f0; cursor: not-allowed; text-align: center; font-weight: 600;">
             </div>
             
