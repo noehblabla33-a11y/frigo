@@ -4,7 +4,8 @@ Context managers et décorateurs pour la gestion des transactions de base de don
 """
 from contextlib import contextmanager
 from functools import wraps
-from flask import flash
+from flask import flash, current_app
+from sqlalchemy import func
 from models.models import db
 import logging
 

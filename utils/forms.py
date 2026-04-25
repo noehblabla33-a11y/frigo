@@ -5,6 +5,8 @@ Utilitaires pour la validation et le parsing des formulaires
 Factorise les conversions de types et validations répétées dans les routes.
 """
 from typing import Optional, Any, List, Tuple, Generator
+from flask import flash
+from models.models import Ingredient, Recette
 
 
 def parse_float(value: Any, default: float = 0.0) -> float:
