@@ -167,6 +167,17 @@
     <p>Aucune recette préparée pour le moment. Commencez à cuisiner !</p>
     {% endif %}
 </div>
+<!-- Zone de réinitialisation -->
+<div class="card" style="border: 2px solid #e74c3c; margin-top: 30px;">
+    <h3 style="color: #e74c3c;">Zone dangereuse</h3>
+    <p style="color: var(--text-secondary);">
+        Supprime tout l'historique des préparations et remet les statistiques à zéro.
+        Les recettes et les ingrédients ne sont pas affectés.
+    </p>
+    <button id="btn-reset-historique" class="btn btn-danger" style="background: #e74c3c; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1em;">
+        Supprimer l'historique des préparations
+    </button>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -212,6 +223,21 @@
         };
         
         initHistoriqueCharts(graphiqueMois, graphiqueTop, statsCategories, coutsPeriodiques, ingredientsPopulaires);
+
+        document.getElementById('btn-reset-historique').addEventListener('click', () => {
+            if (!confirm('Supprimer tout l\'historique des préparations ? Cette action est irréversible.\n\nLes recettes et les ingrédients ne seront pas supprimés.')) return;
+
+            fetch('{{ url_for("historique.reset_historique") }}', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Historique supprimé (${data.nb_supprimes} préparation(s) effacée(s)).`);
+                        window.location.reload();
+                    } else {
+                        alert('Erreur : ' + data.error);
+                    }
+                });
+        });
     });
 </script>
 {% endblock %}

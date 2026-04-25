@@ -332,6 +332,23 @@ def couts_par_mois():
     })
 
 
+@historique_bp.route('/reset', methods=['POST'])
+def reset_historique():
+    """
+    Supprime tout l'historique des préparations (RecettePlanifiee avec preparee=True).
+    Ne supprime pas les recettes ni les ingrédients.
+    """
+    from flask import jsonify
+
+    try:
+        nb_supprimes = RecettePlanifiee.query.filter_by(preparee=True).delete()
+        db.session.commit()
+        return jsonify({'success': True, 'nb_supprimes': nb_supprimes})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @historique_bp.route('/api/ingredients-utilises')
 def ingredients_utilises():
     """
