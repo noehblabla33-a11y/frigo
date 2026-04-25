@@ -306,11 +306,11 @@ def get_suggestions_recettes(limite: int = 3) -> List[RecetteRecommandee]:
         
         # Calculer la disponibilité
         disponibilite = recette.calculer_disponibilite_ingredients()
-        score_dispo = disponibilite['pourcentage']
+        score_dispo = disponibilite['pourcentage_disponibilite']
         nb_manquants = len(disponibilite['ingredients_manquants'])
         
         # Calculer le score saisonnier
-        score_saison = recette.calculer_score_saisonnier(saison_actuelle)
+        score_saison = recette.calculer_score_saisonnier()
         est_de_saison = score_saison['score'] >= 70
         
         # Calculer le coût
