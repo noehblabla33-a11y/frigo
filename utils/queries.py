@@ -7,31 +7,25 @@ from models.models import (
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional
 
-# ============================================
-# STOCK / FRIGO
-# ============================================
 
 def get_stocks_with_ingredients(order_by='nom', filter_empty=True):
     """
     Récupère tous les stocks avec leurs ingrédients préchargés.
-    
+
     Args:
         order_by: 'nom', 'date', 'quantite', 'categorie'
         filter_empty: Exclure les stocks à 0
-    
+
     Returns:
         Liste de StockFrigo avec ingredient préchargé
-    
-    Requêtes: 1 (au lieu de N+1)
     """
     query = StockFrigo.query.options(
         joinedload(StockFrigo.ingredient).joinedload(Ingredient.saisons)
     )
-    
+
     if filter_empty:
         query = query.filter(StockFrigo.quantite > 0)
-    
-    # Tri
+
     if order_by == 'nom':
         query = query.join(Ingredient).order_by(Ingredient.nom)
     elif order_by == 'date':
@@ -40,17 +34,17 @@ def get_stocks_with_ingredients(order_by='nom', filter_empty=True):
         query = query.order_by(desc(StockFrigo.quantite))
     elif order_by == 'categorie':
         query = query.join(Ingredient).order_by(Ingredient.categorie, Ingredient.nom)
-    
+
     return query.all()
 
 
 def get_stock_by_ingredient_id(ingredient_id):
     """
     Récupère le stock d'un ingrédient spécifique.
-    
+
     Args:
         ingredient_id: ID de l'ingrédient
-    
+
     Returns:
         StockFrigo ou None
     """
@@ -62,63 +56,59 @@ def get_stock_by_ingredient_id(ingredient_id):
 def get_stocks_low(threshold_map=None):
     """
     Récupère les stocks bas selon des seuils par unité.
-    
+
     Args:
         threshold_map: Dict {unite: seuil} ex: {'g': 100, 'ml': 200, 'pièce': 2}
-    
+
     Returns:
         Liste de StockFrigo sous les seuils
     """
     if threshold_map is None:
         threshold_map = {'g': 100, 'ml': 250, 'pièce': 2}
-    
+
     stocks = get_stocks_with_ingredients(filter_empty=True)
-    
+
     low_stocks = []
     for stock in stocks:
         seuil = threshold_map.get(stock.ingredient.unite, 100)
         if stock.quantite < seuil:
             low_stocks.append(stock)
-    
+
     return low_stocks
 
-
-# ============================================
-# INGRÉDIENTS
-# ============================================
 
 def get_all_ingredients(with_stock=False, with_saisons=True):
     """
     Récupère tous les ingrédients avec relations préchargées.
-    
+
     Args:
         with_stock: Inclure les infos de stock
         with_saisons: Inclure les saisons
-    
+
     Returns:
         Liste d'Ingredient
     """
     query = Ingredient.query
-    
+
     options = []
     if with_saisons:
         options.append(joinedload(Ingredient.saisons))
     if with_stock:
         options.append(joinedload(Ingredient.stock))
-    
+
     if options:
         query = query.options(*options)
-    
+
     return query.order_by(Ingredient.nom).all()
 
 
 def get_ingredients_by_category(category):
     """
     Récupère les ingrédients d'une catégorie.
-    
+
     Args:
         category: Nom de la catégorie
-    
+
     Returns:
         Liste d'Ingredient
     """
@@ -131,7 +121,7 @@ def get_ingredients_by_category(category):
 def get_ingredients_in_stock():
     """
     Récupère uniquement les ingrédients qui sont en stock.
-    
+
     Returns:
         Liste d'Ingredient avec stock > 0
     """
@@ -146,28 +136,26 @@ def get_ingredients_in_stock():
 def get_ingredients_de_saison(saison=None):
     """
     Récupère les ingrédients de saison.
-    
+
     Args:
         saison: Saison à filtrer (défaut: saison actuelle)
-    
+
     Returns:
         Liste d'Ingredient de saison ou disponibles toute l'année
     """
     from utils.saisons import get_saison_actuelle
-    
+
     if saison is None:
         saison = get_saison_actuelle()
-    
-    # Ingrédients avec cette saison
+
     ingredients_saison = db.session.query(Ingredient.id).join(
         IngredientSaison
     ).filter(IngredientSaison.saison == saison).subquery()
-    
-    # Ingrédients sans saison définie (toute l'année)
+
     ingredients_sans_saison = db.session.query(Ingredient.id).outerjoin(
         IngredientSaison
     ).filter(IngredientSaison.id.is_(None)).subquery()
-    
+
     return Ingredient.query.options(
         joinedload(Ingredient.saisons),
         joinedload(Ingredient.stock)
@@ -179,44 +167,34 @@ def get_ingredients_de_saison(saison=None):
     ).order_by(Ingredient.nom).all()
 
 
-# ============================================
-# RECETTES
-# ============================================
-
 def get_recettes_with_all_relations(limit=None):
     """
-    Récupère les recettes avec TOUTES les relations préchargées.
-    
-    Optimal pour les pages de liste ou recommandations.
-    
+    Récupère les recettes avec toutes les relations préchargées.
+
     Args:
         limit: Nombre max de recettes
-    
+
     Returns:
         Liste de Recette avec tout préchargé
-    
-    Requêtes: 3 max (recettes, ingredients, etapes)
     """
     query = Recette.query.options(
-        # Précharger les ingrédients avec leur relation ingredient
         selectinload(Recette.ingredients).joinedload(IngredientRecette.ingredient),
-        # Précharger les étapes
         selectinload(Recette.etapes)
     ).order_by(Recette.nom)
-    
+
     if limit:
         query = query.limit(limit)
-    
+
     return query.all()
 
 def get_recettes_avec_ingredient(ingredient_id: int) -> List[Recette]:
     """
     Retourne les recettes contenant un ingrédient donné.
 
-    Paramètres:
+    Args:
         ingredient_id: ID de l'ingrédient
 
-    Retour:
+    Returns:
         Liste de Recette
     """
     return Recette.query.options(
@@ -229,10 +207,10 @@ def get_recettes_avec_ingredient(ingredient_id: int) -> List[Recette]:
 def get_recette_with_details(recette_id):
     """
     Récupère une recette avec tous ses détails.
-    
+
     Args:
         recette_id: ID de la recette
-    
+
     Returns:
         Recette avec tout préchargé ou None
     """
@@ -247,80 +225,76 @@ def get_recette_with_details(recette_id):
 def get_recettes_by_type(type_recette, with_ingredients=True):
     """
     Récupère les recettes d'un type spécifique.
-    
+
     Args:
         type_recette: Type de recette
         with_ingredients: Précharger les ingrédients
-    
+
     Returns:
         Liste de Recette
     """
     query = Recette.query.filter_by(type_recette=type_recette)
-    
+
     if with_ingredients:
         query = query.options(
             selectinload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
         )
-    
+
     return query.order_by(Recette.nom).all()
 
 
 def get_recettes_realisables():
     """
     Récupère les recettes réalisables avec le stock actuel.
-    
+
     Returns:
         Liste de Recette dont tous les ingrédients sont en stock
     """
     recettes = get_recettes_with_all_relations()
-    
+
     realisables = []
     for recette in recettes:
         disponibilite = recette.calculer_disponibilite_ingredients()
         if disponibilite['realisable']:
             realisables.append(recette)
-    
+
     return realisables
 
 
 def search_recettes(search_query, type_filter=None, ingredient_id=None):
     """
     Recherche de recettes avec filtres multiples.
-    
+
     Args:
         search_query: Terme de recherche
         type_filter: Filtrer par type
         ingredient_id: Filtrer par ingrédient
-    
+
     Returns:
         Liste de Recette
     """
     query = Recette.query.options(
         selectinload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
     )
-    
+
     if search_query:
         query = query.filter(Recette.nom.ilike(f'%{search_query}%'))
-    
+
     if type_filter:
         query = query.filter(Recette.type_recette == type_filter)
-    
+
     if ingredient_id:
         query = query.join(IngredientRecette).filter(
             IngredientRecette.ingredient_id == ingredient_id
         )
-    
+
     return query.order_by(Recette.nom).all()
 
-
-# ============================================
-# PLANIFICATION
-# ============================================
 
 def get_planifications_pending():
     """
     Récupère les recettes planifiées non préparées.
-    
+
     Returns:
         Liste de RecettePlanifiee avec recette préchargée
     """
@@ -332,10 +306,10 @@ def get_planifications_pending():
 def get_planifications_historique(limit=50):
     """
     Récupère l'historique des recettes préparées.
-    
+
     Args:
         limit: Nombre max de résultats
-    
+
     Returns:
         Liste de RecettePlanifiee
     """
@@ -346,15 +320,11 @@ def get_planifications_historique(limit=50):
     ).limit(limit).all()
 
 
-# ============================================
-# COURSES
-# ============================================
-
 def get_courses_non_achetees():
     """
     Récupère la liste de courses non achetée, en excluant les items orphelins.
 
-    Retour:
+    Returns:
         Liste de ListeCourses avec ingredient et saisons préchargés
     """
     return ListeCourses.query\
@@ -369,8 +339,8 @@ def nettoyer_courses_orphelines() -> int:
     """
     Supprime les items de la liste de courses dont l'ingrédient n'existe plus.
 
-    Retour:
-        int: Nombre d'items supprimés
+    Returns:
+        Nombre d'items supprimés
     """
     orphelins = ListeCourses.query\
         .outerjoin(Ingredient, ListeCourses.ingredient_id == Ingredient.id)\
@@ -390,10 +360,10 @@ def get_historique_courses(limit: int = 10) -> List[ListeCourses]:
     """
     Retourne l'historique des courses achetées.
 
-    Paramètres:
+    Args:
         limit: Nombre maximum d'items à retourner
 
-    Retour:
+    Returns:
         Liste de ListeCourses triée par id décroissant
     """
     return ListeCourses.query\
@@ -409,11 +379,11 @@ def get_preparations_periode(date_debut: datetime, date_fin: datetime = None) ->
     """
     Retourne les préparations sur une période donnée.
 
-    Paramètres:
+    Args:
         date_debut: Date de début
         date_fin: Date de fin (défaut: maintenant)
 
-    Retour:
+    Returns:
         Liste de RecettePlanifiee
     """
     if date_fin is None:
@@ -432,19 +402,19 @@ def get_preparations_periode(date_debut: datetime, date_fin: datetime = None) ->
 def get_courses_by_category():
     """
     Récupère la liste de courses groupée par catégorie.
-    
+
     Returns:
         Dict {categorie: [ListeCourses]}
     """
     items = get_courses_non_achetees()
-    
+
     by_category = {}
     for item in items:
         cat = item.ingredient.categorie or 'Autres'
         if cat not in by_category:
             by_category[cat] = []
         by_category[cat].append(item)
-    
+
     return by_category
 
 
@@ -452,11 +422,11 @@ def get_course_by_ingredient(ingredient_id: int, achete: bool = False) -> Option
     """
     Recherche un item de courses par ingrédient.
 
-    Paramètres:
+    Args:
         ingredient_id: ID de l'ingrédient
         achete: Statut d'achat (défaut: False)
 
-    Retour:
+    Returns:
         ListeCourses avec ingrédient préchargé ou None
     """
     return ListeCourses.query\
@@ -465,18 +435,14 @@ def get_course_by_ingredient(ingredient_id: int, achete: bool = False) -> Option
         .first()
 
 
-# ============================================
-# STATISTIQUES (REQUÊTES AGRÉGÉES)
-# ============================================
-
 def get_top_recettes(limit: int = 10) -> List[Dict]:
     """
     Retourne les recettes les plus préparées.
 
-    Paramètres:
+    Args:
         limit: Nombre de recettes à retourner
 
-    Retour:
+    Returns:
         Liste de dicts {recette: Recette, nb_preparations: int}
     """
     results = db.session.query(
@@ -496,10 +462,10 @@ def get_ingredients_plus_utilises(limit: int = 10) -> List[Dict]:
     """
     Retourne les ingrédients les plus utilisés dans les recettes préparées.
 
-    Paramètres:
+    Args:
         limit: Nombre d'ingrédients à retourner
 
-    Retour:
+    Returns:
         Liste de dicts {ingredient: Ingredient, count: int}
     """
     results = db.session.query(
@@ -522,10 +488,10 @@ def get_stats_periode(jours: int = 30) -> Dict:
     """
     Calcule les statistiques sur une période donnée.
 
-    Paramètres:
+    Args:
         jours: Nombre de jours en arrière
 
-    Retour:
+    Returns:
         Dict avec nb_recettes, cout_total, cout_moyen, periode_jours
     """
     date_limite = datetime.now(timezone.utc) - timedelta(days=jours)
@@ -548,17 +514,15 @@ def get_stats_periode(jours: int = 30) -> Dict:
 def get_categories_count():
     """
     Compte les ingrédients par catégorie.
-    
+
     Returns:
         Dict {categorie: count}
-    
-    Requêtes: 1
     """
     result = db.session.query(
         func.coalesce(Ingredient.categorie, 'Autres').label('categorie'),
         func.count(Ingredient.id).label('count')
     ).group_by(Ingredient.categorie).all()
-    
+
     return {row.categorie: row.count for row in result}
 
 
@@ -566,7 +530,7 @@ def get_stock_stats():
     """
     Calcule les statistiques du stock.
 
-    Retour:
+    Returns:
         Dict avec nb_items, valeur_totale, par_categorie
     """
     stocks = get_stocks_with_ingredients()
@@ -591,66 +555,21 @@ def get_stock_stats():
 def get_recettes_stats():
     """
     Calcule les statistiques des recettes.
-    
+
     Returns:
         Dict avec total, par_type, realisables
     """
-    # Total et par type
     total = Recette.query.count()
-    
+
     by_type = db.session.query(
         Recette.type_recette,
         func.count(Recette.id)
     ).group_by(Recette.type_recette).all()
-    
-    # Planifiées non préparées
+
     planifiees = RecettePlanifiee.query.filter_by(preparee=False).count()
-    
+
     return {
         'total': total,
         'par_type': {t or 'Non classé': c for t, c in by_type},
         'planifiees': planifiees
     }
-
-
-# ============================================
-# BONNES PRATIQUES - DOCUMENTATION
-# ============================================
-
-"""
-GUIDE D'OPTIMISATION DES REQUÊTES SQLAlchemy
-============================================
-
-1. TOUJOURS utiliser eager loading pour les relations accédées :
-   
-   # joinedload : Pour les relations one-to-one ou many-to-one
-   query.options(joinedload(Model.relation))
-   
-   # selectinload : Pour les relations one-to-many (plus efficace)
-   query.options(selectinload(Model.relations))
-
-2. Chaîner les eager loads pour les relations imbriquées :
-   
-   query.options(
-       joinedload(Recette.ingredients).joinedload(IngredientRecette.ingredient)
-   )
-
-3. Utiliser les requêtes agrégées plutôt que Python :
-   
-   # MAUVAIS
-   total = sum(item.prix for item in items)
-   
-   # BON
-   total = db.session.query(func.sum(Model.prix)).scalar()
-
-4. Paginer côté base de données :
-   
-   query.offset((page-1) * per_page).limit(per_page).all()
-
-5. Indexer les colonnes fréquemment utilisées dans les WHERE/ORDER BY :
-   
-   # Dans models.py
-   __table_args__ = (
-       db.Index('idx_nom', 'nom'),
-   )
-"""

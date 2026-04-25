@@ -1,7 +1,3 @@
-"""
-utils/recette_service.py
-Service layer pour la création et modification de recettes
-"""
 from models.models import db, Recette, IngredientRecette, EtapeRecette
 from utils.files import save_uploaded_file, delete_file
 from utils.forms import parse_recette_form, parse_ingredients_list, parse_etapes_list
@@ -11,7 +7,7 @@ def sauvegarder_ingredients(recette_id: int, form_data: dict):
     """
     Remplace les ingrédients d'une recette depuis les données du formulaire.
 
-    Paramètres:
+    Args:
         recette_id: ID de la recette
         form_data: Données du formulaire (request.form)
     """
@@ -29,7 +25,7 @@ def sauvegarder_etapes(recette_id: int, form_data: dict):
     """
     Remplace les étapes d'une recette depuis les données du formulaire.
 
-    Paramètres:
+    Args:
         recette_id: ID de la recette
         form_data: Données du formulaire (request.form)
     """
@@ -48,7 +44,7 @@ def gerer_image_recette(recette: Recette, files: dict):
     """
     Gère l'upload/remplacement de l'image d'une recette.
 
-    Paramètres:
+    Args:
         recette: Instance de la recette
         files: Dictionnaire request.files
     """
@@ -71,15 +67,12 @@ def creer_recette(form_data: dict, files: dict) -> Recette:
     """
     Crée une nouvelle recette complète (métadonnées + ingrédients + étapes + image).
 
-    Paramètres:
+    Args:
         form_data: Données du formulaire (request.form)
         files: Fichiers uploadés (request.files)
 
-    Retour:
-        Recette: L'instance créée
-
-    Raises:
-        ValueError: Si les données sont invalides
+    Returns:
+        L'instance de Recette créée
     """
     recette_data = parse_recette_form(form_data)
     recette = Recette(**recette_data)
@@ -98,13 +91,10 @@ def modifier_recette(recette: Recette, form_data: dict, files: dict):
     """
     Met à jour une recette existante (métadonnées + ingrédients + étapes + image).
 
-    Paramètres:
+    Args:
         recette: Instance existante de la recette
         form_data: Données du formulaire (request.form)
         files: Fichiers uploadés (request.files)
-
-    Raises:
-        ValueError: Si les données sont invalides
     """
     recette_data = parse_recette_form(form_data)
 

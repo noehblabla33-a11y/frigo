@@ -4,8 +4,8 @@ from models.models import db, Ingredient, StockFrigo
 from utils.database import db_transaction_with_flash, paginate_query
 from utils.forms import parse_float, parse_positive_float
 from utils.stock import (
-    ajouter_au_stock, 
-    retirer_du_stock, 
+    ajouter_au_stock,
+    retirer_du_stock,
     definir_stock,
     get_quantite_disponible
 )
@@ -18,11 +18,11 @@ def calculer_valeur_totale_stock(stocks):
     """
     Calcule la valeur totale du stock.
 
-    Paramètres:
+    Args:
         stocks: Liste de StockFrigo avec ingrédients préchargés
 
-    Retour:
-        float: Valeur totale en euros
+    Returns:
+        Valeur totale en euros
     """
     return round(sum(
         stock.ingredient.calculer_prix(stock.quantite)
@@ -34,22 +34,22 @@ def _appliquer_action_stock(ingredient_id, action, quantite):
     """
     Applique une action sur le stock d'un ingrédient.
 
-    Paramètres:
+    Args:
         ingredient_id: ID de l'ingrédient
         action: 'add', 'remove' ou 'set'
         quantite: Quantité concernée
 
-    Retour:
-        str: Message de succès
+    Returns:
+        Message de succès
     """
     ingredient = Ingredient.query.get_or_404(ingredient_id)
 
     if action == 'add':
         stock, nouvelle_quantite = ajouter_au_stock(int(ingredient_id), quantite)
         if nouvelle_quantite == quantite:
-            return f'✓ {ingredient.nom} ajouté au frigo : {quantite} {ingredient.unite}'
+            return f'{ingredient.nom} ajouté au frigo : {quantite} {ingredient.unite}'
         return (
-            f'✓ {quantite} {ingredient.unite} de {ingredient.nom} ajouté(s) ! '
+            f'{quantite} {ingredient.unite} de {ingredient.nom} ajouté(s) ! '
             f'Total : {nouvelle_quantite} {ingredient.unite}'
         )
 
@@ -58,21 +58,21 @@ def _appliquer_action_stock(ingredient_id, action, quantite):
         if stock is None:
             raise ValueError(f'{ingredient.nom} n\'est pas dans le frigo !')
         if nouvelle_quantite <= 0:
-            raise ValueError(f'⚠️ Stock de {ingredient.nom} épuisé !')
+            raise ValueError(f'Stock de {ingredient.nom} épuisé !')
         return (
-            f'✓ {quantite} {ingredient.unite} de {ingredient.nom} retiré(s) ! '
+            f'{quantite} {ingredient.unite} de {ingredient.nom} retiré(s) ! '
             f'Reste : {nouvelle_quantite} {ingredient.unite}'
         )
 
     else:
         definir_stock(int(ingredient_id), quantite)
-        return f'✓ Stock de {ingredient.nom} défini à {quantite} {ingredient.unite}'
+        return f'Stock de {ingredient.nom} défini à {quantite} {ingredient.unite}'
 
 
 @frigo_bp.route('/', methods=['GET', 'POST'])
 def liste():
     """
-    Gestion du stock du frigo avec ajout/retrait/définition de quantités
+    Gestion du stock du frigo avec ajout/retrait/définition de quantités.
     """
     if request.method == 'POST':
         try:
@@ -96,29 +96,22 @@ def liste():
             flash(str(e), 'warning')
 
         return redirect(url_for('frigo.liste'))
-    
-    # ============================================
-    # GET - AFFICHAGE DU STOCK
-    # ============================================
-    
+
     try:
         page = request.args.get('page', 1, type=int)
         view_mode = request.args.get('view', 'list')
         items_per_page = current_app.config.get('ITEMS_PER_PAGE_DEFAULT', 24)
-        
-        # Récupère TOUS les stocks pour calculer la valeur totale
+
         tous_les_stocks = get_stocks_with_ingredients(order_by='nom')
-        
-        # ✅ CORRIGÉ: Calculer la valeur totale avec la méthode corrigée
+
         valeur_totale_globale = calculer_valeur_totale_stock(tous_les_stocks)
-        
-        # Pagination manuelle
+
         total = len(tous_les_stocks)
         pages = (total + items_per_page - 1) // items_per_page if total > 0 else 1
         page = min(max(1, page), pages)
         start = (page - 1) * items_per_page
         end = start + items_per_page
-        
+
         pagination = {
             'items': tous_les_stocks[start:end],
             'total': total,
@@ -130,33 +123,31 @@ def liste():
             'prev_page': page - 1 if page > 1 else None,
             'next_page': page + 1 if page < pages else None
         }
-        
-        # ✅ CORRIGÉ: Récupérer tous les ingrédients AVEC leur stock préchargé
+
         tous_ingredients = Ingredient.query.options(
             joinedload(Ingredient.stock)
         ).order_by(Ingredient.nom).all()
-        
-        # Log pour debug
+
         current_app.logger.info(f'Frigo: {len(tous_ingredients)} ingrédients chargés pour le formulaire')
-        
+
         return render_template(
-            'frigo.html', 
+            'frigo.html',
             stocks=pagination['items'],
             pagination=pagination,
             tous_ingredients=tous_ingredients,
-            valeur_totale=valeur_totale_globale,  # ✅ Renommé pour correspondre au template
-            valeur_totale_globale=valeur_totale_globale,  # Garder pour compatibilité
+            valeur_totale=valeur_totale_globale,
+            valeur_totale_globale=valeur_totale_globale,
             view_mode=view_mode
         )
-    
+
     except Exception as e:
         current_app.logger.error(f'Erreur dans frigo.liste (GET): {str(e)}')
         import traceback
         current_app.logger.error(traceback.format_exc())
         flash('Erreur lors du chargement du stock.', 'danger')
         return render_template(
-            'frigo.html', 
-            stocks=[], 
+            'frigo.html',
+            stocks=[],
             pagination={
                 'items': [], 'total': 0, 'page': 1, 'pages': 1,
                 'per_page': 24, 'has_prev': False, 'has_next': False,
@@ -174,14 +165,14 @@ def supprimer(stock_id):
     """
     Supprime un stock du frigo par son ID.
 
-    Paramètres:
+    Args:
         stock_id: ID de l'entrée StockFrigo
     """
     stock = StockFrigo.query.get_or_404(stock_id)
     nom = stock.ingredient.nom
 
     with db_transaction_with_flash(
-        success_message=f'✓ {nom} retiré du frigo !',
+        success_message=f'{nom} retiré du frigo !',
         error_message=f'Erreur lors de la suppression de {nom}'
     ):
         db.session.delete(stock)
@@ -192,18 +183,18 @@ def supprimer(stock_id):
 @frigo_bp.route('/vider-tout')
 def vider_tout():
     """
-    Vide complètement le frigo
+    Vide complètement le frigo.
     """
     from utils.stock import vider_frigo
-    
+
     with db_transaction_with_flash(
-        success_message='✓ Le frigo a été vidé.',
+        success_message='Le frigo a été vidé.',
         error_message='Erreur lors du vidage du frigo'
     ):
         count = vider_frigo()
         if count > 0:
             flash(f'{count} ingrédient(s) retiré(s).', 'info')
-    
+
     return redirect(url_for('frigo.liste'))
 
 
@@ -212,7 +203,7 @@ def update_quantite(stock_id):
     """
     API AJAX pour mise à jour rapide de la quantité.
 
-    Paramètres:
+    Args:
         stock_id: ID de l'entrée StockFrigo
     """
     try:
